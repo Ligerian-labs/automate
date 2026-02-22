@@ -1,0 +1,25 @@
+{
+  "name": "automate",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web,worker -c blue,green,yellow \"npm run dev -w packages/api\" \"npm run dev -w packages/web\" \"npm run dev -w packages/worker\"",
+    "dev:api": "npm run dev -w packages/api",
+    "dev:web": "npm run dev -w packages/web",
+    "dev:worker": "npm run dev -w packages/worker",
+    "build": "npm run build -w packages/shared && npm run build -w packages/api && npm run build -w packages/web && npm run build -w packages/worker",
+    "db:migrate": "npm run migrate -w packages/api",
+    "db:seed": "npm run seed -w packages/api",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format --write .",
+    "typecheck": "tsc -b"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.7.0"
+  }
+}

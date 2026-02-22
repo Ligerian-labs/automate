@@ -1,0 +1,109 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Automate — AI Pipeline Builder">
+  <main class="min-h-screen bg-gray-950 text-white">
+    <!-- Hero -->
+    <section class="max-w-5xl mx-auto px-6 py-24 text-center">
+      <h1 class="text-6xl font-bold tracking-tight">
+        Chain AI models.<br />
+        <span class="text-blue-400">Schedule everything.</span>
+      </h1>
+      <p class="mt-6 text-xl text-gray-400 max-w-2xl mx-auto">
+        Build multi-step AI pipelines in minutes. Pick your models, write your prompts, set a schedule. We handle the rest.
+      </p>
+      <div class="mt-10 flex gap-4 justify-center">
+        <a href="/register" class="px-8 py-3 bg-blue-500 hover:bg-blue-600 rounded-lg font-semibold text-lg transition">
+          Start Free
+        </a>
+        <a href="/docs" class="px-8 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-semibold text-lg transition">
+          Documentation
+        </a>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="max-w-5xl mx-auto px-6 py-16">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div class="text-3xl mb-4">🔗</div>
+          <h3 class="text-xl font-bold mb-2">Multi-step pipelines</h3>
+          <p class="text-gray-400">Chain any models together. Claude → GPT → Llama. Each step feeds the next.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div class="text-3xl mb-4">⏰</div>
+          <h3 class="text-xl font-bold mb-2">Cron scheduling</h3>
+          <p class="text-gray-400">Run pipelines on a schedule. Daily reports, weekly content, hourly monitoring.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div class="text-3xl mb-4">💰</div>
+          <h3 class="text-xl font-bold mb-2">Transparent pricing</h3>
+          <p class="text-gray-400">See exactly what each run costs before you execute. No hidden fees.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div class="text-3xl mb-4">🚀</div>
+          <h3 class="text-xl font-bold mb-2">Zero install</h3>
+          <p class="text-gray-400">Everything runs on our servers. No setup, no dependencies, no infra to manage.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div class="text-3xl mb-4">📄</div>
+          <h3 class="text-xl font-bold mb-2">Pipeline as code</h3>
+          <p class="text-gray-400">Define pipelines in YAML. Version control, import/export, CI/CD friendly.</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div class="text-3xl mb-4">🔌</div>
+          <h3 class="text-xl font-bold mb-2">API-first</h3>
+          <p class="text-gray-400">Trigger pipelines via API or webhooks. Integrate with anything.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing preview -->
+    <section class="max-w-5xl mx-auto px-6 py-16 text-center">
+      <h2 class="text-4xl font-bold mb-4">Simple pricing</h2>
+      <p class="text-gray-400 mb-12">Pay for what you use. Start free, scale when ready.</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-gray-900 rounded-xl p-8 border border-gray-800">
+          <h3 class="text-xl font-bold">Free</h3>
+          <p class="text-4xl font-bold mt-4">€0</p>
+          <p class="text-gray-400 mt-2">100 credits/mo</p>
+          <ul class="text-left mt-6 space-y-2 text-gray-300">
+            <li>✓ 3 pipelines</li>
+            <li>✓ 10 runs/day</li>
+            <li>✓ 3 models</li>
+            <li class="text-gray-600">✗ Cron scheduling</li>
+          </ul>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-8 border border-blue-500 relative">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-bold">Popular</div>
+          <h3 class="text-xl font-bold">Starter</h3>
+          <p class="text-4xl font-bold mt-4">€19<span class="text-lg text-gray-400">/mo</span></p>
+          <p class="text-gray-400 mt-2">2,000 credits/mo</p>
+          <ul class="text-left mt-6 space-y-2 text-gray-300">
+            <li>✓ 10 pipelines</li>
+            <li>✓ 100 runs/day</li>
+            <li>✓ All models</li>
+            <li>✓ Cron scheduling</li>
+          </ul>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-8 border border-gray-800">
+          <h3 class="text-xl font-bold">Pro</h3>
+          <p class="text-4xl font-bold mt-4">€49<span class="text-lg text-gray-400">/mo</span></p>
+          <p class="text-gray-400 mt-2">8,000 credits/mo</p>
+          <ul class="text-left mt-6 space-y-2 text-gray-300">
+            <li>✓ Unlimited pipelines</li>
+            <li>✓ 500 runs/day</li>
+            <li>✓ All models + webhooks</li>
+            <li>✓ API access</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-8 text-center text-gray-500">
+      <p>Automate by <a href="https://ligerianlabs.fr" class="text-blue-400 hover:underline">Ligerian Labs</a></p>
+    </footer>
+  </main>
+</Layout>

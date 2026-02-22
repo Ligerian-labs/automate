@@ -1,0 +1,25 @@
+{
+  "name": "@automate/worker",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@automate/shared": "*",
+    "bullmq": "^5.30.0",
+    "ioredis": "^5.4.0",
+    "drizzle-orm": "^0.38.0",
+    "postgres": "^3.4.0",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "openai": "^4.80.0",
+    "handlebars": "^4.7.0",
+    "cron-parser": "^5.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}
