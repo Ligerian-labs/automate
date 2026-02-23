@@ -1,18 +1,18 @@
-FROM node:22-alpine AS base
+FROM oven/bun:1-alpine AS base
 WORKDIR /app
 
 FROM base AS deps
-COPY package.json package-lock.json* ./
+COPY package.json bun.lock* bunfig.toml* ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/worker/package.json packages/worker/
-RUN npm install --legacy-peer-deps --workspace=packages/shared --workspace=packages/worker --include-workspace-root
+RUN bun install --frozen-lockfile || bun install
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
 COPY packages/shared packages/shared
 COPY packages/worker packages/worker
-RUN npm run build -w packages/shared && npm run build -w packages/worker
+RUN bun run build -w packages/shared && bun run build -w packages/worker
 
 FROM base AS runtime
 COPY --from=deps /app/node_modules ./node_modules
@@ -22,4 +22,4 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/worker/package.json packages/worker/
 COPY package.json ./
 
-CMD ["node", "packages/worker/dist/index.js"]
+CMD ["bun", "run", "packages/worker/dist/index.js"]
