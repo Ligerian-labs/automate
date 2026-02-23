@@ -3,10 +3,21 @@ export interface Env {
   userPlan?: string;
 }
 
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+
+const jwtSecret = requireEnv("JWT_SECRET");
+if (jwtSecret === "change-me-in-production") {
+  throw new Error("JWT_SECRET must not use the default placeholder value");
+}
+
 export const config = {
   databaseUrl: process.env.DATABASE_URL || "postgres://automate:automate@localhost:5432/automate",
   redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
-  jwtSecret: process.env.JWT_SECRET || "change-me-in-production",
+  jwtSecret,
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",

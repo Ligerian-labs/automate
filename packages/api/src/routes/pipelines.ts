@@ -1,9 +1,16 @@
 import { Hono } from "hono";
 import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { pipelines, pipelineVersions } from "../db/schema.js";
+import { pipelines, pipelineVersions, runs, schedules } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
-import { createPipelineSchema, updatePipelineSchema } from "@automate/shared";
+import {
+  createPipelineSchema,
+  createScheduleSchema,
+  runPipelineSchema,
+  updatePipelineSchema,
+} from "@automate/shared";
+import { getNextCronTick } from "../services/cron.js";
+import { enqueueRun } from "../services/queue.js";
 import type { Env } from "../lib/env.js";
 
 export const pipelineRoutes = new Hono<{ Variables: Env }>();
@@ -12,7 +19,9 @@ pipelineRoutes.use("*", requireAuth);
 
 // List pipelines
 pipelineRoutes.get("/", async (c) => {
-  const userId = c.get("userId")!;
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
   const result = await db
     .select()
     .from(pipelines)
@@ -23,7 +32,9 @@ pipelineRoutes.get("/", async (c) => {
 
 // Create pipeline
 pipelineRoutes.post("/", async (c) => {
-  const userId = c.get("userId")!;
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
   const body = await c.req.json();
   const parsed = createPipelineSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
@@ -54,7 +65,9 @@ pipelineRoutes.post("/", async (c) => {
 
 // Get pipeline
 pipelineRoutes.get("/:id", async (c) => {
-  const userId = c.get("userId")!;
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
   const id = c.req.param("id");
 
   const [pipeline] = await db
@@ -69,7 +82,9 @@ pipelineRoutes.get("/:id", async (c) => {
 
 // Update pipeline
 pipelineRoutes.put("/:id", async (c) => {
-  const userId = c.get("userId")!;
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
   const id = c.req.param("id");
   const body = await c.req.json();
   const parsed = updatePipelineSchema.safeParse(body);
@@ -110,7 +125,9 @@ pipelineRoutes.put("/:id", async (c) => {
 
 // Delete (archive) pipeline
 pipelineRoutes.delete("/:id", async (c) => {
-  const userId = c.get("userId")!;
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
   const id = c.req.param("id");
 
   const [result] = await db
@@ -121,6 +138,102 @@ pipelineRoutes.delete("/:id", async (c) => {
 
   if (!result) return c.json({ error: "Not found" }, 404);
   return c.json({ deleted: true });
+});
+
+// Trigger a pipeline run
+pipelineRoutes.post("/:id/run", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const pipelineId = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = runPipelineSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
+
+  const [pipeline] = await db
+    .select()
+    .from(pipelines)
+    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
+    .limit(1);
+
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  const [run] = await db
+    .insert(runs)
+    .values({
+      pipelineId,
+      pipelineVersion: pipeline.version,
+      userId,
+      triggerType: "manual",
+      status: "pending",
+      inputData: parsed.data.input_data || {},
+    })
+    .returning();
+
+  await enqueueRun(run.id);
+  return c.json(run, 202);
+});
+
+// List schedules for a pipeline
+pipelineRoutes.get("/:id/schedules", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const pipelineId = c.req.param("id");
+  const [pipeline] = await db
+    .select({ id: pipelines.id })
+    .from(pipelines)
+    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
+    .limit(1);
+
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  const result = await db
+    .select()
+    .from(schedules)
+    .where(eq(schedules.pipelineId, pipelineId));
+
+  return c.json(result);
+});
+
+// Create schedule
+pipelineRoutes.post("/:id/schedules", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const pipelineId = c.req.param("id");
+  const body = await c.req.json();
+  const parsed = createScheduleSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
+
+  const [pipeline] = await db
+    .select()
+    .from(pipelines)
+    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
+    .limit(1);
+
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  let nextRun: Date;
+  try {
+    nextRun = getNextCronTick(parsed.data.cron_expression, parsed.data.timezone);
+  } catch (err) {
+    const error = err instanceof Error ? err.message : "Invalid schedule";
+    return c.json({ error }, 400);
+  }
+  const [schedule] = await db
+    .insert(schedules)
+    .values({
+      pipelineId,
+      cronExpression: parsed.data.cron_expression,
+      timezone: parsed.data.timezone || "UTC",
+      inputData: parsed.data.input_data || {},
+      enabled: parsed.data.enabled ?? true,
+      nextRunAt: nextRun,
+    })
+    .returning();
+
+  return c.json(schedule, 201);
 });
 
 // Validate pipeline definition

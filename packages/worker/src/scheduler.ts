@@ -18,8 +18,16 @@ export function startScheduler(connection: IORedis) {
   const queue = new Queue("pipeline-runs", { connection });
 
   async function tick() {
+    const lockToken = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+
     // Acquire distributed lock
-    const acquired = await connection.set(LOCK_KEY, "1", "PX", LOCK_TTL_MS, "NX");
+    const acquired = await connection.set(
+      LOCK_KEY,
+      lockToken,
+      "PX",
+      LOCK_TTL_MS,
+      "NX",
+    );
     if (!acquired) return; // another instance has the lock
 
     try {
@@ -75,7 +83,12 @@ export function startScheduler(connection: IORedis) {
     } catch (err) {
       console.error("Scheduler error:", err);
     } finally {
-      await connection.del(LOCK_KEY);
+      await connection.eval(
+        "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+        1,
+        LOCK_KEY,
+        lockToken,
+      );
     }
   }
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { users, runs } from "../db/schema.js";
+import { users } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { Env } from "../lib/env.js";
 
@@ -11,7 +11,9 @@ userRoutes.use("*", requireAuth);
 
 // Get current user
 userRoutes.get("/me", async (c) => {
-  const userId = c.get("userId")!;
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
   const [user] = await db
     .select({
       id: users.id,
@@ -31,7 +33,8 @@ userRoutes.get("/me", async (c) => {
 
 // Get usage stats
 userRoutes.get("/usage", async (c) => {
-  const userId = c.get("userId")!;
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
   // TODO: Aggregate runs for current billing period
   return c.json({

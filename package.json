@@ -15,7 +15,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test": "npm run test -w packages/shared"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",

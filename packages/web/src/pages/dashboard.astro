@@ -1,11 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Dashboard from "../components/Dashboard";
 ---
 
 <Layout title="Dashboard — Automate">
-  <div id="dashboard-root"></div>
-  <script>
-    // React dashboard will mount here
-    import("../components/Dashboard.jsx");
-  </script>
+  <Dashboard client:load />
 </Layout>

@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import Handlebars from "handlebars";
-import { runs, stepExecutions, pipelines, pipelineVersions, users } from "./db-schema.js";
+import { runs, stepExecutions, pipelineVersions } from "./db-schema.js";
 import { callModel } from "./model-router.js";
-import type { PipelineDefinition, PipelineStep } from "@automate/shared";
+import type { PipelineDefinition } from "@automate/shared";
 
 const dbUrl = process.env.DATABASE_URL || "postgres://automate:automate@localhost:5432/automate";
 const client = postgres(dbUrl);
@@ -19,8 +19,12 @@ export async function executePipeline(runId: string) {
   const [version] = await db
     .select()
     .from(pipelineVersions)
-    .where(eq(pipelineVersions.pipelineId, run.pipelineId))
-    .orderBy(pipelineVersions.version)
+    .where(
+      and(
+        eq(pipelineVersions.pipelineId, run.pipelineId),
+        eq(pipelineVersions.version, run.pipelineVersion),
+      ),
+    )
     .limit(1);
 
   const definition = version?.definition as unknown as PipelineDefinition;
@@ -58,36 +62,54 @@ export async function executePipeline(runId: string) {
       try {
         // Interpolate prompt
         const prompt = step.prompt ? interpolate(step.prompt, context) : "";
-
-        // Call model
+        const stepType = step.type || "llm";
         const startTime = Date.now();
-        const result = await callModel({
-          model: step.model || "gpt-4o-mini",
-          prompt,
-          system: step.system_prompt ? interpolate(step.system_prompt, context) : undefined,
-          temperature: step.temperature,
-          max_tokens: step.max_tokens,
-          output_format: step.output_format,
-        });
-        const durationMs = Date.now() - startTime;
 
-        // Parse output
-        let parsedOutput: unknown = result.output;
-        if (step.output_format === "json") {
-          try {
-            parsedOutput = JSON.parse(result.output);
-          } catch {
-            // Keep as string if JSON parse fails
+        let rawOutput = "";
+        let parsedOutput: unknown;
+        let inputTokens = 0;
+        let outputTokens = 0;
+        let costCents = 0;
+
+        if (stepType === "llm") {
+          const result = await callModel({
+            model: step.model || "gpt-4o-mini",
+            prompt,
+            system: step.system_prompt ? interpolate(step.system_prompt, context) : undefined,
+            temperature: step.temperature,
+            max_tokens: step.max_tokens,
+            output_format: step.output_format,
+          });
+
+          rawOutput = result.output;
+          parsedOutput = result.output;
+          inputTokens = result.input_tokens;
+          outputTokens = result.output_tokens;
+          costCents = result.cost_cents;
+
+          if (step.output_format === "json") {
+            try {
+              parsedOutput = JSON.parse(result.output);
+            } catch {
+              parsedOutput = result.output;
+            }
           }
+        } else if (stepType === "transform") {
+          rawOutput = prompt;
+          parsedOutput = prompt;
+        } else {
+          throw new Error(`Step type "${stepType}" is not implemented`);
         }
+
+        const durationMs = Date.now() - startTime;
 
         // Store step result in context
         (context.steps as Record<string, { output: unknown }>)[step.id] = {
           output: parsedOutput,
         };
 
-        totalTokens += result.input_tokens + result.output_tokens;
-        totalCostCents += result.cost_cents;
+        totalTokens += inputTokens + outputTokens;
+        totalCostCents += costCents;
 
         // Update step execution
         await db
@@ -95,11 +117,11 @@ export async function executePipeline(runId: string) {
           .set({
             status: "completed",
             promptSent: prompt,
-            rawOutput: result.output,
+            rawOutput,
             parsedOutput,
-            inputTokens: result.input_tokens,
-            outputTokens: result.output_tokens,
-            costCents: result.cost_cents,
+            inputTokens,
+            outputTokens,
+            costCents,
             durationMs,
             completedAt: new Date(),
           })
@@ -127,7 +149,7 @@ export async function executePipeline(runId: string) {
       .update(runs)
       .set({
         status: "completed",
-        outputData: outputData as Record<string, unknown>,
+        outputData: outputData === undefined ? null : outputData,
         totalTokens,
         totalCostCents,
         completedAt: new Date(),
