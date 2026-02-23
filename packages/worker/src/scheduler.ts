@@ -1,9 +1,9 @@
-import type IORedis from "ioredis";
+import type { Redis as IORedis } from "ioredis";
 import { Queue } from "bullmq";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { lte, eq, and } from "drizzle-orm";
-import { parseExpression } from "cron-parser";
+import { CronExpressionParser } from "cron-parser";
 import { schedules, runs, pipelines } from "./db-schema.js";
 
 const dbUrl = process.env.DATABASE_URL || "postgres://automate:automate@localhost:5432/automate";
@@ -69,7 +69,7 @@ export function startScheduler(connection: IORedis) {
         });
 
         // Update next run time
-        const nextRun = parseExpression(schedule.cronExpression, {
+        const nextRun = CronExpressionParser.parse(schedule.cronExpression, {
           tz: schedule.timezone,
         }).next().toDate();
 
