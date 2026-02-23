@@ -12,7 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
 COPY packages/shared packages/shared
 COPY packages/api packages/api
-RUN bun run build -w packages/shared && bun run build -w packages/api
+RUN cd packages/shared && bun run build && cd ../api && bun run build
 
 FROM base AS runtime
 COPY --from=deps /app/node_modules ./node_modules
