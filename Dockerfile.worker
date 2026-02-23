@@ -13,8 +13,9 @@ FROM base AS build
 COPY --from=deps /app .
 COPY tsconfig.json ./
 COPY packages/shared packages/shared
+COPY packages/api packages/api
 COPY packages/worker packages/worker
-RUN bun tsc -p packages/shared/tsconfig.json && bun tsc -p packages/worker/tsconfig.json
+RUN bun tsc -p packages/shared/tsconfig.json && bun tsc -p packages/api/tsconfig.json && bun tsc -p packages/worker/tsconfig.json
 
 FROM base AS runtime
 COPY --from=deps /app/node_modules ./node_modules
