@@ -5,7 +5,7 @@ FROM base AS deps
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/web/package.json packages/web/
-RUN npm ci --workspace=packages/shared --workspace=packages/web --include-workspace-root
+RUN npm install --legacy-peer-deps --workspace=packages/shared --workspace=packages/web --include-workspace-root
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
