@@ -12,7 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
 COPY packages/shared packages/shared
 COPY packages/web packages/web
-RUN bun tsc -b packages/shared && cd packages/web && bun run build
+RUN bun tsc -p packages/shared/tsconfig.json && cd packages/web && bun run build
 
 FROM base AS runtime
 RUN bun add -g serve
