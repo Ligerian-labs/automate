@@ -10,6 +10,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@automate/api": "*",
     "@automate/core": "*",
     "bullmq": "^5.30.0",
     "ioredis": "^5.4.0",

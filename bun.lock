@@ -74,6 +74,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@anthropic-ai/sdk": "^0.39.0",
+        "@automate/api": "*",
         "@automate/core": "*",
         "bullmq": "^5.30.0",
         "cron-parser": "^5.0.0",
