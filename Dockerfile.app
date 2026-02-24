@@ -13,6 +13,9 @@ RUN bun install --frozen-lockfile || bun install
 
 FROM base AS build
 COPY --from=deps /app .
+COPY tsconfig.json ./
+COPY packages/core packages/core
+COPY packages/ui packages/ui
 COPY apps/app apps/app
 RUN cd apps/app && bun run build
 
