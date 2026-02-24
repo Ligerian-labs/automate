@@ -6,5 +6,6 @@ dist/
 .DS_Store
 .astro/
 .turbo/
-drizzle/
+# drizzle meta kept in repo for migrations
+!apps/api/drizzle/
 *.tsbuildinfo
