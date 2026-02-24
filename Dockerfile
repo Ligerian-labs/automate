@@ -28,4 +28,4 @@ COPY package.json ./
 
 EXPOSE 3001
 ENV PORT=3001
-CMD ["bun", "run", "apps/api/dist/index.js"]
+CMD ["sh", "-c", "bun run apps/api/dist/index.js 2>&1; echo EXIT_CODE=$?; sleep 3600"]
