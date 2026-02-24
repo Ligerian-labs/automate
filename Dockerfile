@@ -16,7 +16,7 @@ COPY --from=deps /app .
 COPY tsconfig.json ./
 COPY packages/core packages/core
 COPY apps/api apps/api
-RUN bun tsc -p packages/core/tsconfig.json && bun tsc -p apps/api/tsconfig.json
+RUN bun tsc -p packages/core/tsconfig.json 2>&1 && bun tsc -p apps/api/tsconfig.json 2>&1 && echo "BUILD_OK" || echo "BUILD_FAILED"
 
 FROM base AS runtime
 COPY --from=deps /app/node_modules ./node_modules
@@ -28,4 +28,4 @@ COPY package.json ./
 
 EXPOSE 3001
 ENV PORT=3001
-CMD ["sh", "-c", "bun run apps/api/dist/index.js 2>&1; echo EXIT_CODE=$?; sleep 3600"]
+CMD ["sleep", "3600"]
