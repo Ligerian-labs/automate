@@ -31,4 +31,4 @@ worker.on("failed", (job, err) => {
 // Start cron scheduler
 startScheduler(connection);
 
-console.log("🏭 Automate Worker started");
+console.log("🏭 Stepiq Worker started");

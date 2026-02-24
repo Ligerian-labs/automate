@@ -1,4 +1,4 @@
-import type { PipelineDefinition } from "@automate/core";
+import type { PipelineDefinition } from "@stepiq/core";
 export interface ApiErrorShape {
     error?: string;
     message?: string;

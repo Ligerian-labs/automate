@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { SUPPORTED_MODELS, MARKUP_PERCENTAGE } from "@automate/core";
+import { SUPPORTED_MODELS, MARKUP_PERCENTAGE } from "@stepiq/core";
 
 export const modelRoutes = new Hono();
 

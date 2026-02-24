@@ -4,9 +4,9 @@ import postgres from "postgres";
 import Handlebars from "handlebars";
 import { runs, stepExecutions, pipelineVersions } from "./db-schema.js";
 import { callModel } from "./model-router.js";
-import type { PipelineDefinition } from "@automate/core";
+import type { PipelineDefinition } from "@stepiq/core";
 
-const dbUrl = process.env.DATABASE_URL || "postgres://automate:automate@localhost:5432/automate";
+const dbUrl = process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
 const client = postgres(dbUrl);
 const db = drizzle(client);
 

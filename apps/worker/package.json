@@ -1,5 +1,5 @@
 {
-  "name": "@automate/worker",
+  "name": "@stepiq/worker",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
@@ -10,8 +10,8 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@automate/api": "*",
-    "@automate/core": "*",
+    "@stepiq/api": "*",
+    "@stepiq/core": "*",
     "bullmq": "^5.30.0",
     "ioredis": "^5.4.0",
     "drizzle-orm": "^0.38.0",

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { cn } from "@automate/ui";
+import { cn } from "@stepiq/ui";
 import { clearToken } from "../lib/auth";
 
 const navItems = [
@@ -20,7 +20,7 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
       <aside className="border-b border-[var(--divider)] bg-[var(--bg-inset)] p-4 lg:flex lg:min-h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:border-r">
         <div className="mb-8 flex items-center gap-2">
           <div className="grid size-8 place-items-center rounded-md bg-[var(--accent)] text-[var(--bg-primary)] font-bold">A</div>
-          <div className="font-semibold tracking-tight">Automate</div>
+          <div className="font-semibold tracking-tight">Stepiq</div>
         </div>
 
         <nav className="space-y-1">

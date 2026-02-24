@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
 import { config } from "../lib/env.js";
-import { registerSchema, loginSchema } from "@automate/core";
+import { registerSchema, loginSchema } from "@stepiq/core";
 
 const secret = new TextEncoder().encode(config.jwtSecret);
 

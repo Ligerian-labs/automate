@@ -2,7 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { SurfaceCard, UiButton } from "@automate/ui";
+import { SurfaceCard, UiButton } from "@stepiq/ui";
 import { AppShell } from "../components/app-shell";
 import { apiFetch } from "../lib/api";
 export function DashboardPage() {
@@ -17,7 +17,7 @@ export function DashboardPage() {
                     name: "First step",
                     type: "llm",
                     model: "gpt-4o-mini",
-                    prompt: "Hello from Automate",
+                    prompt: "Hello from Stepiq",
                 },
             ],
         };

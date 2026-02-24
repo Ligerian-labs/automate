@@ -4,5 +4,5 @@ import { app } from "./app.js";
 const port = Number(process.env.PORT) || 3001;
 
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`🚀 Automate API running on http://localhost:${info.port}`);
+  console.log(`🚀 Stepiq API running on http://localhost:${info.port}`);
 });

@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { SurfaceCard, UiButton } from "@automate/ui";
+import { SurfaceCard, UiButton } from "@stepiq/ui";
 import { AppShell } from "../components/app-shell";
 import { apiFetch, type PipelineRecord, type RunRecord } from "../lib/api";
-import type { PipelineDefinition } from "@automate/core";
+import type { PipelineDefinition } from "@stepiq/core";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ export function DashboardPage() {
           name: "First step",
           type: "llm",
           model: "gpt-4o-mini",
-          prompt: "Hello from Automate",
+          prompt: "Hello from Stepiq",
         },
       ],
     };

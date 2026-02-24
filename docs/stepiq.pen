@@ -6,7 +6,7 @@
       "id": "8UC47",
       "x": 0,
       "y": 0,
-      "name": "Automate - Landing Page",
+      "name": "Stepiq - Landing Page",
       "clip": true,
       "width": 1440,
       "fill": "$bg-primary",
@@ -68,7 +68,7 @@
                   "id": "hvuML",
                   "name": "brandName",
                   "fill": "$text-primary",
-                  "content": "Automate",
+                  "content": "Stepiq",
                   "fontFamily": "JetBrains Mono",
                   "fontSize": 18,
                   "fontWeight": "700"
@@ -2655,7 +2655,7 @@
                           "id": "CQie9",
                           "name": "fLogoTxt",
                           "fill": "$text-primary",
-                          "content": "Automate",
+                          "content": "Stepiq",
                           "fontFamily": "JetBrains Mono",
                           "fontSize": 16,
                           "fontWeight": "700"
@@ -3002,7 +3002,7 @@
                   "id": "9C8dz",
                   "name": "sLogoTxt",
                   "fill": "$text-primary",
-                  "content": "Automate",
+                  "content": "Stepiq",
                   "fontFamily": "JetBrains Mono",
                   "fontSize": 16,
                   "fontWeight": "700"
@@ -4284,7 +4284,7 @@
                   "id": "VO3I9",
                   "name": "sLogoTxt",
                   "fill": "$text-primary",
-                  "content": "Automate",
+                  "content": "Stepiq",
                   "fontFamily": "JetBrains Mono",
                   "fontSize": 16,
                   "fontWeight": "700"
@@ -5780,7 +5780,7 @@
                   "id": "u9bu4",
                   "name": "sLogoTxt",
                   "fill": "$text-primary",
-                  "content": "Automate",
+                  "content": "Stepiq",
                   "fontFamily": "JetBrains Mono",
                   "fontSize": 16,
                   "fontWeight": "700"
@@ -7274,7 +7274,7 @@
                   "id": "OZvVn",
                   "name": "sLogoTxt",
                   "fill": "$text-primary",
-                  "content": "Automate",
+                  "content": "Stepiq",
                   "fontFamily": "JetBrains Mono",
                   "fontSize": 16,
                   "fontWeight": "700"
@@ -8307,7 +8307,7 @@
                       "id": "xFRAI",
                       "name": "authLogoTxt",
                       "fill": "$text-primary",
-                      "content": "Automate",
+                      "content": "Stepiq",
                       "fontFamily": "JetBrains Mono",
                       "fontSize": 20,
                       "fontWeight": "700"

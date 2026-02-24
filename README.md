@@ -1,4 +1,4 @@
-# Automate
+# Stepiq
 
 **AI Pipeline Builder** - Chain models, write prompts, schedule everything.
 
@@ -50,7 +50,7 @@ cp .env.example .env
 ## Project Structure
 
 ```text
-automate/
+stepiq/
 ├── apps/
 │   ├── api/          # Hono REST API
 │   ├── worker/       # BullMQ workers + cron scheduler

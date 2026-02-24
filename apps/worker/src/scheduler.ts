@@ -6,12 +6,12 @@ import { lte, eq, and } from "drizzle-orm";
 import { CronExpressionParser } from "cron-parser";
 import { schedules, runs, pipelines } from "./db-schema.js";
 
-const dbUrl = process.env.DATABASE_URL || "postgres://automate:automate@localhost:5432/automate";
+const dbUrl = process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
 const client = postgres(dbUrl);
 const db = drizzle(client);
 
 const POLL_INTERVAL_MS = 30_000; // 30 seconds
-const LOCK_KEY = "automate:cron-scheduler-lock";
+const LOCK_KEY = "stepiq:cron-scheduler-lock";
 const LOCK_TTL_MS = 25_000;
 
 export function startScheduler(connection: IORedis) {

@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { cn } from "@automate/ui";
+import { cn } from "@stepiq/ui";
 import { clearToken } from "../lib/auth";
 const navItems = [
     { to: "/dashboard", label: "Dashboard", icon: "▣" },
@@ -12,7 +12,7 @@ const navItems = [
 export function AppShell({ title, subtitle, children }) {
     const location = useLocation();
     const navigate = useNavigate();
-    return (_jsxs("div", { className: "min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] lg:flex", children: [_jsxs("aside", { className: "border-b border-[var(--divider)] bg-[var(--bg-inset)] p-4 lg:flex lg:min-h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:border-r", children: [_jsxs("div", { className: "mb-8 flex items-center gap-2", children: [_jsx("div", { className: "grid size-8 place-items-center rounded-md bg-[var(--accent)] text-[var(--bg-primary)] font-bold", children: "A" }), _jsx("div", { className: "font-semibold tracking-tight", children: "Automate" })] }), _jsx("nav", { className: "space-y-1", children: navItems.map((item) => {
+    return (_jsxs("div", { className: "min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] lg:flex", children: [_jsxs("aside", { className: "border-b border-[var(--divider)] bg-[var(--bg-inset)] p-4 lg:flex lg:min-h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:border-r", children: [_jsxs("div", { className: "mb-8 flex items-center gap-2", children: [_jsx("div", { className: "grid size-8 place-items-center rounded-md bg-[var(--accent)] text-[var(--bg-primary)] font-bold", children: "A" }), _jsx("div", { className: "font-semibold tracking-tight", children: "Stepiq" })] }), _jsx("nav", { className: "space-y-1", children: navItems.map((item) => {
                             const active = item.to && location.pathname.startsWith(item.to);
                             if (!item.to) {
                                 return (_jsxs("span", { className: "block rounded-md px-3 py-2 text-sm text-[var(--text-secondary)] opacity-90", children: [_jsx("span", { className: "mr-2 inline-block w-4 text-center text-xs", children: item.icon }), item.label] }, item.label));
