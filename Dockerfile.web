@@ -12,6 +12,8 @@ COPY apps/worker/package.json apps/worker/
 RUN bun install --frozen-lockfile || bun install
 
 FROM base AS build
+ARG PUBLIC_APP_URL=https://app.stepiq.sh
+ENV PUBLIC_APP_URL=${PUBLIC_APP_URL}
 COPY --from=deps /app .
 COPY tsconfig.json ./
 COPY packages/core packages/core
