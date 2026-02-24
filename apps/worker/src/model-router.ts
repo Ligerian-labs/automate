@@ -24,7 +24,9 @@ interface ModelResponse {
 }
 
 export async function callModel(req: ModelRequest): Promise<ModelResponse> {
-  const modelInfo = SUPPORTED_MODELS.find((m) => m.id === req.model);
+  const modelInfo = SUPPORTED_MODELS.find(
+    (m: (typeof SUPPORTED_MODELS)[number]) => m.id === req.model
+  );
   if (!modelInfo) throw new Error(`Unsupported model: ${req.model}`);
 
   const start = Date.now();
