@@ -133,14 +133,14 @@ steps:
     output_format: markdown`;
 ---
 
-<Layout title="Stepiq — Build AI pipelines. Ship without infrastructure.">
+<Layout title="stepIQ — Build AI pipelines. Ship without infrastructure.">
   <main class="landing">
     <header class="header">
       <div class="brand">
         <div class="logo-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
         </div>
-        <span>Stepiq</span>
+        <span>stepIQ</span>
       </div>
       <nav class="nav-links">
         <a href="#features">Features</a>
@@ -293,7 +293,7 @@ steps:
                 <li>{item}</li>
               ))}
             </ul>
-            <a href={`${APP_URL}/register`} class={plan.featured ? "solid-link" : "outline-link"}>{plan.cta}</a>
+            <a href={plan.name === "Enterprise" ? "/contact" : `${APP_URL}/register`} class={plan.featured ? "solid-link" : "outline-link"}>{plan.cta}</a>
           </article>
         ))}
       </div>
@@ -306,7 +306,7 @@ steps:
             <div class="logo-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>
             </div>
-            <span class="brand-name">Stepiq</span>
+            <span class="brand-name">stepIQ</span>
           </div>
           <p class="footer-tagline">Zapier for AI — AI-native, server-side,<br />and model-agnostic.</p>
         </div>
