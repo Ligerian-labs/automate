@@ -1,8 +1,7 @@
-FROM oven/bun:1-alpine AS base
+FROM oven/bun:1-debian AS base
 WORKDIR /app
 
 FROM base AS deps
-RUN apk add --no-cache python3 make g++ linux-headers
 COPY package.json bun.lock* bunfig.toml* ./
 COPY packages/core/package.json packages/core/
 COPY packages/ui/package.json packages/ui/
@@ -25,12 +24,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
-COPY --from=build /app/packages/core/dist ./packages/core/dist
-COPY --from=build /app/apps/api/dist ./apps/api/dist
-COPY --from=build /app/apps/worker/dist ./apps/worker/dist
-COPY packages/core/package.json packages/core/
-COPY apps/api/package.json apps/api/
-COPY apps/worker/package.json apps/worker/
+COPY --from=build /app/packages/core ./packages/core
+COPY --from=build /app/apps/api ./apps/api
+COPY --from=build /app/apps/worker ./apps/worker
 COPY package.json ./
 
 CMD ["bun", "run", "apps/worker/dist/index.js"]
