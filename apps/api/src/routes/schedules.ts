@@ -3,7 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { schedules, pipelines } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
-import { createScheduleSchema } from "@automate/core";
+import { createScheduleSchema } from "@stepiq/core";
 import { getNextCronTick } from "../services/cron.js";
 import type { Env } from "../lib/env.js";
 

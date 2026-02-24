@@ -15,7 +15,7 @@ if (jwtSecret === "change-me-in-production") {
 }
 
 export const config = {
-  databaseUrl: process.env.DATABASE_URL || "postgres://automate:automate@localhost:5432/automate",
+  databaseUrl: process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq",
   redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
   jwtSecret,
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",

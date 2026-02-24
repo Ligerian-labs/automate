@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
-import { SUPPORTED_MODELS, MARKUP_PERCENTAGE } from "@automate/core";
+import { SUPPORTED_MODELS, MARKUP_PERCENTAGE } from "@stepiq/core";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });

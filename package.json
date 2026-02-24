@@ -1,5 +1,5 @@
 {
-  "name": "automate",
+  "name": "stepiq",
   "private": true,
   "packageManager": "bun@1.3.4",
   "workspaces": [
@@ -7,14 +7,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --parallel --filter=@automate/api --filter=@automate/landing --filter=@automate/app --filter=@automate/worker",
-    "dev:api": "turbo run dev --filter=@automate/api",
-    "dev:landing": "turbo run dev --filter=@automate/landing",
-    "dev:app": "turbo run dev --filter=@automate/app",
-    "dev:worker": "turbo run dev --filter=@automate/worker",
+    "dev": "turbo run dev --parallel --filter=@stepiq/api --filter=@stepiq/landing --filter=@stepiq/app --filter=@stepiq/worker",
+    "dev:api": "turbo run dev --filter=@stepiq/api",
+    "dev:landing": "turbo run dev --filter=@stepiq/landing",
+    "dev:app": "turbo run dev --filter=@stepiq/app",
+    "dev:worker": "turbo run dev --filter=@stepiq/worker",
     "build": "turbo run build",
-    "db:migrate": "bun run --filter @automate/api migrate",
-    "db:seed": "bun run --filter @automate/api seed",
+    "db:migrate": "bun run --filter @stepiq/api migrate",
+    "db:seed": "bun run --filter @stepiq/api seed",
     "lint": "turbo run lint",
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",

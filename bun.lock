@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "automate",
+      "name": "stepiq",
       "devDependencies": {
         "@biomejs/biome": "^1.9.0",
         "@types/node": "^22.0.0",
@@ -12,10 +12,10 @@
       },
     },
     "apps/api": {
-      "name": "@automate/api",
+      "name": "@stepiq/api",
       "version": "0.0.1",
       "dependencies": {
-        "@automate/core": "*",
+        "@stepiq/core": "*",
         "@hono/node-server": "^1.13.0",
         "bcrypt": "^5.1.0",
         "bullmq": "^5.30.0",
@@ -35,11 +35,11 @@
       },
     },
     "apps/app": {
-      "name": "@automate/app",
+      "name": "@stepiq/app",
       "version": "0.0.1",
       "dependencies": {
-        "@automate/core": "*",
-        "@automate/ui": "*",
+        "@stepiq/core": "*",
+        "@stepiq/ui": "*",
         "@tailwindcss/vite": "^4.1.13",
         "@tanstack/react-query": "^5.66.9",
         "@tanstack/react-router": "^1.111.0",
@@ -57,7 +57,7 @@
       },
     },
     "apps/landing": {
-      "name": "@automate/landing",
+      "name": "@stepiq/landing",
       "version": "0.0.1",
       "dependencies": {
         "@tailwindcss/vite": "^4.0.0",
@@ -70,12 +70,12 @@
       },
     },
     "apps/worker": {
-      "name": "@automate/worker",
+      "name": "@stepiq/worker",
       "version": "0.0.1",
       "dependencies": {
         "@anthropic-ai/sdk": "^0.39.0",
-        "@automate/api": "*",
-        "@automate/core": "*",
+        "@stepiq/api": "*",
+        "@stepiq/core": "*",
         "bullmq": "^5.30.0",
         "cron-parser": "^5.0.0",
         "drizzle-orm": "^0.38.0",
@@ -89,7 +89,7 @@
       },
     },
     "packages/core": {
-      "name": "@automate/core",
+      "name": "@stepiq/core",
       "version": "0.0.1",
       "dependencies": {
         "zod": "^3.24.0",
@@ -99,7 +99,7 @@
       },
     },
     "packages/ui": {
-      "name": "@automate/ui",
+      "name": "@stepiq/ui",
       "version": "0.0.1",
       "peerDependencies": {
         "react": "^19.0.0",
@@ -126,17 +126,17 @@
 
     "@astrojs/yaml2ts": ["@astrojs/yaml2ts@0.2.2", "", { "dependencies": { "yaml": "^2.5.0" } }, "sha512-GOfvSr5Nqy2z5XiwqTouBBpy5FyI6DEe+/g/Mk5am9SjILN1S5fOEvYK0GuWHg98yS/dobP4m8qyqw/URW35fQ=="],
 
-    "@automate/api": ["@automate/api@workspace:apps/api"],
+    "@stepiq/api": ["@stepiq/api@workspace:apps/api"],
 
-    "@automate/app": ["@automate/app@workspace:apps/app"],
+    "@stepiq/app": ["@stepiq/app@workspace:apps/app"],
 
-    "@automate/core": ["@automate/core@workspace:packages/core"],
+    "@stepiq/core": ["@stepiq/core@workspace:packages/core"],
 
-    "@automate/landing": ["@automate/landing@workspace:apps/landing"],
+    "@stepiq/landing": ["@stepiq/landing@workspace:apps/landing"],
 
-    "@automate/ui": ["@automate/ui@workspace:packages/ui"],
+    "@stepiq/ui": ["@stepiq/ui@workspace:packages/ui"],
 
-    "@automate/worker": ["@automate/worker@workspace:apps/worker"],
+    "@stepiq/worker": ["@stepiq/worker@workspace:apps/worker"],
 
     "@babel/code-frame": ["@babel/code-frame@7.29.0", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw=="],
 

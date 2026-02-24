@@ -1,5 +1,5 @@
 {
-  "name": "@automate/app",
+  "name": "@stepiq/app",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@automate/core": "*",
-    "@automate/ui": "*",
+    "@stepiq/core": "*",
+    "@stepiq/ui": "*",
     "@tanstack/react-query": "^5.66.9",
     "@tanstack/react-router": "^1.111.0",
     "@tanstack/router-devtools": "^1.111.0",

@@ -4,7 +4,7 @@ export default defineConfig({
     out: "./drizzle",
     dialect: "postgresql",
     dbCredentials: {
-        url: process.env.DATABASE_URL || "postgres://automate:automate@localhost:5432/automate",
+        url: process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq",
     },
 });
 //# sourceMappingURL=drizzle.config.js.map

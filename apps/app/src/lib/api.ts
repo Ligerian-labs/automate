@@ -1,4 +1,4 @@
-import type { PipelineDefinition } from "@automate/core";
+import type { PipelineDefinition } from "@stepiq/core";
 import { getToken } from "./auth";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";

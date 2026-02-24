@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: automate
-      POSTGRES_PASSWORD: automate
-      POSTGRES_DB: automate
+      POSTGRES_USER: stepiq
+      POSTGRES_PASSWORD: stepiq
+      POSTGRES_DB: stepiq
     ports:
       - "5432:5432"
     volumes:

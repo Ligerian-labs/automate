@@ -8,7 +8,7 @@ import {
   createScheduleSchema,
   runPipelineSchema,
   updatePipelineSchema,
-} from "@automate/core";
+} from "@stepiq/core";
 import { getNextCronTick } from "../services/cron.js";
 import { enqueueRun } from "../services/queue.js";
 import type { Env } from "../lib/env.js";

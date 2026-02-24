@@ -2,24 +2,24 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: automate
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-automate}
-      POSTGRES_DB: automate
+      POSTGRES_USER: stepiq
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stepiq}
+      POSTGRES_DB: stepiq
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U automate"]
+      test: ["CMD-SHELL", "pg_isready -U stepiq"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD:-automate}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-stepiq}
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-automate}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-stepiq}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,8 +29,8 @@ services:
       context: .
       dockerfile: Dockerfile.api
     environment:
-      DATABASE_URL: postgres://automate:${POSTGRES_PASSWORD:-automate}@postgres:5432/automate
-      REDIS_URL: redis://:${REDIS_PASSWORD:-automate}@redis:6379
+      DATABASE_URL: postgres://stepiq:${POSTGRES_PASSWORD:-stepiq}@postgres:5432/stepiq
+      REDIS_URL: redis://:${REDIS_PASSWORD:-stepiq}@redis:6379
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       NODE_ENV: production
@@ -48,8 +48,8 @@ services:
       context: .
       dockerfile: Dockerfile.worker
     environment:
-      DATABASE_URL: postgres://automate:${POSTGRES_PASSWORD:-automate}@postgres:5432/automate
-      REDIS_URL: redis://:${REDIS_PASSWORD:-automate}@redis:6379
+      DATABASE_URL: postgres://stepiq:${POSTGRES_PASSWORD:-stepiq}@postgres:5432/stepiq
+      REDIS_URL: redis://:${REDIS_PASSWORD:-stepiq}@redis:6379
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       NODE_ENV: production
