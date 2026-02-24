@@ -7,24 +7,24 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,landing,app,worker -c blue,green,magenta,yellow \"bun run --filter @automate/api dev\" \"bun run --filter @automate/landing dev\" \"bun run --filter @automate/app dev\" \"bun run --filter @automate/worker dev\"",
-    "dev:api": "bun run --filter @automate/api dev",
-    "dev:landing": "bun run --filter @automate/landing dev",
-    "dev:app": "bun run --filter @automate/app dev",
-    "dev:worker": "bun run --filter @automate/worker dev",
-    "build": "bun run --filter @automate/core build && bun run --filter @automate/ui build && bun run --filter @automate/api build && bun run --filter @automate/landing build && bun run --filter @automate/app build && bun run --filter @automate/worker build",
+    "dev": "turbo run dev --parallel --filter=@automate/api --filter=@automate/landing --filter=@automate/app --filter=@automate/worker",
+    "dev:api": "turbo run dev --filter=@automate/api",
+    "dev:landing": "turbo run dev --filter=@automate/landing",
+    "dev:app": "turbo run dev --filter=@automate/app",
+    "dev:worker": "turbo run dev --filter=@automate/worker",
+    "build": "turbo run build",
     "db:migrate": "bun run --filter @automate/api migrate",
     "db:seed": "bun run --filter @automate/api seed",
-    "lint": "biome check .",
+    "lint": "turbo run lint",
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",
-    "typecheck": "tsc -b",
-    "test": "bun run --filter @automate/core test"
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@types/node": "^22.0.0",
-    "concurrently": "^9.0.0",
+    "turbo": "^2.8.10",
     "typescript": "^5.7.0"
   },
   "dependencies": {}

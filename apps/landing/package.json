@@ -6,6 +6,7 @@
     "dev": "astro dev --port 4321",
     "build": "astro build",
     "preview": "astro preview",
+    "lint": "biome lint src",
     "typecheck": "astro check"
   },
   "dependencies": {

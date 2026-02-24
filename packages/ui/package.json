@@ -6,6 +6,7 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "tsc",
+    "lint": "biome lint src",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
