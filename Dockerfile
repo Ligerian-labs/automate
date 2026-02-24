@@ -2,6 +2,7 @@ FROM oven/bun:1-alpine AS base
 WORKDIR /app
 
 FROM base AS deps
+RUN apk add --no-cache python3 make g++ linux-headers
 COPY package.json bun.lock* bunfig.toml* ./
 COPY packages/core/package.json packages/core/
 COPY packages/ui/package.json packages/ui/
