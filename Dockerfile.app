@@ -12,6 +12,8 @@ COPY apps/worker/package.json apps/worker/
 RUN bun install --frozen-lockfile || bun install
 
 FROM base AS build
+ARG VITE_API_URL=https://api.stepiq.sh
+ENV VITE_API_URL=${VITE_API_URL}
 COPY --from=deps /app .
 COPY tsconfig.json ./
 COPY packages/core packages/core
