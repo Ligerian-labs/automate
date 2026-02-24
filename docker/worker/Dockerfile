@@ -3,28 +3,30 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json bun.lock* bunfig.toml* ./
-COPY packages/shared/package.json packages/shared/
-COPY packages/api/package.json packages/api/
-COPY packages/web/package.json packages/web/
-COPY packages/worker/package.json packages/worker/
+COPY packages/core/package.json packages/core/
+COPY packages/ui/package.json packages/ui/
+COPY apps/api/package.json apps/api/
+COPY apps/landing/package.json apps/landing/
+COPY apps/app/package.json apps/app/
+COPY apps/worker/package.json apps/worker/
 RUN bun install --frozen-lockfile || bun install
 
 FROM base AS build
 COPY --from=deps /app .
 COPY tsconfig.json ./
-COPY packages/shared packages/shared
-COPY packages/api packages/api
-COPY packages/worker packages/worker
-RUN bun tsc -p packages/shared/tsconfig.json && bun tsc -p packages/api/tsconfig.json && bun tsc -p packages/worker/tsconfig.json
+COPY packages/core packages/core
+COPY apps/api apps/api
+COPY apps/worker apps/worker
+RUN bun tsc -p packages/core/tsconfig.json && bun tsc -p apps/api/tsconfig.json && bun tsc -p apps/worker/tsconfig.json
 
 FROM base AS runtime
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/packages/worker/node_modules ./packages/worker/node_modules
-COPY --from=build /app/packages/shared/dist ./packages/shared/dist
-COPY --from=build /app/packages/worker/dist ./packages/worker/dist
-COPY packages/shared/package.json packages/shared/
-COPY packages/worker/package.json packages/worker/
+COPY --from=deps /app/packages/core/node_modules ./packages/core/node_modules
+COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=build /app/packages/core/dist ./packages/core/dist
+COPY --from=build /app/apps/worker/dist ./apps/worker/dist
+COPY packages/core/package.json packages/core/
+COPY apps/worker/package.json apps/worker/
 COPY package.json ./
 
-CMD ["bun", "run", "packages/worker/dist/index.js"]
+CMD ["bun", "run", "apps/worker/dist/index.js"]

@@ -1,28 +1,31 @@
 {
   "name": "automate",
   "private": true,
+  "packageManager": "bun@1.3.4",
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n api,web,worker -c blue,green,yellow \"npm run dev -w packages/api\" \"npm run dev -w packages/web\" \"npm run dev -w packages/worker\"",
-    "dev:api": "npm run dev -w packages/api",
-    "dev:web": "npm run dev -w packages/web",
-    "dev:worker": "npm run dev -w packages/worker",
-    "build": "npm run build -w packages/shared && npm run build -w packages/api && npm run build -w packages/web && npm run build -w packages/worker",
-    "db:migrate": "npm run migrate -w packages/api",
-    "db:seed": "npm run seed -w packages/api",
+    "dev": "concurrently -n api,landing,app,worker -c blue,green,magenta,yellow \"bun run --filter @automate/api dev\" \"bun run --filter @automate/landing dev\" \"bun run --filter @automate/app dev\" \"bun run --filter @automate/worker dev\"",
+    "dev:api": "bun run --filter @automate/api dev",
+    "dev:landing": "bun run --filter @automate/landing dev",
+    "dev:app": "bun run --filter @automate/app dev",
+    "dev:worker": "bun run --filter @automate/worker dev",
+    "build": "bun run --filter @automate/core build && bun run --filter @automate/ui build && bun run --filter @automate/api build && bun run --filter @automate/landing build && bun run --filter @automate/app build && bun run --filter @automate/worker build",
+    "db:migrate": "bun run --filter @automate/api migrate",
+    "db:seed": "bun run --filter @automate/api seed",
     "lint": "biome check .",
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",
     "typecheck": "tsc -b",
-    "test": "npm run test -w packages/shared"
+    "test": "bun run --filter @automate/core test"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
+    "@types/node": "^22.0.0",
     "concurrently": "^9.0.0",
-    "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "typescript": "^5.7.0"
   },
   "dependencies": {}
 }

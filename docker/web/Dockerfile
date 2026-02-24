@@ -3,22 +3,22 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json bun.lock* bunfig.toml* ./
-COPY packages/shared/package.json packages/shared/
-COPY packages/api/package.json packages/api/
-COPY packages/web/package.json packages/web/
-COPY packages/worker/package.json packages/worker/
+COPY packages/core/package.json packages/core/
+COPY packages/ui/package.json packages/ui/
+COPY apps/api/package.json apps/api/
+COPY apps/landing/package.json apps/landing/
+COPY apps/app/package.json apps/app/
+COPY apps/worker/package.json apps/worker/
 RUN bun install --frozen-lockfile || bun install
 
 FROM base AS build
 COPY --from=deps /app .
-COPY tsconfig.json ./
-COPY packages/shared packages/shared
-COPY packages/web packages/web
-RUN bun tsc -p packages/shared/tsconfig.json && cd packages/web && bun run build
+COPY apps/landing apps/landing
+RUN cd apps/landing && bun run build
 
 FROM base AS runtime
 RUN bun add -g serve
-COPY --from=build /app/packages/web/dist ./dist
+COPY --from=build /app/apps/landing/dist ./dist
 
 EXPOSE 4321
 CMD ["serve", "-s", "dist", "-l", "4321"]
