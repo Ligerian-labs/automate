@@ -59,12 +59,21 @@ services:
       redis:
         condition: service_healthy
 
-  web:
+  landing:
     build:
       context: .
       dockerfile: Dockerfile.web
     ports:
-      - "${WEB_PORT:-4321}:4321"
+      - "${LANDING_PORT:-4321}:4321"
+    depends_on:
+      - api
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    ports:
+      - "${APP_PORT:-5173}:5173"
     depends_on:
       - api
 

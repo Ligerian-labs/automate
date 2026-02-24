@@ -13,9 +13,11 @@
     "sourceMap": true
   },
   "references": [
-    { "path": "packages/shared" },
-    { "path": "packages/api" },
-    { "path": "packages/web" },
-    { "path": "packages/worker" }
+    { "path": "packages/core" },
+    { "path": "packages/ui" },
+    { "path": "apps/api" },
+    { "path": "apps/landing" },
+    { "path": "apps/app" },
+    { "path": "apps/worker" }
   ]
 }

@@ -1,0 +1,177 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const APP_URL = import.meta.env.PUBLIC_APP_URL || "http://localhost:5173";
+
+const howItWorks = [
+  {
+    step: "01",
+    title: "Define",
+    description:
+      "Write your pipeline in YAML or JSON. Chain models, set variables, configure retries and output formats.",
+  },
+  {
+    step: "02",
+    title: "Run",
+    description:
+      "Trigger manually, via API, cron, or webhook. Steps execute in sequence with real-time streaming.",
+  },
+  {
+    step: "03",
+    title: "Deliver",
+    description:
+      "Output goes where you need it: webhooks, email, API response. Track cost and tokens per step.",
+  },
+];
+
+const secondaryFeatures = [
+  "Mix Claude, GPT-4o, Llama and more in a single pipeline.",
+  "Reference previous outputs, user inputs, secrets, and metadata.",
+  "Schedule pipelines with cron expressions and timezone awareness.",
+  "Define pipelines in YAML/JSON and keep them version controlled.",
+  "Trigger pipelines programmatically with webhooks and REST APIs.",
+  "Built-in retry with backoff and conditional branching.",
+];
+
+const pricing = [
+  {
+    name: "Free",
+    price: "$0",
+    caption: "3 pipelines",
+    items: ["5 steps per pipeline", "20 runs / day", "Community support"],
+    cta: "Start free",
+  },
+  {
+    name: "Pro",
+    price: "$29",
+    caption: "Unlimited pipelines",
+    items: ["20 steps per pipeline", "Scheduled runs", "Priority support"],
+    cta: "Start 14-day trial",
+    featured: true,
+  },
+  {
+    name: "Enterprise",
+    price: "Contact",
+    caption: "Custom limits",
+    items: ["SLA + SSO", "Dedicated cluster", "Private support channel"],
+    cta: "Talk to sales",
+  },
+];
+---
+
+<Layout title="Automate — Build AI pipelines. Ship without infrastructure.">
+  <main class="landing">
+    <header class="header">
+      <div class="brand">
+        <div class="logo-icon">A</div>
+        <span>Automate</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#docs">Docs</a>
+      </nav>
+      <div class="actions">
+        <a href={`${APP_URL}/login`} class="ghost-link">Log in</a>
+        <a href={`${APP_URL}/register`} class="solid-link">Get Started</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="beta-badge"><span class="dot"></span> Now in public beta</div>
+      <h1>Build AI pipelines.<br />Ship without infrastructure.</h1>
+      <p>
+        Chain models, prompts and logic into multi-step workflows. Trigger via API, cron, or one click.
+        No servers needed.
+      </p>
+      <div class="hero-actions">
+        <a href={`${APP_URL}/register`} class="solid-link">Start building free</a>
+        <a href="#docs" class="outline-link">View documentation</a>
+      </div>
+
+      <article class="pipeline-mockup" id="docs">
+        <div class="mock-head">
+          <strong>weekly-blog-generator</strong>
+          <span class="status">active</span>
+        </div>
+        <div class="steps">
+          <div class="step">Research</div>
+          <div class="arrow">→</div>
+          <div class="step">Outline</div>
+          <div class="arrow">→</div>
+          <div class="step">Draft</div>
+          <div class="arrow">→</div>
+          <div class="step">Publish</div>
+        </div>
+      </article>
+
+      <div class="trust">Works with Anthropic · OpenAI · Meta Llama · Mistral</div>
+    </section>
+
+    <section class="section">
+      <p class="kicker">HOW IT WORKS</p>
+      <h2>From YAML to production in three steps</h2>
+      <p class="section-sub">Define your pipeline as code. We handle execution, retries, scheduling, and delivery.</p>
+      <div class="card-grid three">
+        {howItWorks.map((item) => (
+          <article class="card">
+            <div class="step-pill">{item.step}</div>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <p class="kicker">PIPELINE AS CODE</p>
+      <h2>Everything you need to orchestrate AI workflows</h2>
+      <div class="features-layout">
+        <pre class="code-card"><code>{`name: weekly-blog-generator
+steps:
+  - id: research
+    model: claude-3-5-sonnet
+  - id: draft
+    model: gpt-4o
+schedule:
+  cron: "0 9 * * 1"
+output:
+  from: draft`}</code></pre>
+        <div class="card-grid">
+          {secondaryFeatures.map((feature) => (
+            <article class="card compact"><p>{feature}</p></article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing">
+      <p class="kicker">PRICING</p>
+      <h2>Start free, scale as you grow</h2>
+      <p class="section-sub">100 free credits to start. No credit card required.</p>
+      <div class="card-grid three">
+        {pricing.map((plan) => (
+          <article class={`card pricing-card ${plan.featured ? "featured" : ""}`}>
+            <h3>{plan.name}</h3>
+            <p class="price">{plan.price}</p>
+            <p>{plan.caption}</p>
+            <ul>
+              {plan.items.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+            <a href={`${APP_URL}/register`} class={plan.featured ? "solid-link" : "outline-link"}>{plan.cta}</a>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="brand">
+        <div class="logo-icon">A</div>
+        <span>Automate</span>
+      </div>
+      <p>Zapier for AI — AI-native, server-side, and model-agnostic.</p>
+    </footer>
+  </main>
+</Layout>
