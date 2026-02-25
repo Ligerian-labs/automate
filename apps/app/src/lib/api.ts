@@ -87,6 +87,10 @@ export interface StepExecutionRecord {
   model?: string | null;
   durationMs?: number | null;
   duration_ms?: number | null;
+  inputTokens?: number;
+  input_tokens?: number;
+  outputTokens?: number;
+  output_tokens?: number;
   costCents?: number;
   cost_cents?: number;
   rawOutput?: string | null;
