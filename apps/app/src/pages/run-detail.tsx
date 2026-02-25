@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
 import { type RunRecord, type StepExecutionRecord, apiFetch } from "../lib/api";
 
 export function RunDetailPage() {
   const { runId } = useParams({ strict: false }) as { runId: string };
+  const navigate = useNavigate();
   const [sseState, setSseState] = useState("disconnected");
 
   const runQ = useQuery({
@@ -22,6 +23,17 @@ export function RunDetailPage() {
         body: "{}",
       }),
     onSuccess: () => runQ.refetch(),
+  });
+
+  const retryMut = useMutation({
+    mutationFn: () =>
+      apiFetch<RunRecord>(`/api/runs/${runId}/retry`, {
+        method: "POST",
+        body: "{}",
+      }),
+    onSuccess: (newRun) => {
+      navigate({ to: "/runs/$runId", params: { runId: newRun.id } });
+    },
   });
 
   useEffect(() => {
@@ -63,10 +75,11 @@ export function RunDetailPage() {
       <RunStatusBadge status={status} />
       <button
         type="button"
-        onClick={() => cancelMut.mutate()}
-        className="rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)]"
+        onClick={() => retryMut.mutate()}
+        disabled={retryMut.isPending}
+        className="cursor-pointer rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Retry
+        {retryMut.isPending ? "Retrying..." : "Retry"}
       </button>
     </>
   );

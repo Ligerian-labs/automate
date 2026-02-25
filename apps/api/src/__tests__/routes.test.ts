@@ -216,6 +216,15 @@ describe("Run routes (authenticated)", () => {
     );
     expect([200, 404]).toContain(res.status);
   });
+
+  it("POST /api/runs/:id/retry creates a new run", async () => {
+    const headers = await authHeader();
+    const res = await app.request(
+      "/api/runs/b0b0b0b0-c1c1-d2d2-e3e3-f4f4f4f4f4f4/retry",
+      { method: "POST", headers },
+    );
+    expect([202, 404]).toContain(res.status);
+  });
 });
 
 describe("Schedule routes (authenticated)", () => {
