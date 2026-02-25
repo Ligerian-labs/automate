@@ -110,22 +110,22 @@ export function PipelineEditorPage() {
           {/* Config card */}
           <div className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
             <h2 className="mb-4 text-[15px] font-semibold">Pipeline Config</h2>
-            <div className="mb-4 flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[var(--text-secondary)]">Name</label>
+            <label className="mb-4 flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[var(--text-secondary)]">Name</span>
               <input
                 className="w-full rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-[var(--text-secondary)]">Description</label>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[var(--text-secondary)]">Description</span>
               <input
                 className="w-full rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-            </div>
+            </label>
           </div>
 
           {/* Variables card */}
@@ -210,7 +210,7 @@ export function PipelineEditorPage() {
                   <div className="mt-4 space-y-4">
                     {/* Prompt */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-medium text-[var(--text-secondary)]">Prompt</label>
+                      <span className="text-xs font-medium text-[var(--text-secondary)]">Prompt</span>
                       <div className="rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-xs leading-relaxed text-[var(--text-secondary)]">
                         {step.prompt || "No prompt defined"}
                       </div>
@@ -219,19 +219,19 @@ export function PipelineEditorPage() {
                     {/* Config row */}
                     <div className="grid grid-cols-3 gap-3">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-[var(--text-secondary)]">Output Format</label>
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Output Format</span>
                         <div className="rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs text-[var(--text-secondary)]">
                           {step.outputFormat || "text"}
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-[var(--text-secondary)]">Timeout</label>
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Timeout</span>
                         <div className="rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs text-[var(--text-secondary)]">
                           {step.timeout ?? 30}s
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-[var(--text-secondary)]">Retries</label>
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Retries</span>
                         <div className="rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs text-[var(--text-secondary)]">
                           {step.retries ?? 2}
                         </div>

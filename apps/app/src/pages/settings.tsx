@@ -52,22 +52,22 @@ export function SettingsPage() {
                 {meQ.data ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-[var(--text-secondary)]">Name</label>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Name</span>
                         <input
                           className="w-full rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                           defaultValue={meQ.data.name || ""}
                           placeholder="Your name"
                         />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-medium text-[var(--text-secondary)]">Email</label>
+                      </label>
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Email</span>
                         <input
                           className="w-full rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                           defaultValue={meQ.data.email}
                           readOnly
                         />
-                      </div>
+                      </label>
                     </div>
                     <button
                       type="button"

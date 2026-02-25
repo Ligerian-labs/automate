@@ -3,26 +3,29 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { cn } from "@stepiq/ui";
 import { clearToken } from "../lib/auth";
 const navItems = [
-    { to: "/dashboard", label: "Dashboard", icon: "▣" },
-    { to: "", label: "Pipelines", icon: "◇" },
-    { to: "", label: "Runs", icon: "▷" },
-    { to: "", label: "Schedules", icon: "◷" },
-    { to: "", label: "Templates", icon: "▤" },
+    { to: "/dashboard", label: "Dashboard", icon: "⊞" },
+    { to: "/pipelines", label: "Pipelines", icon: "◇" },
+    { to: "/runs", label: "Runs", icon: "▷" },
+    { to: "/schedules", label: "Schedules", icon: "◷" },
+    { to: "/templates", label: "Templates", icon: "▤" },
 ];
-export function AppShell({ title, subtitle, children }) {
+export function AppShell({ title, subtitle, actions, children, }) {
     const location = useLocation();
     const navigate = useNavigate();
-    return (_jsxs("div", { className: "min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] lg:flex", children: [_jsxs("aside", { className: "border-b border-[var(--divider)] bg-[var(--bg-inset)] p-4 lg:flex lg:min-h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:border-r", children: [_jsxs("div", { className: "mb-8 flex items-center gap-2", children: [_jsx("div", { className: "grid size-8 place-items-center rounded-md bg-[var(--accent)] text-[var(--bg-primary)] font-bold", children: "A" }), _jsx("div", { className: "font-semibold tracking-tight", children: "Stepiq" })] }), _jsx("nav", { className: "space-y-1", children: navItems.map((item) => {
+    return (_jsxs("div", { className: "flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]", children: [_jsxs("aside", { className: "flex w-[260px] shrink-0 flex-col border-r border-[var(--divider)] bg-[var(--bg-inset)] px-5 py-6", children: [_jsxs("div", { className: "mb-8 flex items-center gap-2", children: [_jsx("div", { className: "grid size-7 place-items-center rounded-md bg-[var(--accent)] text-xs font-bold text-[var(--bg-primary)]", children: "sQ" }), _jsx("span", { className: "text-base font-bold tracking-tight", children: "stepIQ" })] }), _jsx("nav", { className: "flex flex-col gap-1", children: navItems.map((item) => {
                             const active = item.to && location.pathname.startsWith(item.to);
-                            if (!item.to) {
-                                return (_jsxs("span", { className: "block rounded-md px-3 py-2 text-sm text-[var(--text-secondary)] opacity-90", children: [_jsx("span", { className: "mr-2 inline-block w-4 text-center text-xs", children: item.icon }), item.label] }, item.label));
+                            const isPlaceholder = item.to !== "/dashboard" && item.to !== "/pipelines" && item.to !== "/runs";
+                            if (isPlaceholder) {
+                                return (_jsxs("span", { className: "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] opacity-60", children: [_jsx("span", { className: "w-4 text-center text-xs", children: item.icon }), item.label] }, item.label));
                             }
-                            return (_jsxs(Link, { to: item.to, className: cn("block rounded-md px-3 py-2 text-sm", active
-                                    ? "bg-[var(--bg-surface)] text-[var(--text-primary)]"
-                                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"), children: [_jsx("span", { className: "mr-2 inline-block w-4 text-center text-xs", children: item.icon }), item.label] }, item.to));
-                        }) }), _jsx("div", { className: "mt-8 rounded-md bg-[var(--bg-surface)] px-2 py-2 text-sm", children: _jsx(Link, { to: "/settings", className: cn("block rounded-md px-2 py-1 text-[var(--text-secondary)]", location.pathname.startsWith("/settings") ? "bg-[var(--bg-inset)] text-[var(--text-primary)]" : ""), children: "\u2699 Settings" }) }), _jsxs("div", { className: "mt-4 border-t border-[var(--divider)] pt-3 lg:mt-auto", children: [_jsx("button", { type: "button", className: "w-full rounded-md border border-[var(--divider)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]", onClick: () => {
+                            return (_jsxs(Link, { to: item.to, className: cn("flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors", active
+                                    ? "bg-[var(--bg-surface)] font-medium text-[var(--text-primary)]"
+                                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"), children: [_jsx("span", { className: "w-4 text-center text-xs", children: item.icon }), item.label] }, item.to));
+                        }) }), _jsx("div", { className: "flex-1" }), _jsx("nav", { className: "mb-4 flex flex-col gap-1", children: _jsxs(Link, { to: "/settings", className: cn("flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors", location.pathname.startsWith("/settings")
+                                ? "bg-[var(--bg-surface)] font-medium text-[var(--text-primary)]"
+                                : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"), children: [_jsx("span", { className: "w-4 text-center text-xs", children: "\u2699" }), "Settings"] }) }), _jsx("div", { className: "mb-4 h-px bg-[var(--divider)]" }), _jsxs("div", { className: "flex items-center gap-3", children: [_jsx("div", { className: "grid size-8 shrink-0 place-items-center rounded-full bg-[var(--bg-surface)] text-[11px] font-semibold", children: "VD" }), _jsxs("div", { className: "min-w-0 flex-1", children: [_jsx("p", { className: "truncate text-[13px] font-medium", children: "Valentin D." }), _jsx("p", { className: "truncate text-[11px] text-[var(--text-tertiary)]", children: "Pro plan" })] }), _jsx("button", { type: "button", title: "Log out", className: "rounded-md p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]", onClick: () => {
                                     clearToken();
                                     navigate({ to: "/login" });
-                                }, children: "Log out" }), _jsxs("div", { className: "mt-3 flex items-center gap-2 rounded-md border border-[var(--divider)] p-2", children: [_jsx("div", { className: "grid size-7 place-items-center rounded-full bg-[var(--bg-surface)] text-xs font-semibold", children: "VD" }), _jsxs("div", { className: "min-w-0", children: [_jsx("p", { className: "truncate text-xs text-[var(--text-primary)]", children: "Valentin D." }), _jsx("p", { className: "truncate text-[10px] text-[var(--text-tertiary)]", children: "Pro plan" })] })] })] })] }), _jsxs("main", { className: "flex-1 p-4 sm:p-6 lg:p-10", children: [_jsxs("header", { className: "mb-6 border-b border-[var(--divider)] pb-4", children: [_jsx("h1", { className: "text-2xl font-semibold", children: title }), subtitle ? _jsx("p", { className: "mt-1 text-sm text-[var(--text-tertiary)]", children: subtitle }) : null] }), children] })] }));
+                                }, children: _jsxs("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", role: "img", "aria-label": "Log out", children: [_jsx("path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" }), _jsx("polyline", { points: "16 17 21 12 16 7" }), _jsx("line", { x1: "21", y1: "12", x2: "9", y2: "12" })] }) })] })] }), _jsxs("main", { className: "flex flex-1 flex-col overflow-auto px-10 py-8", children: [_jsxs("header", { className: "mb-8 flex items-start justify-between", children: [_jsxs("div", { className: "flex flex-col gap-1", children: [_jsx("h1", { className: "text-2xl font-bold", children: title }), subtitle ? (_jsx("p", { className: "text-sm text-[var(--text-tertiary)]", children: subtitle })) : null] }), actions ? _jsx("div", { className: "flex items-center gap-3", children: actions }) : null] }), children] })] }));
 }
 //# sourceMappingURL=app-shell.js.map
