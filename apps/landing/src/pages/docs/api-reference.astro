@@ -1,0 +1,55 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+---
+
+<DocsLayout title="API Reference" breadcrumb={[{ label: "Docs", href: "/docs" }, { label: "API Reference" }]}>
+  <h1>API Reference</h1>
+  <p>The stepIQ REST API lets you manage pipelines, trigger runs, and query results programmatically. All endpoints return JSON.</p>
+
+  <div class="docs-info-box">
+    <strong>Base URL:</strong> <code>https://api.stepiq.sh/v1</code>
+  </div>
+
+  <h2 id="authentication">Authentication</h2>
+  <p>All API requests must include an authorization header. Two methods are supported:</p>
+
+  <table class="docs-table">
+    <thead><tr><th>Method</th><th>Header</th><th>How to get</th></tr></thead>
+    <tbody>
+      <tr><td>JWT Token</td><td><code>Authorization: Bearer &lt;jwt_token&gt;</code></td><td><code>POST /api/auth/login</code></td></tr>
+      <tr><td>API Key</td><td><code>X-API-Key: sk_live_xxxxxxxx</code></td><td>Settings → API Keys</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Auth endpoints</h3>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/auth/register</span><span class="endpoint-desc">Email + password signup</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/auth/login</span><span class="endpoint-desc">Returns JWT token</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/auth/refresh</span><span class="endpoint-desc">Refresh JWT token</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/auth/forgot-password</span><span class="endpoint-desc">Send reset email</span></div>
+
+  <h2>Pipelines</h2>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/pipelines</span><span class="endpoint-desc">List user's pipelines</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/pipelines</span><span class="endpoint-desc">Create pipeline (JSON or YAML body)</span></div>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/pipelines/:id</span><span class="endpoint-desc">Get pipeline details</span></div>
+  <div class="endpoint-row"><span class="docs-badge put">PUT</span><span class="endpoint-path">/api/pipelines/:id</span><span class="endpoint-desc">Update pipeline (creates new version)</span></div>
+  <div class="endpoint-row"><span class="docs-badge delete">DELETE</span><span class="endpoint-path">/api/pipelines/:id</span><span class="endpoint-desc">Archive pipeline (soft delete)</span></div>
+
+  <h2>Execution</h2>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/pipelines/:id/run</span><span class="endpoint-desc">Trigger a run</span></div>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/runs</span><span class="endpoint-desc">List runs (filterable)</span></div>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/runs/:id</span><span class="endpoint-desc">Get run details + step executions</span></div>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/runs/:id/stream</span><span class="endpoint-desc">SSE stream for real-time updates</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/runs/:id/cancel</span><span class="endpoint-desc">Cancel a running pipeline</span></div>
+
+  <h2>Schedules</h2>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/pipelines/:id/schedules</span><span class="endpoint-desc">List schedules</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/pipelines/:id/schedules</span><span class="endpoint-desc">Create schedule</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/schedules/:id/enable</span><span class="endpoint-desc">Enable schedule</span></div>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/schedules/upcoming</span><span class="endpoint-desc">List next scheduled runs</span></div>
+
+  <h2>User & Secrets</h2>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/user/me</span><span class="endpoint-desc">Current user profile</span></div>
+  <div class="endpoint-row"><span class="docs-badge get">GET</span><span class="endpoint-path">/api/user/usage</span><span class="endpoint-desc">Usage stats (tokens, cost, runs)</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/user/api-keys</span><span class="endpoint-desc">Create API key</span></div>
+  <div class="endpoint-row"><span class="docs-badge post">POST</span><span class="endpoint-path">/api/user/secrets</span><span class="endpoint-desc">Create/update encrypted secret</span></div>
+</DocsLayout>
