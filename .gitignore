@@ -9,3 +9,4 @@ dist/
 # drizzle meta kept in repo for migrations
 !apps/api/drizzle/
 *.tsbuildinfo
+.github/
