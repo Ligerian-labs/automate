@@ -41,17 +41,20 @@ export const SUPPORTED_MODELS: ModelInfo[] = [
 
 export const MARKUP_PERCENTAGE = 25; // 25% markup on model costs
 
-export const PLAN_LIMITS: Record<Plan, {
-  credits: number;
-  max_runs_per_day: number;
-  max_pipelines: number;
-  max_steps_per_pipeline: number;
-  cron_enabled: boolean;
-  webhooks_enabled: boolean;
-  api_enabled: boolean;
-  price_cents: number; // monthly price in cents
-  overage_per_credit_cents: number;
-}> = {
+export const PLAN_LIMITS: Record<
+  Plan,
+  {
+    credits: number;
+    max_runs_per_day: number;
+    max_pipelines: number;
+    max_steps_per_pipeline: number;
+    cron_enabled: boolean;
+    webhooks_enabled: boolean;
+    api_enabled: boolean;
+    price_cents: number; // monthly price in cents
+    overage_per_credit_cents: number;
+  }
+> = {
   free: {
     credits: 100,
     max_runs_per_day: 10,

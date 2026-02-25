@@ -1,8 +1,11 @@
-import { describe, it, expect, vi } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import Handlebars from "handlebars";
 
 // Test the interpolation logic (extracted from executor)
-function interpolate(template: string, context: Record<string, unknown>): string {
+function interpolate(
+  template: string,
+  context: Record<string, unknown>,
+): string {
   const compiled = Handlebars.compile(template, { noEscape: true });
   return compiled(context);
 }
@@ -49,36 +52,33 @@ describe("interpolate (Handlebars template engine)", () => {
     };
     const result = interpolate(
       "Write in {{vars.language}} about {{input.url}}",
-      context
+      context,
     );
     expect(result).toBe("Write in fr about https://example.com");
   });
 
   it("handles conditionals", () => {
-    const result = interpolate(
-      "{{#if active}}Active{{else}}Inactive{{/if}}",
-      { active: true }
-    );
+    const result = interpolate("{{#if active}}Active{{else}}Inactive{{/if}}", {
+      active: true,
+    });
     expect(result).toBe("Active");
   });
 
   it("handles iteration", () => {
-    const result = interpolate(
-      "{{#each items}}{{this}} {{/each}}",
-      { items: ["a", "b", "c"] }
-    );
+    const result = interpolate("{{#each items}}{{this}} {{/each}}", {
+      items: ["a", "b", "c"],
+    });
     expect(result).toBe("a b c ");
   });
 });
 
 describe("cost calculation logic", () => {
-  // Mirror the calculateCost function from model-router
   function calculateCost(
     inputTokens: number,
     outputTokens: number,
     inputCostPerMillion: number,
     outputCostPerMillion: number,
-    markupPercentage: number
+    markupPercentage: number,
   ): number {
     const inputCost = (inputTokens / 1_000_000) * inputCostPerMillion;
     const outputCost = (outputTokens / 1_000_000) * outputCostPerMillion;
@@ -88,20 +88,12 @@ describe("cost calculation logic", () => {
   }
 
   it("calculates GPT-4o mini cost correctly", () => {
-    // 1000 input + 500 output tokens with GPT-4o mini
     const cost = calculateCost(1000, 500, 150, 600, 25);
-    // input: (1000/1M) * 150 = 0.15
-    // output: (500/1M) * 600 = 0.30
-    // base: 0.45, with 25% markup: 0.5625, ceil = 1
     expect(cost).toBe(1);
   });
 
   it("calculates Claude Sonnet cost correctly", () => {
-    // 5000 input + 2000 output tokens
     const cost = calculateCost(5000, 2000, 3000, 15000, 25);
-    // input: (5000/1M) * 3000 = 15
-    // output: (2000/1M) * 15000 = 30
-    // base: 45, with 25% markup: 56.25, ceil = 57
     expect(cost).toBe(57);
   });
 

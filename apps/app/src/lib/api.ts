@@ -25,7 +25,11 @@ async function toJson(res: Response) {
   }
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit, auth = true): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init?: RequestInit,
+  auth = true,
+): Promise<T> {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json");
 

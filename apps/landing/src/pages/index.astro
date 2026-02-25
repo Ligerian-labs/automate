@@ -7,17 +7,20 @@ const howItWorks = [
   {
     step: "01",
     title: "Define",
-    description: "Write your pipeline in YAML or JSON. Chain models, set variables, configure retries and output formats.",
+    description:
+      "Write your pipeline in YAML or JSON. Chain models, set variables, configure retries and output formats.",
   },
   {
     step: "02",
     title: "Run",
-    description: "Trigger manually, via API, cron, or webhook. Steps execute in sequence with real-time streaming.",
+    description:
+      "Trigger manually, via API, cron, or webhook. Steps execute in sequence with real-time streaming.",
   },
   {
     step: "03",
     title: "Deliver",
-    description: "Output goes where you need it — webhooks, email, API response. Track cost and tokens per step.",
+    description:
+      "Output goes where you need it — webhooks, email, API response. Track cost and tokens per step.",
   },
 ];
 
@@ -83,7 +86,13 @@ const pricing = [
     price: "€0",
     period: "/month",
     caption: "100 credits included",
-    items: ["3 pipelines", "5 steps per pipeline", "10 runs/day", "Community models", "Run history"],
+    items: [
+      "3 pipelines",
+      "5 steps per pipeline",
+      "10 runs/day",
+      "Community models",
+      "Run history",
+    ],
     cta: "Get started",
     featured: false,
   },
@@ -92,7 +101,15 @@ const pricing = [
     price: "€49",
     period: "/month",
     caption: "8,000 credits included",
-    items: ["Unlimited pipelines", "20 steps per pipeline", "500 runs/day", "All models", "Cron scheduling", "Webhooks & API access", "Priority execution"],
+    items: [
+      "Unlimited pipelines",
+      "20 steps per pipeline",
+      "500 runs/day",
+      "All models",
+      "Cron scheduling",
+      "Webhooks & API access",
+      "Priority execution",
+    ],
     cta: "Start free trial",
     featured: true,
   },
@@ -101,17 +118,48 @@ const pricing = [
     price: "Custom",
     period: "",
     caption: "Custom credit allocation",
-    items: ["Everything in Pro", "SSO / SAML", "Dedicated workers", "SLA guarantee", "Custom model endpoints", "Priority support"],
+    items: [
+      "Everything in Pro",
+      "SSO / SAML",
+      "Dedicated workers",
+      "SLA guarantee",
+      "Custom model endpoints",
+      "Priority support",
+    ],
     cta: "Contact sales",
     featured: false,
   },
 ];
 
 const pipelineSteps = [
-  { icon: "🔍", title: "Research", model: "claude-sonnet-4", active: true, progress: 100 },
-  { icon: "💡", title: "Pick Topic", model: "gpt-4o", active: true, progress: 70 },
-  { icon: "✍️", title: "Write Draft", model: "claude-sonnet-4", active: false, progress: 0 },
-  { icon: "✅", title: "Quality Review", model: "claude-sonnet-4", active: false, progress: 0 },
+  {
+    icon: "🔍",
+    title: "Research",
+    model: "claude-sonnet-4",
+    active: true,
+    progress: 100,
+  },
+  {
+    icon: "💡",
+    title: "Pick Topic",
+    model: "gpt-4o",
+    active: true,
+    progress: 70,
+  },
+  {
+    icon: "✍️",
+    title: "Write Draft",
+    model: "claude-sonnet-4",
+    active: false,
+    progress: 0,
+  },
+  {
+    icon: "✅",
+    title: "Quality Review",
+    model: "claude-sonnet-4",
+    active: false,
+    progress: 0,
+  },
 ];
 
 const codeContent = `name: weekly-blog-generator

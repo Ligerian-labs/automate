@@ -7,7 +7,9 @@ let pipelineQueue: Queue | null = null;
 function getPipelineQueue(): Queue {
   if (pipelineQueue) return pipelineQueue;
 
-  const connection = new IORedis(config.redisUrl, { maxRetriesPerRequest: null });
+  const connection = new IORedis(config.redisUrl, {
+    maxRetriesPerRequest: null,
+  });
   pipelineQueue = new Queue("pipeline-runs", { connection });
   return pipelineQueue;
 }
@@ -20,6 +22,6 @@ export async function enqueueRun(runId: string) {
       attempts: 1, // retries handled at step level
       removeOnComplete: 1000,
       removeOnFail: 5000,
-    }
+    },
   );
 }

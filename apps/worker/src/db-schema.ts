@@ -7,4 +7,5 @@ export {
   schedules,
   runs,
   stepExecutions,
+  userSecrets,
 } from "../../api/src/db/schema.js";

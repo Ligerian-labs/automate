@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import YAML from "yaml";
 import { AppShell } from "../components/app-shell";
-import { apiFetch, type PipelineRecord, type RunRecord } from "../lib/api";
+import { type PipelineRecord, type RunRecord, apiFetch } from "../lib/api";
 
 interface StepDef {
   id: string;
@@ -42,7 +42,9 @@ export function PipelineEditorPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<StepDef[]>([]);
-  const [variables, setVariables] = useState<{ key: string; value: string }[]>([]);
+  const [variables, setVariables] = useState<{ key: string; value: string }[]>(
+    [],
+  );
   const [expandedStep, setExpandedStep] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
   const [yamlMode, setYamlMode] = useState(false);
@@ -54,7 +56,10 @@ export function PipelineEditorPage() {
     const p = pipelineQ.data;
     setName(p.name);
     setDescription(p.description || "");
-    const def = (p.definition ?? {}) as { steps?: StepDef[]; variables?: Record<string, string> };
+    const def = (p.definition ?? {}) as {
+      steps?: StepDef[];
+      variables?: Record<string, string>;
+    };
     setSteps(
       (def.steps ?? []).map((s, i) => ({
         id: s.id || `step_${i + 1}`,
@@ -68,17 +73,28 @@ export function PipelineEditorPage() {
       })),
     );
     const vars = def.variables ?? {};
-    setVariables(Object.entries(vars).map(([key, value]) => ({ key, value: String(value) })));
+    setVariables(
+      Object.entries(vars).map(([key, value]) => ({
+        key,
+        value: String(value),
+      })),
+    );
     setRawYaml(YAML.stringify(p.definition ?? {}));
   }, [pipelineQ.data]);
 
   // Build definition from structured state
   const buildDefinition = useCallback(() => {
     if (yamlMode) {
-      try { return YAML.parse(rawYaml); } catch { return {}; }
+      try {
+        return YAML.parse(rawYaml);
+      } catch {
+        return {};
+      }
     }
     const vars: Record<string, string> = {};
-    for (const v of variables) { if (v.key) vars[v.key] = v.value; }
+    for (const v of variables) {
+      if (v.key) vars[v.key] = v.value;
+    }
     return {
       name,
       version: pipelineQ.data?.version ?? 1,
@@ -104,12 +120,15 @@ export function PipelineEditorPage() {
 
   // Step mutations
   const updateStep = (idx: number, patch: Partial<StepDef>) => {
-    setSteps((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+    setSteps((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)),
+    );
   };
 
   const removeStep = (idx: number) => {
     setSteps((prev) => prev.filter((_, i) => i !== idx));
-    if (expandedStep >= idx && expandedStep > 0) setExpandedStep(expandedStep - 1);
+    if (expandedStep >= idx && expandedStep > 0)
+      setExpandedStep(expandedStep - 1);
   };
 
   const addStep = () => {
@@ -131,10 +150,14 @@ export function PipelineEditorPage() {
 
   // Variable mutations
   const updateVar = (idx: number, field: "key" | "value", val: string) => {
-    setVariables((prev) => prev.map((v, i) => (i === idx ? { ...v, [field]: val } : v)));
+    setVariables((prev) =>
+      prev.map((v, i) => (i === idx ? { ...v, [field]: val } : v)),
+    );
   };
-  const removeVar = (idx: number) => setVariables((prev) => prev.filter((_, i) => i !== idx));
-  const addVar = () => setVariables((prev) => [...prev, { key: "", value: "" }]);
+  const removeVar = (idx: number) =>
+    setVariables((prev) => prev.filter((_, i) => i !== idx));
+  const addVar = () =>
+    setVariables((prev) => [...prev, { key: "", value: "" }]);
 
   // Save
   const saveMut = useMutation({
@@ -146,14 +169,21 @@ export function PipelineEditorPage() {
       });
     },
     onSuccess: () => setMessage("Pipeline saved ✓"),
-    onError: (err) => setMessage(err instanceof Error ? err.message : "Save failed"),
+    onError: (err) =>
+      setMessage(err instanceof Error ? err.message : "Save failed"),
   });
 
   // Run
   const runMut = useMutation({
-    mutationFn: () => apiFetch<RunRecord>(`/api/pipelines/${pipelineId}/run`, { method: "POST", body: "{}" }),
-    onSuccess: (run) => navigate({ to: "/runs/$runId", params: { runId: run.id } }),
-    onError: (err) => setMessage(err instanceof Error ? err.message : "Run failed"),
+    mutationFn: () =>
+      apiFetch<RunRecord>(`/api/pipelines/${pipelineId}/run`, {
+        method: "POST",
+        body: "{}",
+      }),
+    onSuccess: (run) =>
+      navigate({ to: "/runs/$runId", params: { runId: run.id } }),
+    onError: (err) =>
+      setMessage(err instanceof Error ? err.message : "Run failed"),
   });
 
   const status = pipelineQ.data?.status || "draft";
@@ -179,10 +209,22 @@ export function PipelineEditorPage() {
   );
 
   return (
-    <AppShell title={name || "Pipeline Editor"} subtitle={description || "Configure your pipeline steps and variables"} actions={actions}>
-      {pipelineQ.isLoading ? <p className="text-sm text-[var(--text-tertiary)]">Loading pipeline...</p> : null}
+    <AppShell
+      title={name || "Pipeline Editor"}
+      subtitle={description || "Configure your pipeline steps and variables"}
+      actions={actions}
+    >
+      {pipelineQ.isLoading ? (
+        <p className="text-sm text-[var(--text-tertiary)]">
+          Loading pipeline...
+        </p>
+      ) : null}
       {pipelineQ.isError ? (
-        <p className="text-sm text-red-300">{pipelineQ.error instanceof Error ? pipelineQ.error.message : "Failed to load"}</p>
+        <p className="text-sm text-red-300">
+          {pipelineQ.error instanceof Error
+            ? pipelineQ.error.message
+            : "Failed to load"}
+        </p>
       ) : null}
       {message ? (
         <p className="mb-2 text-sm text-[var(--text-secondary)]">{message}</p>
@@ -195,7 +237,9 @@ export function PipelineEditorPage() {
           <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
             <h2 className="text-[15px] font-semibold">Pipeline Config</h2>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Name</span>
+              <span className="text-xs font-medium text-[var(--text-secondary)]">
+                Name
+              </span>
               <input
                 className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                 value={name}
@@ -203,7 +247,9 @@ export function PipelineEditorPage() {
               />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Description</span>
+              <span className="text-xs font-medium text-[var(--text-secondary)]">
+                Description
+              </span>
               <input
                 className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                 value={description}
@@ -216,11 +262,20 @@ export function PipelineEditorPage() {
           <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-[15px] font-semibold">Variables</h2>
-              <button type="button" onClick={addVar} className="text-xs font-medium text-[var(--accent)]">+ Add</button>
+              <button
+                type="button"
+                onClick={addVar}
+                className="text-xs font-medium text-[var(--accent)]"
+              >
+                + Add
+              </button>
             </div>
             <div className="flex flex-col gap-2">
               {variables.map((v, i) => (
-                <div key={`var-${v.key || i}`} className="flex items-center gap-2">
+                <div
+                  key={`var-${v.key || i}`}
+                  className="flex items-center gap-2"
+                >
                   <input
                     className="flex-1 rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
                     style={{ fontFamily: "var(--font-mono)" }}
@@ -246,7 +301,9 @@ export function PipelineEditorPage() {
                 </div>
               ))}
               {variables.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)]">No variables defined.</p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  No variables defined.
+                </p>
               ) : null}
             </div>
           </div>
@@ -259,7 +316,9 @@ export function PipelineEditorPage() {
                 type="button"
                 onClick={() => setYamlMode(!yamlMode)}
                 className={`rounded-[6px] px-2.5 py-1 text-[11px] font-semibold ${
-                  yamlMode ? "bg-[var(--accent)] text-[var(--bg-primary)]" : "bg-[var(--bg-inset)] text-[var(--text-secondary)]"
+                  yamlMode
+                    ? "bg-[var(--accent)] text-[var(--bg-primary)]"
+                    : "bg-[var(--bg-inset)] text-[var(--text-secondary)]"
                 }`}
               >
                 {yamlMode ? "Editing YAML" : "View only"}
@@ -278,7 +337,9 @@ export function PipelineEditorPage() {
         {/* Right panel — Steps */}
         <div className="flex flex-1 flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold">Steps ({steps.length})</h2>
+            <h2 className="text-[15px] font-semibold">
+              Steps ({steps.length})
+            </h2>
             <button
               type="button"
               onClick={addStep}
@@ -294,7 +355,9 @@ export function PipelineEditorPage() {
               <div
                 key={step.id}
                 className={`rounded-[10px] border bg-[var(--bg-surface)] transition-colors ${
-                  isExpanded ? "border-[var(--accent)]" : "border-[var(--divider)]"
+                  isExpanded
+                    ? "border-[var(--accent)]"
+                    : "border-[var(--divider)]"
                 }`}
               >
                 {/* Step header — always visible */}
@@ -306,13 +369,17 @@ export function PipelineEditorPage() {
                   <div className="flex items-center gap-2.5">
                     <div
                       className={`grid size-6 place-items-center rounded-[6px] text-[11px] font-bold ${
-                        isExpanded ? "bg-[var(--accent)] text-[var(--bg-primary)]" : "bg-[var(--bg-inset)] text-[var(--text-secondary)]"
+                        isExpanded
+                          ? "bg-[var(--accent)] text-[var(--bg-primary)]"
+                          : "bg-[var(--bg-inset)] text-[var(--text-secondary)]"
                       }`}
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
                       {idx + 1}
                     </div>
-                    <span className={`text-sm ${isExpanded ? "font-semibold" : "font-medium"}`}>
+                    <span
+                      className={`text-sm ${isExpanded ? "font-semibold" : "font-medium"}`}
+                    >
                       {step.name || `Step ${idx + 1}`}
                     </span>
                   </div>
@@ -323,7 +390,9 @@ export function PipelineEditorPage() {
                     >
                       {step.model}
                     </span>
-                    <span className="text-[var(--text-muted)]">{isExpanded ? "▲" : "▼"}</span>
+                    <span className="text-[var(--text-muted)]">
+                      {isExpanded ? "▲" : "▼"}
+                    </span>
                   </div>
                 </button>
 
@@ -334,38 +403,56 @@ export function PipelineEditorPage() {
                       {/* Name + Model row */}
                       <div className="grid grid-cols-2 gap-3">
                         <label className="flex flex-col gap-1.5">
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">Step Name</span>
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                            Step Name
+                          </span>
                           <input
                             className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                             value={step.name}
-                            onChange={(e) => updateStep(idx, { name: e.target.value })}
+                            onChange={(e) =>
+                              updateStep(idx, { name: e.target.value })
+                            }
                           />
                         </label>
                         <label className="flex flex-col gap-1.5">
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">Model</span>
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                            Model
+                          </span>
                           <select
                             className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
                             style={{ fontFamily: "var(--font-mono)" }}
                             value={step.model}
-                            onChange={(e) => updateStep(idx, { model: e.target.value })}
+                            onChange={(e) =>
+                              updateStep(idx, { model: e.target.value })
+                            }
                           >
                             <option value="gpt-4o-mini">gpt-4o-mini</option>
                             <option value="gpt-4o">gpt-4o</option>
                             <option value="gpt-4-turbo">gpt-4-turbo</option>
-                            <option value="claude-3-5-sonnet-20241022">claude-3.5-sonnet</option>
-                            <option value="claude-3-haiku-20240307">claude-3-haiku</option>
-                            <option value="mistral-large-latest">mistral-large</option>
+                            <option value="claude-3-5-sonnet-20241022">
+                              claude-3.5-sonnet
+                            </option>
+                            <option value="claude-3-haiku-20240307">
+                              claude-3-haiku
+                            </option>
+                            <option value="mistral-large-latest">
+                              mistral-large
+                            </option>
                           </select>
                         </label>
                       </div>
 
                       {/* Prompt */}
                       <label className="flex flex-col gap-1.5">
-                        <span className="text-xs font-medium text-[var(--text-secondary)]">Prompt</span>
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">
+                          Prompt
+                        </span>
                         <textarea
                           className="min-h-[100px] w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] leading-relaxed focus:border-[var(--accent)] focus:outline-none"
                           value={step.prompt}
-                          onChange={(e) => updateStep(idx, { prompt: e.target.value })}
+                          onChange={(e) =>
+                            updateStep(idx, { prompt: e.target.value })
+                          }
                           placeholder="Enter the prompt for this step..."
                         />
                       </label>
@@ -373,12 +460,16 @@ export function PipelineEditorPage() {
                       {/* Config row — Output Format, Timeout, Retries */}
                       <div className="grid grid-cols-3 gap-3">
                         <label className="flex flex-col gap-1.5">
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">Output Format</span>
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                            Output Format
+                          </span>
                           <select
                             className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
                             style={{ fontFamily: "var(--font-mono)" }}
                             value={step.outputFormat || "text"}
-                            onChange={(e) => updateStep(idx, { outputFormat: e.target.value })}
+                            onChange={(e) =>
+                              updateStep(idx, { outputFormat: e.target.value })
+                            }
                           >
                             <option value="text">text</option>
                             <option value="json">json</option>
@@ -386,25 +477,37 @@ export function PipelineEditorPage() {
                           </select>
                         </label>
                         <label className="flex flex-col gap-1.5">
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">Timeout (s)</span>
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                            Timeout (s)
+                          </span>
                           <input
                             type="number"
                             className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
                             style={{ fontFamily: "var(--font-mono)" }}
                             value={step.timeout ?? 30}
-                            onChange={(e) => updateStep(idx, { timeout: Number(e.target.value) })}
+                            onChange={(e) =>
+                              updateStep(idx, {
+                                timeout: Number(e.target.value),
+                              })
+                            }
                             min={1}
                             max={300}
                           />
                         </label>
                         <label className="flex flex-col gap-1.5">
-                          <span className="text-xs font-medium text-[var(--text-secondary)]">Retries</span>
+                          <span className="text-xs font-medium text-[var(--text-secondary)]">
+                            Retries
+                          </span>
                           <input
                             type="number"
                             className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
                             style={{ fontFamily: "var(--font-mono)" }}
                             value={step.retries ?? 2}
-                            onChange={(e) => updateStep(idx, { retries: Number(e.target.value) })}
+                            onChange={(e) =>
+                              updateStep(idx, {
+                                retries: Number(e.target.value),
+                              })
+                            }
                             min={0}
                             max={10}
                           />
@@ -450,7 +553,9 @@ export function PipelineEditorPage() {
 
           {steps.length === 0 ? (
             <div className="rounded-[10px] border border-dashed border-[var(--divider)] p-8 text-center">
-              <p className="text-sm text-[var(--text-tertiary)]">No steps yet.</p>
+              <p className="text-sm text-[var(--text-tertiary)]">
+                No steps yet.
+              </p>
               <button
                 type="button"
                 onClick={addStep}
@@ -475,7 +580,10 @@ function StatusBadge({ status }: { status: string }) {
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
       style={{ background: bg, color: fg, fontFamily: "var(--font-mono)" }}
     >
-      <span className="inline-block size-1.5 rounded-full" style={{ background: fg }} />
+      <span
+        className="inline-block size-1.5 rounded-full"
+        style={{ background: fg }}
+      />
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );

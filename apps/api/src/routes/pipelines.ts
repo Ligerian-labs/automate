@@ -1,8 +1,3 @@
-import { Hono } from "hono";
-import { eq, and } from "drizzle-orm";
-import { db } from "../db/index.js";
-import { pipelines, pipelineVersions, runs, schedules } from "../db/schema.js";
-import { requireAuth } from "../middleware/auth.js";
 import {
   createPipelineSchema,
   createScheduleSchema,
@@ -10,9 +5,14 @@ import {
   updatePipelineSchema,
   uuidParam,
 } from "@stepiq/core";
+import { and, eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db/index.js";
+import { pipelineVersions, pipelines, runs, schedules } from "../db/schema.js";
+import type { Env } from "../lib/env.js";
+import { requireAuth } from "../middleware/auth.js";
 import { getNextCronTick } from "../services/cron.js";
 import { enqueueRun } from "../services/queue.js";
-import type { Env } from "../lib/env.js";
 
 export const pipelineRoutes = new Hono<{ Variables: Env }>();
 
@@ -157,7 +157,8 @@ pipelineRoutes.post("/:id/run", async (c) => {
 
   const _pidRaw = c.req.param("id");
   const _pidParsed = uuidParam.safeParse(_pidRaw);
-  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!_pidParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = _pidParsed.data;
   const body = await c.req.json().catch(() => ({}));
   const parsed = runPipelineSchema.safeParse(body);
@@ -194,7 +195,8 @@ pipelineRoutes.get("/:id/schedules", async (c) => {
 
   const _pidRaw = c.req.param("id");
   const _pidParsed = uuidParam.safeParse(_pidRaw);
-  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!_pidParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = _pidParsed.data;
   const [pipeline] = await db
     .select({ id: pipelines.id })
@@ -219,7 +221,8 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
 
   const _pidRaw = c.req.param("id");
   const _pidParsed = uuidParam.safeParse(_pidRaw);
-  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!_pidParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = _pidParsed.data;
   const body = await c.req.json();
   const parsed = createScheduleSchema.safeParse(body);
@@ -235,7 +238,10 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
 
   let nextRun: Date;
   try {
-    nextRun = getNextCronTick(parsed.data.cron_expression, parsed.data.timezone);
+    nextRun = getNextCronTick(
+      parsed.data.cron_expression,
+      parsed.data.timezone,
+    );
   } catch (err) {
     const error = err instanceof Error ? err.message : "Invalid schedule";
     return c.json({ error }, 400);
@@ -259,6 +265,7 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
 pipelineRoutes.post("/validate", async (c) => {
   const body = await c.req.json();
   const parsed = createPipelineSchema.safeParse(body);
-  if (!parsed.success) return c.json({ valid: false, errors: parsed.error.flatten() });
+  if (!parsed.success)
+    return c.json({ valid: false, errors: parsed.error.flatten() });
   return c.json({ valid: true });
 });

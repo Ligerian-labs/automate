@@ -1,22 +1,22 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  Outlet,
+  RouterProvider,
   createRootRoute,
   createRoute,
   createRouter,
-  Outlet,
-  RouterProvider,
   redirect,
 } from "@tanstack/react-router";
-import { DashboardPage } from "./pages/dashboard";
-import { PipelinesListPage } from "./pages/pipelines-list";
-import { PipelineEditorPage } from "./pages/pipeline-editor";
-import { RunsListPage } from "./pages/runs-list";
-import { RunDetailPage } from "./pages/run-detail";
-import { SettingsPage } from "./pages/settings";
-import { AuthPage } from "./pages/auth-page";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 import { isAuthenticated } from "./lib/auth";
+import { AuthPage } from "./pages/auth-page";
+import { DashboardPage } from "./pages/dashboard";
+import { PipelineEditorPage } from "./pages/pipeline-editor";
+import { PipelinesListPage } from "./pages/pipelines-list";
+import { RunDetailPage } from "./pages/run-detail";
+import { RunsListPage } from "./pages/runs-list";
+import { SettingsPage } from "./pages/settings";
 import "./styles.css";
 
 const queryClient = new QueryClient();

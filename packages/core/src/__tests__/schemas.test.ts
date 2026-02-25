@@ -1,12 +1,19 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import {
-  registerSchema,
-  loginSchema,
   createPipelineSchema,
-  runPipelineSchema,
   createScheduleSchema,
-  pipelineStepSchema,
+  createSecretSchema,
+  listPipelinesQuery,
+  listRunsQuery,
+  loginSchema,
   pipelineDefinitionSchema,
+  pipelineStepSchema,
+  registerSchema,
+  runPipelineSchema,
+  secretNameParam,
+  updateSecretSchema,
+  uuidParam,
+  webhookTriggerSchema,
 } from "../schemas.js";
 
 describe("registerSchema", () => {
@@ -93,9 +100,21 @@ describe("pipelineStepSchema", () => {
   });
 
   it("accepts all valid step types", () => {
-    const types = ["llm", "transform", "condition", "parallel", "webhook", "human_review", "code"];
+    const types = [
+      "llm",
+      "transform",
+      "condition",
+      "parallel",
+      "webhook",
+      "human_review",
+      "code",
+    ];
     for (const type of types) {
-      const result = pipelineStepSchema.safeParse({ id: "s1", name: "S", type });
+      const result = pipelineStepSchema.safeParse({
+        id: "s1",
+        name: "S",
+        type,
+      });
       expect(result.success).toBe(true);
     }
   });
@@ -115,7 +134,9 @@ describe("pipelineDefinitionSchema", () => {
     const result = pipelineDefinitionSchema.safeParse({
       name: "Test Pipeline",
       version: 1,
-      steps: [{ id: "step1", name: "Step 1", model: "gpt-4o-mini", prompt: "Hello" }],
+      steps: [
+        { id: "step1", name: "Step 1", model: "gpt-4o-mini", prompt: "Hello" },
+      ],
     });
     expect(result.success).toBe(true);
   });
@@ -229,5 +250,199 @@ describe("createScheduleSchema", () => {
     if (result.success) {
       expect(result.data.timezone).toBe("UTC");
     }
+  });
+});
+
+// ── Secret Vault Schemas ──
+
+describe("createSecretSchema", () => {
+  it("accepts valid secret", () => {
+    const result = createSecretSchema.safeParse({
+      name: "OPENAI_KEY",
+      value: "sk-abc123",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts underscore-prefixed name", () => {
+    const result = createSecretSchema.safeParse({
+      name: "_INTERNAL",
+      value: "v",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects name starting with number", () => {
+    const result = createSecretSchema.safeParse({ name: "1BAD", value: "v" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects name with dashes", () => {
+    const result = createSecretSchema.safeParse({ name: "MY-KEY", value: "v" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects name with spaces", () => {
+    const result = createSecretSchema.safeParse({ name: "MY KEY", value: "v" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty name", () => {
+    const result = createSecretSchema.safeParse({ name: "", value: "v" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty value", () => {
+    const result = createSecretSchema.safeParse({ name: "KEY", value: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects name longer than 100 chars", () => {
+    const result = createSecretSchema.safeParse({
+      name: "A".repeat(101),
+      value: "v",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects value longer than 10000 chars", () => {
+    const result = createSecretSchema.safeParse({
+      name: "KEY",
+      value: "x".repeat(10_001),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts value at max length (10000)", () => {
+    const result = createSecretSchema.safeParse({
+      name: "KEY",
+      value: "x".repeat(10_000),
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("updateSecretSchema", () => {
+  it("accepts valid value", () => {
+    const result = updateSecretSchema.safeParse({ value: "new-value" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects empty value", () => {
+    const result = updateSecretSchema.safeParse({ value: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing value", () => {
+    const result = updateSecretSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("secretNameParam", () => {
+  it("accepts valid names", () => {
+    expect(secretNameParam.safeParse("MY_SECRET").success).toBe(true);
+    expect(secretNameParam.safeParse("a").success).toBe(true);
+    expect(secretNameParam.safeParse("_private").success).toBe(true);
+  });
+
+  it("rejects invalid names", () => {
+    expect(secretNameParam.safeParse("").success).toBe(false);
+    expect(secretNameParam.safeParse("has-dash").success).toBe(false);
+    expect(secretNameParam.safeParse("has space").success).toBe(false);
+    expect(secretNameParam.safeParse("0starts").success).toBe(false);
+  });
+});
+
+// ── Query / Param Validation ──
+
+describe("uuidParam", () => {
+  it("accepts valid UUIDs", () => {
+    expect(
+      uuidParam.safeParse("550e8400-e29b-41d4-a716-446655440000").success,
+    ).toBe(true);
+  });
+
+  it("rejects non-UUID strings", () => {
+    expect(uuidParam.safeParse("not-a-uuid").success).toBe(false);
+    expect(uuidParam.safeParse("").success).toBe(false);
+    expect(uuidParam.safeParse("12345").success).toBe(false);
+  });
+});
+
+describe("listRunsQuery", () => {
+  it("accepts empty query (defaults)", () => {
+    const result = listRunsQuery.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.limit).toBe(50);
+  });
+
+  it("accepts valid filters", () => {
+    const result = listRunsQuery.safeParse({
+      status: "running",
+      pipeline_id: "550e8400-e29b-41d4-a716-446655440000",
+      limit: 10,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid status", () => {
+    expect(listRunsQuery.safeParse({ status: "invalid" }).success).toBe(false);
+  });
+
+  it("coerces string limit to number", () => {
+    const result = listRunsQuery.safeParse({ limit: "25" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.limit).toBe(25);
+  });
+
+  it("rejects limit > 100", () => {
+    expect(listRunsQuery.safeParse({ limit: 101 }).success).toBe(false);
+  });
+});
+
+describe("listPipelinesQuery", () => {
+  it("accepts empty query", () => {
+    const result = listPipelinesQuery.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts valid status filter", () => {
+    expect(listPipelinesQuery.safeParse({ status: "active" }).success).toBe(
+      true,
+    );
+    expect(listPipelinesQuery.safeParse({ status: "archived" }).success).toBe(
+      true,
+    );
+    expect(listPipelinesQuery.safeParse({ status: "draft" }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects invalid status", () => {
+    expect(listPipelinesQuery.safeParse({ status: "deleted" }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("webhookTriggerSchema", () => {
+  it("accepts empty body", () => {
+    expect(webhookTriggerSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts input_data", () => {
+    const result = webhookTriggerSchema.safeParse({ input_data: { x: 1 } });
+    expect(result.success).toBe(true);
+  });
+
+  it("passes through extra fields", () => {
+    const result = webhookTriggerSchema.safeParse({
+      input_data: {},
+      extra: "ok",
+    });
+    expect(result.success).toBe(true);
+    if (result.success)
+      expect((result.data as Record<string, unknown>).extra).toBe("ok");
   });
 });

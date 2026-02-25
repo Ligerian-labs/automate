@@ -1,11 +1,11 @@
-import { Hono } from "hono";
-import { SignJWT } from "jose";
+import { loginSchema, registerSchema } from "@stepiq/core";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { SignJWT } from "jose";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
 import { config } from "../lib/env.js";
-import { registerSchema, loginSchema } from "@stepiq/core";
 
 const secret = new TextEncoder().encode(config.jwtSecret);
 
@@ -18,8 +18,13 @@ authRoutes.post("/register", async (c) => {
 
   const { email, password, name } = parsed.data;
 
-  const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (existing.length > 0) return c.json({ error: "Email already registered" }, 409);
+  const existing = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (existing.length > 0)
+    return c.json({ error: "Email already registered" }, 409);
 
   const passwordHash = await bcrypt.hash(password, 12);
   const [user] = await db
@@ -42,7 +47,11 @@ authRoutes.post("/login", async (c) => {
 
   const { email, password } = parsed.data;
 
-  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
   if (!user) return c.json({ error: "Invalid credentials" }, 401);
 
   const valid = await bcrypt.compare(password, user.passwordHash);
