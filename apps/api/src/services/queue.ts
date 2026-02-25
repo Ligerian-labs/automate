@@ -2,12 +2,18 @@ import { Queue } from "bullmq";
 import { Redis as IORedis } from "ioredis";
 import { config } from "../lib/env.js";
 
-const connection = new IORedis(config.redisUrl, { maxRetriesPerRequest: null });
+let pipelineQueue: Queue | null = null;
 
-export const pipelineQueue = new Queue("pipeline-runs", { connection });
+function getPipelineQueue(): Queue {
+  if (pipelineQueue) return pipelineQueue;
+
+  const connection = new IORedis(config.redisUrl, { maxRetriesPerRequest: null });
+  pipelineQueue = new Queue("pipeline-runs", { connection });
+  return pipelineQueue;
+}
 
 export async function enqueueRun(runId: string) {
-  await pipelineQueue.add(
+  await getPipelineQueue().add(
     "execute",
     { runId },
     {
