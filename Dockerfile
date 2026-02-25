@@ -15,4 +15,4 @@ COPY apps/api apps/api
 RUN bun tsc -p packages/core/tsconfig.json && bun tsc -p apps/api/tsconfig.json
 EXPOSE 3001
 ENV PORT=3001
-CMD ["bun", "run", "apps/api/dist/index.js"]
+CMD ["sh", "-c", "bun run apps/api/dist/db/migrate.js && exec bun run apps/api/dist/index.js"]
