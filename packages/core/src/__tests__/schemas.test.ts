@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import {
   registerSchema,
   loginSchema,
@@ -400,6 +400,6 @@ describe("webhookTriggerSchema", () => {
   it("passes through extra fields", () => {
     const result = webhookTriggerSchema.safeParse({ input_data: {}, extra: "ok" });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.extra).toBe("ok");
+    if (result.success) expect((result.data as any).extra).toBe("ok");
   });
 });

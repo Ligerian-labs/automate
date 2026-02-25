@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
 import { EnvKmsProvider, VaultKmsProvider, createKmsProvider, KEY_LENGTH } from "../index.js";
 import { randomBytes } from "node:crypto";
 
@@ -6,7 +6,7 @@ describe("EnvKmsProvider", () => {
   const validHex = randomBytes(KEY_LENGTH).toString("hex");
 
   beforeEach(() => {
-    Reflect.deleteProperty(process.env, "STEPIQ_MASTER_KEY");
+    delete process.env.STEPIQ_MASTER_KEY;
   });
 
   it("reads master key from env var", async () => {
@@ -23,7 +23,7 @@ describe("EnvKmsProvider", () => {
   });
 
   it("throws if key is wrong length", () => {
-    process.env.STEPIQ_MASTER_KEY = "aabbcc"; // 3 bytes, not 32
+    process.env.STEPIQ_MASTER_KEY = "aabbcc";
     expect(() => new EnvKmsProvider()).toThrow("must be 32 bytes");
   });
 
@@ -32,7 +32,7 @@ describe("EnvKmsProvider", () => {
     const provider = new EnvKmsProvider("MY_CUSTOM_KEY");
     const key = await provider.getMasterKey();
     expect(key.length).toBe(KEY_LENGTH);
-    Reflect.deleteProperty(process.env, "MY_CUSTOM_KEY");
+    delete process.env.MY_CUSTOM_KEY;
   });
 });
 
@@ -54,13 +54,11 @@ describe("VaultKmsProvider", () => {
 
   it("fetches key from Vault API", async () => {
     const validHex = randomBytes(KEY_LENGTH).toString("hex");
+    const originalFetch = globalThis.fetch;
 
-    // Mock fetch
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: { data: { key: validHex } } }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    globalThis.fetch = mock(async () =>
+      new Response(JSON.stringify({ data: { data: { key: validHex } } }), { status: 200 })
+    ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
       endpoint: "http://vault:8200",
@@ -70,22 +68,22 @@ describe("VaultKmsProvider", () => {
     expect(key.length).toBe(KEY_LENGTH);
     expect(key.toString("hex")).toBe(validHex);
 
-    // Verify correct API call
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       "http://vault:8200/v1/secret/data/stepiq/master-key",
       { headers: { "X-Vault-Token": "hvs.test" } },
     );
 
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("caches the master key after first fetch", async () => {
     const validHex = randomBytes(KEY_LENGTH).toString("hex");
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: { data: { key: validHex } } }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
+    const originalFetch = globalThis.fetch;
+
+    const mockFetch = mock(async () =>
+      new Response(JSON.stringify({ data: { data: { key: validHex } } }), { status: 200 })
+    ) as typeof fetch;
+    globalThis.fetch = mockFetch;
 
     const provider = new VaultKmsProvider({
       endpoint: "http://vault:8200",
@@ -93,63 +91,62 @@ describe("VaultKmsProvider", () => {
     });
     await provider.getMasterKey();
     await provider.getMasterKey();
-    expect(mockFetch).toHaveBeenCalledTimes(1); // cached
+    expect(mockFetch).toHaveBeenCalledTimes(1);
 
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("throws on Vault API error", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: false,
-      status: 403,
-      text: async () => "permission denied",
-    }));
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(async () =>
+      new Response("permission denied", { status: 403 })
+    ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
       endpoint: "http://vault:8200",
       token: "bad-token",
     });
-    await expect(provider.getMasterKey()).rejects.toThrow("Vault error (403)");
+    expect(provider.getMasterKey()).rejects.toThrow("Vault error (403)");
 
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("throws if key not found in Vault response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: { data: {} } }),
-    }));
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(async () =>
+      new Response(JSON.stringify({ data: { data: {} } }), { status: 200 })
+    ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
       endpoint: "http://vault:8200",
       token: "hvs.test",
     });
-    await expect(provider.getMasterKey()).rejects.toThrow("Master key not found");
+    expect(provider.getMasterKey()).rejects.toThrow("Master key not found");
 
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("throws if key from Vault is wrong length", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: { data: { key: "aabb" } } }),
-    }));
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock(async () =>
+      new Response(JSON.stringify({ data: { data: { key: "aabb" } } }), { status: 200 })
+    ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
       endpoint: "http://vault:8200",
       token: "hvs.test",
     });
-    await expect(provider.getMasterKey()).rejects.toThrow("must be 32 bytes");
+    expect(provider.getMasterKey()).rejects.toThrow("must be 32 bytes");
 
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 });
 
 describe("createKmsProvider factory", () => {
   afterEach(() => {
-    Reflect.deleteProperty(process.env, "VAULT_ADDR");
-    Reflect.deleteProperty(process.env, "VAULT_TOKEN");
-    Reflect.deleteProperty(process.env, "STEPIQ_MASTER_KEY");
+    delete process.env.VAULT_ADDR;
+    delete process.env.VAULT_TOKEN;
+    delete process.env.STEPIQ_MASTER_KEY;
   });
 
   it("returns VaultKmsProvider when Vault env vars are set", () => {

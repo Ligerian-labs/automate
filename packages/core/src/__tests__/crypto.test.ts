@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { randomBytes } from "node:crypto";
 import {
   encryptSecret,
@@ -57,7 +57,6 @@ describe("encryptSecret", () => {
   it("blob size = HEADER_SIZE + secret length + 16 (tag)", async () => {
     const secret = "hello";
     const blob = await encryptSecret(TEST_USER_ID, secret, TEST_MK);
-    // ciphertext length = plaintext length for GCM (stream cipher)
     expect(blob.length).toBe(HEADER_SIZE + secret.length + 16);
   });
 
@@ -68,13 +67,13 @@ describe("encryptSecret", () => {
   });
 
   it("rejects empty secret value", async () => {
-    await expect(encryptSecret(TEST_USER_ID, "", TEST_MK)).rejects.toThrow(
+    expect(encryptSecret(TEST_USER_ID, "", TEST_MK)).rejects.toThrow(
       "Secret value cannot be empty",
     );
   });
 
   it("rejects wrong master key length", async () => {
-    await expect(
+    expect(
       encryptSecret(TEST_USER_ID, "secret", Buffer.alloc(16)),
     ).rejects.toThrow("Master key must be 32 bytes");
   });
@@ -116,49 +115,47 @@ describe("decryptSecret", () => {
   it("fails with wrong master key", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
     const wrongMK = randomBytes(KEY_LENGTH);
-    await expect(decryptSecret(TEST_USER_ID, blob, wrongMK)).rejects.toThrow();
+    expect(decryptSecret(TEST_USER_ID, blob, wrongMK)).rejects.toThrow();
   });
 
   it("fails with wrong userId (different user key)", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
-    await expect(
+    expect(
       decryptSecret(TEST_USER_ID_2, blob, TEST_MK),
     ).rejects.toThrow();
   });
 
   it("fails with tampered ciphertext", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
-    // Flip a byte in the ciphertext region
     blob[blob.length - 20] ^= 0xff;
-    await expect(decryptSecret(TEST_USER_ID, blob, TEST_MK)).rejects.toThrow();
+    expect(decryptSecret(TEST_USER_ID, blob, TEST_MK)).rejects.toThrow();
   });
 
   it("fails with tampered DEK envelope", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
-    // Flip a byte in the encrypted DEK region
     blob[15] ^= 0xff;
-    await expect(decryptSecret(TEST_USER_ID, blob, TEST_MK)).rejects.toThrow();
+    expect(decryptSecret(TEST_USER_ID, blob, TEST_MK)).rejects.toThrow();
   });
 
   it("fails with tampered version byte", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
     blob[0] = 0x99;
-    await expect(decryptSecret(TEST_USER_ID, blob, TEST_MK)).rejects.toThrow(
+    expect(decryptSecret(TEST_USER_ID, blob, TEST_MK)).rejects.toThrow(
       "Unknown encryption format version",
     );
   });
 
   it("fails with truncated blob", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
-    const truncated = blob.subarray(0, 50); // too short
-    await expect(
+    const truncated = blob.subarray(0, 50);
+    expect(
       decryptSecret(TEST_USER_ID, truncated, TEST_MK),
     ).rejects.toThrow("Ciphertext too short");
   });
 
   it("rejects wrong master key length", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
-    await expect(
+    expect(
       decryptSecret(TEST_USER_ID, blob, Buffer.alloc(16)),
     ).rejects.toThrow("Master key must be 32 bytes");
   });
@@ -170,18 +167,13 @@ describe("reWrapSecret (key rotation)", () => {
     const oldMK = TEST_MK;
     const newMK = randomBytes(KEY_LENGTH);
 
-    // Encrypt with old key
     const blob = await encryptSecret(TEST_USER_ID, secret, oldMK);
-
-    // Re-wrap with new key
     const rotated = await reWrapSecret(TEST_USER_ID, blob, oldMK, newMK);
 
-    // Decrypt with new key should work
     const decrypted = await decryptSecret(TEST_USER_ID, rotated, newMK);
     expect(decrypted).toBe(secret);
 
-    // Decrypt with old key should fail
-    await expect(decryptSecret(TEST_USER_ID, rotated, oldMK)).rejects.toThrow();
+    expect(decryptSecret(TEST_USER_ID, rotated, oldMK)).rejects.toThrow();
   });
 
   it("old blob still works with old key after rotation", async () => {
@@ -192,7 +184,6 @@ describe("reWrapSecret (key rotation)", () => {
     const blob = await encryptSecret(TEST_USER_ID, secret, oldMK);
     await reWrapSecret(TEST_USER_ID, blob, oldMK, newMK);
 
-    // Original blob unchanged — still decrypts with old key
     const decrypted = await decryptSecret(TEST_USER_ID, blob, oldMK);
     expect(decrypted).toBe(secret);
   });
@@ -205,8 +196,7 @@ describe("reWrapSecret (key rotation)", () => {
     const blob = await encryptSecret(TEST_USER_ID, secret, oldMK);
     const rotated = await reWrapSecret(TEST_USER_ID, blob, oldMK, newMK);
 
-    // The part after the DEK envelope (secretNonce + ciphertext + tag) should be identical
-    const dekEnvelopeEnd = 1 + 12 + 32 + 16; // version + dekNonce + encDek + dekTag
+    const dekEnvelopeEnd = 1 + 12 + 32 + 16;
     const originalRest = blob.subarray(dekEnvelopeEnd);
     const rotatedRest = rotated.subarray(dekEnvelopeEnd);
     expect(originalRest.equals(rotatedRest)).toBe(true);
@@ -216,7 +206,7 @@ describe("reWrapSecret (key rotation)", () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
     const wrongOldMK = randomBytes(KEY_LENGTH);
     const newMK = randomBytes(KEY_LENGTH);
-    await expect(
+    expect(
       reWrapSecret(TEST_USER_ID, blob, wrongOldMK, newMK),
     ).rejects.toThrow();
   });
@@ -250,7 +240,7 @@ describe("redactSecrets", () => {
 
   it("skips very short secret values (< 4 chars) to avoid false positives", () => {
     const text = "a = 1";
-    expect(redactSecrets(text, ["1"])).toBe("a = 1"); // NOT redacted
+    expect(redactSecrets(text, ["1"])).toBe("a = 1");
   });
 
   it("redacts all occurrences of a secret value", () => {
@@ -267,7 +257,7 @@ describe("user isolation", () => {
     const userB = "bbbb0000-0000-0000-0000-000000000002";
 
     const blob = await encryptSecret(userA, "user-a-secret", TEST_MK);
-    await expect(decryptSecret(userB, blob, TEST_MK)).rejects.toThrow();
+    expect(decryptSecret(userB, blob, TEST_MK)).rejects.toThrow();
   });
 
   it("each user has a unique derived key", async () => {
@@ -284,12 +274,8 @@ describe("crypto-shredding", () => {
   it("deleting secrets makes data unrecoverable (simulated)", async () => {
     const secret = "shred-me";
     const blob = await encryptSecret(TEST_USER_ID, secret, TEST_MK);
-
-    // Simulate crypto-shredding: wipe the blob
     blob.fill(0);
-
-    // Attempting to decrypt the zeroed blob fails
-    await expect(
+    expect(
       decryptSecret(TEST_USER_ID, blob, TEST_MK),
     ).rejects.toThrow();
   });

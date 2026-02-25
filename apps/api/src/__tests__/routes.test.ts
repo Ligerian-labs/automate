@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, mock } from "bun:test";
 import { SignJWT } from "jose";
 
 const TEST_SECRET = "test-secret-key-that-is-long-enough-for-testing-purposes";
@@ -17,23 +17,19 @@ type Chainable = {
   [key: string]: (...args: unknown[]) => Chainable | Promise<unknown[]>;
 };
 
-// Chainable mock DB
 function chainable(resolveValue: unknown): Chainable {
   const chain: Chainable = {};
   const methods = ["select", "from", "where", "insert", "values", "update", "set", "delete"];
   for (const method of methods) {
     chain[method] = () => chain;
   }
-
-  // Terminal methods return promises
   chain.limit = () => Promise.resolve(asList(resolveValue));
   chain.orderBy = () => Promise.resolve(asList(resolveValue));
   chain.returning = () => Promise.resolve(asList(resolveValue));
   return chain;
 }
 
-// Mock with data
-vi.mock("../db/index.js", () => ({
+mock.module("../db/index.js", () => ({
   db: {
     select: () => chainable(mockUser),
     insert: () => chainable(mockPipeline),
@@ -42,7 +38,7 @@ vi.mock("../db/index.js", () => ({
   },
 }));
 
-vi.mock("../lib/env.js", () => ({
+mock.module("../lib/env.js", () => ({
   config: {
     databaseUrl: "postgres://test:test@localhost:5432/test",
     redisUrl: "redis://localhost:6379",
@@ -56,11 +52,11 @@ vi.mock("../lib/env.js", () => ({
   },
 }));
 
-vi.mock("../services/queue.js", () => ({
+mock.module("../services/queue.js", () => ({
   enqueueRun: () => Promise.resolve(),
 }));
 
-vi.mock("../services/cron.js", () => ({
+mock.module("../services/cron.js", () => ({
   getNextCronTick: () => new Date(Date.now() + 86400000),
 }));
 
@@ -116,7 +112,6 @@ describe("Pipeline routes (authenticated)", () => {
         },
       }),
     });
-    // May be 201 or 200 depending on mock
     expect([200, 201]).toContain(res.status);
   });
 
@@ -155,7 +150,6 @@ describe("Run routes (authenticated)", () => {
   it("POST /api/runs/:id/cancel cancels a run", async () => {
     const headers = await authHeader();
     const res = await app.request("/api/runs/b0b0b0b0-c1c1-d2d2-e3e3-f4f4f4f4f4f4/cancel", { method: "POST", headers });
-    // Should return 200 or similar
     expect([200, 404]).toContain(res.status);
   });
 });
@@ -167,7 +161,6 @@ describe("Auth routes (with data)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: "new@example.com", password: "securepass123", name: "New User" }),
     });
-    // With mock returning empty array for existing check, should succeed or conflict
     expect([201, 409]).toContain(res.status);
   });
 
@@ -177,7 +170,6 @@ describe("Auth routes (with data)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: "test@example.com", password: "testpass" }),
     });
-    // bcrypt.compare will fail since mock hash is fake, so 401
     expect(res.status).toBe(401);
   });
 });

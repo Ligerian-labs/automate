@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+// @ts-nocheck
+import { describe, it, expect, mock } from "bun:test";
 
-// Mock DB and env before importing app
-vi.mock("../db/index.js", () => ({
+mock.module("../db/index.js", () => ({
   db: {
     select: () => ({
       from: () => ({
@@ -25,7 +25,7 @@ vi.mock("../db/index.js", () => ({
   },
 }));
 
-vi.mock("../lib/env.js", () => ({
+mock.module("../lib/env.js", () => ({
   config: {
     databaseUrl: "postgres://test:test@localhost:5432/test",
     redisUrl: "redis://localhost:6379",
