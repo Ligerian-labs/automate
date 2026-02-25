@@ -3,9 +3,10 @@ import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { db } from "../db/index.js";
-import { runs, stepExecutions } from "../db/schema.js";
+import { pipelines, runs, stepExecutions } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import { enqueueRun } from "../services/queue.js";
 
 export const runRoutes = new Hono<{ Variables: Env }>();
 
@@ -84,6 +85,50 @@ runRoutes.post("/:id/cancel", async (c) => {
   if (!result)
     return c.json({ error: "Run not found or not cancellable" }, 404);
   return c.json({ cancelled: true });
+});
+
+// Retry a run by creating and enqueuing a new run
+runRoutes.post("/:id/retry", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const idParsed = uuidParam.safeParse(c.req.param("id"));
+  if (!idParsed.success) return c.json({ error: "Invalid run ID" }, 400);
+
+  const [sourceRun] = await db
+    .select()
+    .from(runs)
+    .where(and(eq(runs.id, idParsed.data), eq(runs.userId, userId)))
+    .limit(1);
+  if (!sourceRun) return c.json({ error: "Run not found" }, 404);
+
+  const [pipeline] = await db
+    .select({ id: pipelines.id })
+    .from(pipelines)
+    .where(
+      and(
+        eq(pipelines.id, sourceRun.pipelineId),
+        eq(pipelines.userId, userId),
+        eq(pipelines.status, "active"),
+      ),
+    )
+    .limit(1);
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  const [newRun] = await db
+    .insert(runs)
+    .values({
+      pipelineId: sourceRun.pipelineId,
+      pipelineVersion: sourceRun.pipelineVersion,
+      userId,
+      triggerType: "retry",
+      status: "pending",
+      inputData: sourceRun.inputData ?? {},
+    })
+    .returning();
+
+  await enqueueRun(newRun.id);
+  return c.json(newRun, 202);
 });
 
 // SSE stream for real-time updates
