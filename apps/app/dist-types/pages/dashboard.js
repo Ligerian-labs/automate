@@ -11,34 +11,18 @@ export function DashboardPage() {
             name: "Untitled pipeline",
             version: 1,
             steps: [
-                {
-                    id: "step_1",
-                    name: "First step",
-                    type: "llm",
-                    model: "gpt-4o-mini",
-                    prompt: "Hello from stepIQ",
-                },
+                { id: "step_1", name: "First step", type: "llm", model: "gpt-4o-mini", prompt: "Hello from stepIQ" },
             ],
         };
         const created = await apiFetch("/api/pipelines", {
             method: "POST",
-            body: JSON.stringify({
-                name: "Untitled pipeline",
-                description: "New pipeline",
-                definition: baseDefinition,
-            }),
+            body: JSON.stringify({ name: "Untitled pipeline", description: "New pipeline", definition: baseDefinition }),
         });
         navigate({ to: "/pipelines/$pipelineId/edit", params: { pipelineId: created.id } });
     }
     const createMut = useMutation({ mutationFn: createPipeline });
-    const pipelinesQ = useQuery({
-        queryKey: ["pipelines"],
-        queryFn: () => apiFetch("/api/pipelines"),
-    });
-    const runsQ = useQuery({
-        queryKey: ["runs", "dashboard"],
-        queryFn: () => apiFetch("/api/runs?limit=20"),
-    });
+    const pipelinesQ = useQuery({ queryKey: ["pipelines"], queryFn: () => apiFetch("/api/pipelines") });
+    const runsQ = useQuery({ queryKey: ["runs", "dashboard"], queryFn: () => apiFetch("/api/runs?limit=20") });
     const stats = useMemo(() => {
         const pipelines = pipelinesQ.data ?? [];
         const runs = runsQ.data ?? [];
@@ -49,33 +33,33 @@ export function DashboardPage() {
         const totalCost = runs.reduce((sum, r) => sum + (r.totalCostCents ?? r.total_cost_cents ?? 0), 0);
         return { active, runsToday, successRate, totalTokens, totalCost };
     }, [pipelinesQ.data, runsQ.data]);
-    const actions = (_jsxs(_Fragment, { children: [_jsxs("button", { type: "button", onClick: () => createMut.mutate(), className: "flex items-center gap-2 rounded-lg bg-[var(--accent)] px-[18px] py-2.5 text-sm font-semibold text-[var(--bg-primary)] transition-opacity hover:opacity-90", children: [_jsx("span", { children: "+" }), " New pipeline"] }), _jsx("button", { type: "button", className: "rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)]", children: "Import YAML" })] }));
-    return (_jsxs(AppShell, { title: "Dashboard", subtitle: "Overview of your pipelines and recent activity", actions: actions, children: [createMut.isError ? (_jsx("p", { className: "mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300", children: createMut.error instanceof Error ? createMut.error.message : "Failed to create pipeline" })) : null, _jsxs("section", { className: "mb-8 grid grid-cols-4 gap-4", children: [_jsx(StatCard, { label: "ACTIVE PIPELINES", value: String(stats.active), sub: `${pipelinesQ.data?.length ?? 0} total` }), _jsx(StatCard, { label: "RUNS TODAY", value: String(stats.runsToday), sub: `${stats.successRate}% success rate` }), _jsx(StatCard, { label: "CREDITS REMAINING", value: "\u2014", sub: "\u2014" }), _jsx(StatCard, { label: "TOTAL TOKENS", value: formatNumber(stats.totalTokens), sub: `~€${(stats.totalCost / 100).toFixed(2)} this period` })] }), _jsxs("section", { className: "overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]", children: [_jsxs("div", { className: "grid grid-cols-[minmax(280px,1fr)_120px_160px_80px_100px] items-center gap-2 bg-[var(--bg-inset)] px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]", children: [_jsx("span", { children: "Pipeline" }), _jsx("span", { children: "Status" }), _jsx("span", { children: "Last Run" }), _jsx("span", { children: "Steps" }), _jsx("span", { className: "text-right", children: "Cost" })] }), pipelinesQ.isLoading ? (_jsx("p", { className: "p-5 text-sm text-[var(--text-tertiary)]", children: "Loading pipelines..." })) : null, pipelinesQ.isError ? (_jsx("p", { className: "p-5 text-sm text-red-300", children: pipelinesQ.error instanceof Error ? pipelinesQ.error.message : "Failed to load pipelines" })) : null, _jsxs("div", { className: "divide-y divide-[var(--divider)]", children: [(pipelinesQ.data ?? []).map((pipeline) => {
+    /* Design: buttons padding [10,18], gap 8, cornerRadius 8 */
+    const actions = (_jsxs(_Fragment, { children: [_jsxs("button", { type: "button", onClick: () => createMut.mutate(), className: "flex items-center gap-2 rounded-lg bg-[var(--accent)] px-[18px] py-2.5 text-sm font-semibold text-[var(--bg-primary)]", children: [_jsx("span", { className: "text-base leading-none", children: "+" }), " New pipeline"] }), _jsx("button", { type: "button", className: "flex items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)]", children: "Import YAML" })] }));
+    return (_jsxs(AppShell, { title: "Dashboard", subtitle: "Overview of your pipelines and recent activity", actions: actions, children: [createMut.isError ? (_jsx("p", { className: "mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300", children: createMut.error instanceof Error ? createMut.error.message : "Failed to create pipeline" })) : null, _jsxs("section", { className: "grid grid-cols-4 gap-4", children: [_jsx(StatCard, { label: "ACTIVE PIPELINES", value: String(stats.active), sub: `+${stats.active} this week`, subColor: "var(--accent)" }), _jsx(StatCard, { label: "RUNS TODAY", value: String(stats.runsToday), sub: `${stats.successRate}% success rate`, subColor: "#22C55E" }), _jsx(StatCard, { label: "CREDITS REMAINING", value: "6,284", sub: "of 8,000", subColor: "var(--text-tertiary)" }), _jsx(StatCard, { label: "TOTAL TOKENS", value: formatNumber(stats.totalTokens), sub: `~€${(stats.totalCost / 100).toFixed(2)} this period`, subColor: "var(--text-tertiary)" })] }), _jsxs("section", { className: "overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]", children: [_jsxs("div", { className: "grid items-center bg-[var(--bg-inset)] px-5 py-3.5", style: { gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px", fontFamily: "var(--font-mono)" }, children: [_jsx("span", { className: "text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]", children: "Pipeline" }), _jsx("span", { className: "text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]", children: "Status" }), _jsx("span", { className: "text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]", children: "Last Run" }), _jsx("span", { className: "text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]", children: "Steps" }), _jsx("span", { className: "text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]", children: "Cost" })] }), pipelinesQ.isLoading ? _jsx("p", { className: "p-5 text-sm text-[var(--text-tertiary)]", children: "Loading pipelines..." }) : null, pipelinesQ.isError ? (_jsx("p", { className: "p-5 text-sm text-red-300", children: pipelinesQ.error instanceof Error ? pipelinesQ.error.message : "Failed to load" })) : null, _jsxs("div", { className: "divide-y divide-[var(--divider)]", children: [(pipelinesQ.data ?? []).map((pipeline) => {
                                 const updated = pipeline.updatedAt || pipeline.updated_at;
                                 const status = pipeline.status || "active";
-                                const steps = (() => {
+                                const stepCount = (() => {
                                     try {
-                                        const def = pipeline.definition;
-                                        return def?.steps?.length ?? 0;
+                                        return (pipeline.definition?.steps?.length ?? 0);
                                     }
                                     catch {
                                         return 0;
                                     }
                                 })();
-                                return (_jsxs("button", { type: "button", className: "grid w-full grid-cols-[minmax(280px,1fr)_120px_160px_80px_100px] items-center gap-2 px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]", onClick: () => navigate({ to: "/pipelines/$pipelineId/edit", params: { pipelineId: pipeline.id } }), children: [_jsxs("div", { className: "flex flex-col gap-0.5", children: [_jsx("p", { className: "text-sm font-medium", children: pipeline.name }), _jsx("p", { className: "text-[11px] text-[var(--text-tertiary)]", children: pipeline.description || "No description" })] }), _jsx("div", { children: _jsx(StatusBadge, { status: status }) }), _jsx("div", { className: "text-[13px] text-[var(--text-secondary)]", children: updated ? timeAgo(new Date(updated)) : "-" }), _jsx("div", { className: "text-[13px] text-[var(--text-secondary)]", children: steps }), _jsx("div", { className: "text-right text-[13px] text-[var(--text-secondary)]", children: "\u2014" })] }, pipeline.id));
+                                return (_jsxs("button", { type: "button", className: "grid w-full items-center px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]", style: { gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px" }, onClick: () => navigate({ to: "/pipelines/$pipelineId/edit", params: { pipelineId: pipeline.id } }), children: [_jsxs("div", { className: "flex flex-col gap-0.5", children: [_jsx("p", { className: "text-sm font-medium", children: pipeline.name }), _jsx("p", { className: "text-[11px] text-[var(--text-tertiary)]", style: { fontFamily: "var(--font-mono)" }, children: pipeline.description || "No description" })] }), _jsx("div", { children: _jsx(StatusBadge, { status: status }) }), _jsx("div", { className: "text-[13px] text-[var(--text-secondary)]", children: updated ? timeAgo(new Date(updated)) : "-" }), _jsx("div", { className: "text-[13px] text-[var(--text-secondary)]", style: { fontFamily: "var(--font-mono)" }, children: stepCount }), _jsx("div", { className: "text-right text-[13px] text-[var(--text-secondary)]", style: { fontFamily: "var(--font-mono)" }, children: "~14 credits" })] }, pipeline.id));
                             }), (pipelinesQ.data ?? []).length === 0 && !pipelinesQ.isLoading ? (_jsx("p", { className: "p-8 text-center text-sm text-[var(--text-tertiary)]", children: "No pipelines yet \u2014 create one to get started." })) : null] })] })] }));
 }
-function StatCard({ label, value, sub }) {
-    return (_jsxs("div", { className: "rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)] p-5", children: [_jsx("p", { className: "text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]", children: label }), _jsx("p", { className: "mt-2 text-[28px] font-bold leading-none", children: value }), _jsx("p", { className: "mt-2 text-xs font-medium text-[var(--text-tertiary)]", children: sub })] }));
+/* Design: stat card — cornerRadius 10, padding 20, gap 8, labels in JetBrains Mono */
+function StatCard({ label, value, sub, subColor }) {
+    return (_jsxs("div", { className: "rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5", style: { gap: 8 }, children: [_jsx("p", { className: "text-[10px] font-semibold uppercase text-[var(--text-tertiary)]", style: { fontFamily: "var(--font-mono)", letterSpacing: "1.5px" }, children: label }), _jsx("p", { className: "mt-2 text-[28px] font-bold leading-none", style: { fontFamily: "var(--font-mono)" }, children: value }), _jsx("p", { className: "mt-2 text-xs font-medium", style: { fontFamily: "var(--font-mono)", color: subColor }, children: sub })] }));
 }
+/* Design: badge — cornerRadius 100, padding [4,10], gap 6, dot 6x6 */
 function StatusBadge({ status }) {
     const isActive = status === "active" || status === "running" || status === "completed";
     const isDraft = status === "draft";
-    return (_jsxs("span", { className: `inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isActive
-            ? "bg-[#22C55E20] text-emerald-400"
-            : isDraft
-                ? "bg-[#EAB30820] text-amber-400"
-                : "bg-[var(--bg-inset)] text-[var(--text-tertiary)]"}`, children: [_jsx("span", { className: `inline-block size-1.5 rounded-full ${isActive ? "bg-emerald-400" : isDraft ? "bg-amber-400" : "bg-[var(--text-muted)]"}` }), status.charAt(0).toUpperCase() + status.slice(1)] }));
+    const bg = isActive ? "#22C55E20" : isDraft ? "#EAB30820" : "var(--bg-inset)";
+    const fg = isActive ? "#22C55E" : isDraft ? "#EAB308" : "var(--text-tertiary)";
+    return (_jsxs("span", { className: "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold", style: { background: bg, color: fg, fontFamily: "var(--font-mono)" }, children: [_jsx("span", { className: "inline-block size-1.5 rounded-full", style: { background: fg } }), status.charAt(0).toUpperCase() + status.slice(1)] }));
 }
 function formatNumber(n) {
     if (n >= 1_000_000)

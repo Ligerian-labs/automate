@@ -23,6 +23,8 @@ export interface RunRecord {
     pipelineId?: string;
     pipeline_id?: string;
     status: string;
+    triggerType?: string;
+    trigger_type?: string;
     totalTokens?: number;
     total_tokens?: number;
     totalCostCents?: number;

@@ -9,9 +9,10 @@ import {
   RouterProvider,
   redirect,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { DashboardPage } from "./pages/dashboard";
+import { PipelinesListPage } from "./pages/pipelines-list";
 import { PipelineEditorPage } from "./pages/pipeline-editor";
+import { RunsListPage } from "./pages/runs-list";
 import { RunDetailPage } from "./pages/run-detail";
 import { SettingsPage } from "./pages/settings";
 import { AuthPage } from "./pages/auth-page";
@@ -21,12 +22,7 @@ import "./styles.css";
 const queryClient = new QueryClient();
 
 function RootLayout() {
-  return (
-    <>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  );
+  return <Outlet />;
 }
 
 const rootRoute = createRootRoute({ component: RootLayout });
@@ -69,11 +65,25 @@ const dashboardRoute = createRoute({
   component: DashboardPage,
 });
 
+const pipelinesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pipelines",
+  beforeLoad: requireAuth,
+  component: PipelinesListPage,
+});
+
 const editorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/pipelines/$pipelineId/edit",
   beforeLoad: requireAuth,
   component: PipelineEditorPage,
+});
+
+const runsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/runs",
+  beforeLoad: requireAuth,
+  component: RunsListPage,
 });
 
 const runRoute = createRoute({
@@ -95,7 +105,9 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
   dashboardRoute,
+  pipelinesRoute,
   editorRoute,
+  runsRoute,
   runRoute,
   settingsRoute,
 ]);
