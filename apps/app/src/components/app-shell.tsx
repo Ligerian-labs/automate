@@ -4,32 +4,51 @@ import { cn } from "@stepiq/ui";
 import { clearToken } from "../lib/auth";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: "▣" },
-  { to: "", label: "Pipelines", icon: "◇" },
-  { to: "", label: "Runs", icon: "▷" },
-  { to: "", label: "Schedules", icon: "◷" },
-  { to: "", label: "Templates", icon: "▤" },
+  { to: "/dashboard", label: "Dashboard", icon: "⊞" },
+  { to: "/pipelines", label: "Pipelines", icon: "◇" },
+  { to: "/runs", label: "Runs", icon: "▷" },
+  { to: "/schedules", label: "Schedules", icon: "◷" },
+  { to: "/templates", label: "Templates", icon: "▤" },
 ];
 
-export function AppShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+export function AppShell({
+  title,
+  subtitle,
+  actions,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
   const location = useLocation();
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] lg:flex">
-      <aside className="border-b border-[var(--divider)] bg-[var(--bg-inset)] p-4 lg:flex lg:min-h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:border-r">
+    <div className="flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+      {/* Sidebar — 260px, matches design */}
+      <aside className="flex w-[260px] shrink-0 flex-col border-r border-[var(--divider)] bg-[var(--bg-inset)] px-5 py-6">
+        {/* Logo */}
         <div className="mb-8 flex items-center gap-2">
-          <div className="grid size-8 place-items-center rounded-md bg-[var(--accent)] text-[var(--bg-primary)] font-bold">A</div>
-          <div className="font-semibold tracking-tight">Stepiq</div>
+          <div className="grid size-7 place-items-center rounded-md bg-[var(--accent)] text-xs font-bold text-[var(--bg-primary)]">
+            sQ
+          </div>
+          <span className="text-base font-bold tracking-tight">stepIQ</span>
         </div>
 
-        <nav className="space-y-1">
+        {/* Main nav */}
+        <nav className="flex flex-col gap-1">
           {navItems.map((item) => {
             const active = item.to && location.pathname.startsWith(item.to);
-            if (!item.to) {
+            const isPlaceholder = item.to !== "/dashboard" && item.to !== "/pipelines" && item.to !== "/runs";
+            if (isPlaceholder) {
               return (
-                <span key={item.label} className="block rounded-md px-3 py-2 text-sm text-[var(--text-secondary)] opacity-90">
-                  <span className="mr-2 inline-block w-4 text-center text-xs">{item.icon}</span>
+                <span
+                  key={item.label}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] opacity-60"
+                >
+                  <span className="w-4 text-center text-xs">{item.icon}</span>
                   {item.label}
                 </span>
               );
@@ -39,57 +58,79 @@ export function AppShell({ title, subtitle, children }: { title: string; subtitl
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "block rounded-md px-3 py-2 text-sm",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
                   active
-                    ? "bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                    ? "bg-[var(--bg-surface)] font-medium text-[var(--text-primary)]"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
                 )}
               >
-                <span className="mr-2 inline-block w-4 text-center text-xs">{item.icon}</span>
+                <span className="w-4 text-center text-xs">{item.icon}</span>
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="mt-8 rounded-md bg-[var(--bg-surface)] px-2 py-2 text-sm">
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Settings */}
+        <nav className="mb-4 flex flex-col gap-1">
           <Link
             to="/settings"
             className={cn(
-              "block rounded-md px-2 py-1 text-[var(--text-secondary)]",
-              location.pathname.startsWith("/settings") ? "bg-[var(--bg-inset)] text-[var(--text-primary)]" : "",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              location.pathname.startsWith("/settings")
+                ? "bg-[var(--bg-surface)] font-medium text-[var(--text-primary)]"
+                : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
             )}
           >
-            ⚙ Settings
+            <span className="w-4 text-center text-xs">⚙</span>
+            Settings
           </Link>
-        </div>
+        </nav>
 
-        <div className="mt-4 border-t border-[var(--divider)] pt-3 lg:mt-auto">
+        {/* Divider */}
+        <div className="mb-4 h-px bg-[var(--divider)]" />
+
+        {/* User row */}
+        <div className="flex items-center gap-3">
+          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--bg-surface)] text-[11px] font-semibold">
+            VD
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-medium">Valentin D.</p>
+            <p className="truncate text-[11px] text-[var(--text-tertiary)]">Pro plan</p>
+          </div>
           <button
             type="button"
-            className="w-full rounded-md border border-[var(--divider)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
+            title="Log out"
+            className="rounded-md p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
             onClick={() => {
               clearToken();
               navigate({ to: "/login" });
             }}
           >
-            Log out
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
           </button>
-
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-[var(--divider)] p-2">
-            <div className="grid size-7 place-items-center rounded-full bg-[var(--bg-surface)] text-xs font-semibold">VD</div>
-            <div className="min-w-0">
-              <p className="truncate text-xs text-[var(--text-primary)]">Valentin D.</p>
-              <p className="truncate text-[10px] text-[var(--text-tertiary)]">Pro plan</p>
-            </div>
-          </div>
         </div>
       </aside>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-10">
-        <header className="mb-6 border-b border-[var(--divider)] pb-4">
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          {subtitle ? <p className="mt-1 text-sm text-[var(--text-tertiary)]">{subtitle}</p> : null}
+      {/* Main content */}
+      <main className="flex flex-1 flex-col overflow-auto px-10 py-8">
+        {/* Top bar */}
+        <header className="mb-8 flex items-start justify-between">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold">{title}</h1>
+            {subtitle ? (
+              <p className="text-sm text-[var(--text-tertiary)]">{subtitle}</p>
+            ) : null}
+          </div>
+          {actions ? <div className="flex items-center gap-3">{actions}</div> : null}
         </header>
         {children}
       </main>

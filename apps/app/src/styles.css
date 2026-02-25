@@ -3,6 +3,8 @@
 :root {
   --accent: #22d3ee;
   --accent-dim: #0e7490;
+  --accent-gradient-start: #22d3ee;
+  --accent-gradient-end: #6366f1;
   --bg-primary: #0a0f1c;
   --bg-inset: #0f172a;
   --bg-surface: #1e293b;
@@ -22,6 +24,19 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #111a2c 0%, var(--bg-primary) 45%);
+  background: var(--bg-primary);
   color: var(--text-primary);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
 }
