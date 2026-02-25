@@ -1,6 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, mock, beforeAll } from "bun:test";
-import { Hono } from "hono";
+import { describe, it, expect, mock } from "bun:test";
 
 // Mock DB before importing app
 mock.module("../db/index.js", () => ({

@@ -8,4 +8,5 @@ dist/
 .turbo/
 # drizzle meta kept in repo for migrations
 !apps/api/drizzle/
++coverage/
 *.tsbuildinfo

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, mock, beforeAll } from "bun:test";
+import { describe, it, expect, mock } from "bun:test";
 import { SignJWT } from "jose";
 
 const TEST_SECRET = "test-secret-key-that-is-long-enough-for-testing-purposes";
@@ -9,28 +9,36 @@ const mockUser = { id: "user-123", email: "test@example.com", name: "Test", plan
 const mockPipeline = { id: "pipe-1", userId: "user-123", name: "test-pipeline", description: "test", definition: { name: "test", version: 1, steps: [{ id: "s1", name: "S1", type: "llm" }] }, tags: [], status: "active", version: 1, createdAt: new Date(), updatedAt: new Date() };
 const mockRun = { id: "run-1", pipelineId: "pipe-1", userId: "user-123", status: "completed", pipelineVersion: 1, triggerType: "manual", inputData: {}, outputData: null, totalTokens: 100, totalCostCents: 5, error: null, startedAt: new Date(), completedAt: new Date(), createdAt: new Date() };
 
+function asList(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [value];
+}
+
+type Chainable = {
+  [key: string]: (...args: unknown[]) => Chainable | Promise<unknown[]>;
+};
+
 // Chainable mock DB
-function chainable(resolveValue: any) {
-  const chain: any = {};
-  const methods = ["select", "from", "where", "limit", "orderBy", "insert", "values", "returning", "update", "set", "delete"];
-  for (const m of methods) {
-    chain[m] = (...args: any[]) => chain;
+function chainable(resolveValue: unknown): Chainable {
+  const chain: Chainable = {};
+  const methods = ["select", "from", "where", "insert", "values", "update", "set", "delete"];
+  for (const method of methods) {
+    chain[method] = () => chain;
   }
+
   // Terminal methods return promises
-  chain.limit = () => Promise.resolve(Array.isArray(resolveValue) ? resolveValue : [resolveValue]);
-  chain.orderBy = () => Promise.resolve(Array.isArray(resolveValue) ? resolveValue : [resolveValue]);
-  chain.returning = () => Promise.resolve(Array.isArray(resolveValue) ? resolveValue : [resolveValue]);
-  chain.then = (resolve: any) => Promise.resolve(Array.isArray(resolveValue) ? resolveValue : [resolveValue]).then(resolve);
+  chain.limit = () => Promise.resolve(asList(resolveValue));
+  chain.orderBy = () => Promise.resolve(asList(resolveValue));
+  chain.returning = () => Promise.resolve(asList(resolveValue));
   return chain;
 }
 
 // Mock with data
 mock.module("../db/index.js", () => ({
   db: {
-    select: (...args: any[]) => chainable(mockUser),
-    insert: (...args: any[]) => chainable(mockPipeline),
-    update: (...args: any[]) => chainable(mockRun),
-    delete: (...args: any[]) => chainable({}),
+    select: () => chainable(mockUser),
+    insert: () => chainable(mockPipeline),
+    update: () => chainable(mockRun),
+    delete: () => chainable({}),
   },
 }));
 
