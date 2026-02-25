@@ -118,8 +118,27 @@ export const runPipelineSchema = z.object({
 });
 
 export const createScheduleSchema = z.object({
-  cron_expression: z.string().min(1),
-  timezone: z.string().default("UTC"),
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).optional(),
+  cron_expression: z
+    .string()
+    .trim()
+    .regex(
+      /^(\S+\s+){4}\S+$/,
+      "Cron expression must have exactly 5 fields",
+    ),
+  timezone: z
+    .string()
+    .trim()
+    .default("UTC")
+    .refine((tz) => {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: tz }).format(new Date());
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Invalid timezone"),
   input_data: z.record(z.unknown()).optional(),
   enabled: z.boolean().default(true),
 });

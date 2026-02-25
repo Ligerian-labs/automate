@@ -23291,6 +23291,1396 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "TFk7N",
+      "x": 3080,
+      "y": 5000,
+      "name": "New Schedule",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$bg-primary",
+      "children": [
+        {
+          "type": "frame",
+          "id": "2Qeqw",
+          "name": "schSidebar",
+          "width": 260,
+          "height": "fill_container",
+          "fill": "$bg-inset",
+          "stroke": {
+            "thickness": {
+              "right": 1
+            },
+            "fill": "$divider"
+          },
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            24,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "cwr3K",
+              "name": "sideTop",
+              "width": "fill_container",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "2IgPv",
+                  "name": "sLogo",
+                  "width": 28,
+                  "height": 28,
+                  "fill": "$accent",
+                  "cornerRadius": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "8GpyL",
+                      "name": "sLogoI",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "workflow",
+                      "iconFontFamily": "lucide",
+                      "fill": "$bg-primary"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "RqwdG",
+                  "name": "sLogoTxt",
+                  "fill": "$text-primary",
+                  "content": "stepIQ",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nDaLQ",
+              "name": "sideNav",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "HyxzQ",
+                  "name": "navDash",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 12,
+                  "padding": [
+                    10,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "t2tdJ",
+                      "name": "navDashI",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "layout-dashboard",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-tertiary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "PGiut",
+                      "name": "navDashT",
+                      "fill": "$text-secondary",
+                      "content": "Dashboard",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UIR08",
+                  "name": "navPipe",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 12,
+                  "padding": [
+                    10,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "gaQDo",
+                      "name": "navPipeI",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "workflow",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-tertiary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "yQ0Fd",
+                      "name": "navPipeT",
+                      "fill": "$text-secondary",
+                      "content": "Pipelines",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "0y5iA",
+                  "name": "navRuns",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 12,
+                  "padding": [
+                    10,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "LFKk9",
+                      "name": "navRunsI",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "play",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-tertiary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "46EHQ",
+                      "name": "navRunsT",
+                      "fill": "$text-secondary",
+                      "content": "Runs",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hLyIR",
+                  "name": "navSched",
+                  "width": "fill_container",
+                  "fill": "$bg-surface",
+                  "cornerRadius": 8,
+                  "gap": 12,
+                  "padding": [
+                    10,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "o8mS8",
+                      "name": "navSchedI",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "timer",
+                      "iconFontFamily": "lucide",
+                      "fill": "$accent"
+                    },
+                    {
+                      "type": "text",
+                      "id": "si35g",
+                      "name": "navSchedT",
+                      "fill": "$text-primary",
+                      "content": "Schedules",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "9zLZ6",
+                  "name": "navTempl",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 12,
+                  "padding": [
+                    10,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "gbZbc",
+                      "name": "navTemplI",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "layout-template",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-tertiary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "BxCxK",
+                      "name": "navTemplT",
+                      "fill": "$text-secondary",
+                      "content": "Templates",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "6XVda",
+              "name": "sideSpacer",
+              "width": "fill_container",
+              "height": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "AAcSU",
+              "name": "sideBottom",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "kPdSg",
+                  "name": "navSet",
+                  "width": "fill_container",
+                  "cornerRadius": 8,
+                  "gap": 12,
+                  "padding": [
+                    10,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "SUCSz",
+                      "name": "navSetI",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "settings",
+                      "iconFontFamily": "lucide",
+                      "fill": "$text-tertiary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "JCPld",
+                      "name": "navSetT",
+                      "fill": "$text-secondary",
+                      "content": "Settings",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "4pBPF",
+              "name": "sideDivider",
+              "width": "fill_container",
+              "height": 1,
+              "fill": "$divider"
+            },
+            {
+              "type": "frame",
+              "id": "EmwHS",
+              "name": "userRow",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "25Q4M",
+                  "name": "userAvatar",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "$bg-surface",
+                  "cornerRadius": 100,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "NFTmn",
+                      "name": "userAvatarTxt",
+                      "fill": "$text-secondary",
+                      "content": "VD",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Muak7",
+                  "name": "userInfo",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ruIiD",
+                      "name": "userName",
+                      "fill": "$text-primary",
+                      "content": "Valentin D.",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "EOgiV",
+                      "name": "userPlan",
+                      "fill": "$text-tertiary",
+                      "content": "Pro plan",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ml3FA",
+          "name": "New Schedule Main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 28,
+          "padding": [
+            32,
+            40
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "XdDeF",
+              "name": "nsTopBar",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vThKU",
+                  "name": "nsTopLeft",
+                  "gap": 16,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "9lutC",
+                      "name": "nsBackBtn",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$divider"
+                      },
+                      "padding": [
+                        8,
+                        10
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "NsaxJ",
+                          "name": "backIcon",
+                          "width": 16,
+                          "height": 16,
+                          "iconFontName": "arrow-left",
+                          "iconFontFamily": "lucide",
+                          "fill": "$text-secondary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aUioY",
+                      "name": "nsTitleGroup",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "F975q",
+                          "name": "titleTxt",
+                          "fill": "$text-primary",
+                          "content": "New Schedule",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "C1czT",
+                          "name": "subTxt",
+                          "fill": "$text-tertiary",
+                          "content": "Configure a new automated pipeline schedule",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9Gwv3",
+              "name": "nsFormArea",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 28,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pJnV0",
+                  "name": "nsLeftCol",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "BWUdY",
+                      "name": "nsDetailsCard",
+                      "width": "fill_container",
+                      "fill": "$bg-surface",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$divider"
+                      },
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": 20,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "GPbAs",
+                          "name": "detailTitle",
+                          "fill": "$text-primary",
+                          "content": "Schedule Details",
+                          "fontFamily": "Inter",
+                          "fontSize": 17,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "nGPlP",
+                          "name": "nsFieldName",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 6,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "YBEU9",
+                              "name": "nameLabel",
+                              "fill": "$text-secondary",
+                              "content": "Name",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "MZVvF",
+                              "name": "nsNameInput",
+                              "width": "fill_container",
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                10,
+                                14
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "hFIcq",
+                                  "name": "nameVal",
+                                  "fill": "$text-muted",
+                                  "content": "e.g. Weekly blog generation",
+                                  "fontFamily": "JetBrains Mono",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xBj7P",
+                          "name": "nsFieldDesc",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 6,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Veyoc",
+                              "name": "descLabel",
+                              "fill": "$text-secondary",
+                              "content": "Description",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "7NF3O",
+                              "name": "nsDescInput",
+                              "width": "fill_container",
+                              "height": 56,
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                10,
+                                14
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "XfJlU",
+                                  "name": "descVal",
+                                  "fill": "$text-muted",
+                                  "content": "Optional description for this schedule",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ZpAW8",
+                      "name": "nsPipelineCard",
+                      "width": "fill_container",
+                      "fill": "$bg-surface",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$divider"
+                      },
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": 20,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "IFLWY",
+                          "name": "pipeTitle",
+                          "fill": "$text-primary",
+                          "content": "Pipeline",
+                          "fontFamily": "Inter",
+                          "fontSize": 17,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wFXbW",
+                          "name": "nsPipeField",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 6,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "6piuU",
+                              "name": "pipeLabel",
+                              "fill": "$text-secondary",
+                              "content": "Select pipeline",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "GSIou",
+                              "name": "nsPipeSelect",
+                              "width": "fill_container",
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                10,
+                                14
+                              ],
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "sFyyO",
+                                  "name": "pipeVal",
+                                  "fill": "$text-primary",
+                                  "content": "weekly-blog-generator",
+                                  "fontFamily": "JetBrains Mono",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "icon_font",
+                                  "id": "DMdUK",
+                                  "name": "pipeChevron",
+                                  "width": 16,
+                                  "height": 16,
+                                  "iconFontName": "chevron-down",
+                                  "iconFontFamily": "lucide",
+                                  "fill": "$text-muted"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "Zocua",
+                          "name": "pipeHint",
+                          "fill": "$text-muted",
+                          "content": "The pipeline that will be triggered on each scheduled run.",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "m5OkF",
+                      "name": "nsCronCard",
+                      "width": "fill_container",
+                      "fill": "$bg-surface",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$divider"
+                      },
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": 20,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nNsRB",
+                          "name": "cronTitle",
+                          "fill": "$text-primary",
+                          "content": "Schedule Frequency",
+                          "fontFamily": "Inter",
+                          "fontSize": 17,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "STliT",
+                          "name": "nsPresetRow",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "MFZZD",
+                              "name": "nsPreset1",
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "XGzDG",
+                                  "name": "preset1Txt",
+                                  "fill": "$text-secondary",
+                                  "content": "Every hour",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "xz2mz",
+                              "name": "nsPreset2",
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "kXLjB",
+                                  "name": "preset2Txt",
+                                  "fill": "$text-secondary",
+                                  "content": "Daily",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "py00C",
+                              "name": "nsPreset3",
+                              "fill": "$accent",
+                              "cornerRadius": 6,
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Zn3W6",
+                                  "name": "preset3Txt",
+                                  "fill": "$bg-primary",
+                                  "content": "Weekly",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "sGvlt",
+                              "name": "nsPreset4",
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "X69g2",
+                                  "name": "preset4Txt",
+                                  "fill": "$text-secondary",
+                                  "content": "Monthly",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "5rwTt",
+                              "name": "nsPreset5",
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "2HMhg",
+                                  "name": "preset5Txt",
+                                  "fill": "$text-secondary",
+                                  "content": "Custom",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "4eYuU",
+                          "name": "nsCronField",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 6,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Rb3Ok",
+                              "name": "cronLabel",
+                              "fill": "$text-secondary",
+                              "content": "Cron expression",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "tBEvy",
+                              "name": "nsCronInput",
+                              "width": "fill_container",
+                              "fill": "$bg-inset",
+                              "cornerRadius": 6,
+                              "stroke": {
+                                "thickness": 1,
+                                "fill": "$divider"
+                              },
+                              "padding": [
+                                10,
+                                14
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "KrcvE",
+                                  "name": "cronVal",
+                                  "fill": "$accent",
+                                  "content": "0 9 * * MON",
+                                  "fontFamily": "JetBrains Mono",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "WDs4j",
+                          "name": "nsCronHuman",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "wOWCe",
+                              "name": "cronHumanIcon",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "clock-3",
+                              "iconFontFamily": "lucide",
+                              "fill": "$text-muted"
+                            },
+                            {
+                              "type": "text",
+                              "id": "lZMJr",
+                              "name": "cronHumanTxt",
+                              "fill": "$text-secondary",
+                              "content": "Runs every Monday at 09:00 UTC",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "RKEe2",
+                          "name": "nsDayTimeRow",
+                          "width": "fill_container",
+                          "gap": 16,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "tEBJG",
+                              "name": "nsDayField",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 6,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Cc5Y2",
+                                  "name": "dayLabel",
+                                  "fill": "$text-secondary",
+                                  "content": "Day of week",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "SGP46",
+                                  "name": "nsDaySelect",
+                                  "width": "fill_container",
+                                  "fill": "$bg-inset",
+                                  "cornerRadius": 6,
+                                  "stroke": {
+                                    "thickness": 1,
+                                    "fill": "$divider"
+                                  },
+                                  "padding": [
+                                    10,
+                                    14
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "VHTBO",
+                                      "name": "dayVal",
+                                      "fill": "$text-primary",
+                                      "content": "Monday",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "icon_font",
+                                      "id": "bA2e4",
+                                      "name": "dayChevron",
+                                      "width": 16,
+                                      "height": 16,
+                                      "iconFontName": "chevron-down",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "$text-muted"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "SQUua",
+                              "name": "nsTimeField",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 6,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "7DQPC",
+                                  "name": "timeLabel",
+                                  "fill": "$text-secondary",
+                                  "content": "Time (UTC)",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "J17IG",
+                                  "name": "nsTimeSelect",
+                                  "width": "fill_container",
+                                  "fill": "$bg-inset",
+                                  "cornerRadius": 6,
+                                  "stroke": {
+                                    "thickness": 1,
+                                    "fill": "$divider"
+                                  },
+                                  "padding": [
+                                    10,
+                                    14
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "mAA1x",
+                                      "name": "timeVal",
+                                      "fill": "$text-primary",
+                                      "content": "09:00",
+                                      "fontFamily": "JetBrains Mono",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "icon_font",
+                                      "id": "O7eRw",
+                                      "name": "timeChevron",
+                                      "width": 16,
+                                      "height": 16,
+                                      "iconFontName": "chevron-down",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "$text-muted"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "prs2a",
+                  "name": "nsRightCol",
+                  "width": 340,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "aSnFA",
+                      "name": "nsSummaryCard",
+                      "width": "fill_container",
+                      "fill": "$bg-surface",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$divider"
+                      },
+                      "layout": "vertical",
+                      "gap": 20,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZeN2P",
+                          "name": "summaryTitle",
+                          "fill": "$text-primary",
+                          "content": "Summary",
+                          "fontFamily": "Inter",
+                          "fontSize": 17,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "z1tY3",
+                          "name": "nsSumDiv1",
+                          "width": "fill_container",
+                          "height": 1,
+                          "fill": "$divider"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "weyAU",
+                          "name": "nsSumRow1",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "u84Xc",
+                              "name": "sumRow1Label",
+                              "fill": "$text-tertiary",
+                              "content": "Pipeline",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "wfdgb",
+                              "name": "sumRow1Val",
+                              "fill": "$text-primary",
+                              "content": "weekly-blog-generator",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "VEkcA",
+                          "name": "nsSumRow2",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "4ighM",
+                              "name": "sumRow2Label",
+                              "fill": "$text-tertiary",
+                              "content": "Frequency",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "HtCpU",
+                              "name": "sumRow2Val",
+                              "fill": "$text-primary",
+                              "content": "Weekly",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rt4Oh",
+                          "name": "nsSumRow3",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "9qWth",
+                              "name": "sumRow3Label",
+                              "fill": "$text-tertiary",
+                              "content": "Schedule",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "GD3iH",
+                              "name": "sumRow3Val",
+                              "fill": "$accent",
+                              "content": "Mon 09:00 UTC",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 12,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "BUOym",
+                      "name": "nsNextRunCard",
+                      "width": "fill_container",
+                      "fill": "$bg-surface",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$divider"
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "XUaMq",
+                          "name": "nextRunTitle",
+                          "fill": "$text-primary",
+                          "content": "Next Scheduled Run",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "c9Mb0",
+                          "name": "nsNextRunTime",
+                          "gap": 10,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "RxD5S",
+                              "name": "nextRunIcon",
+                              "width": 18,
+                              "height": 18,
+                              "iconFontName": "calendar",
+                              "iconFontFamily": "lucide",
+                              "fill": "$accent"
+                            },
+                            {
+                              "type": "text",
+                              "id": "EOVyP",
+                              "name": "nextRunVal",
+                              "fill": "$text-primary",
+                              "content": "Mon, Mar 3, 2026 · 09:00 UTC",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "PauX8",
+                          "name": "nsCountdown",
+                          "width": "fill_container",
+                          "fill": "$bg-inset",
+                          "cornerRadius": 8,
+                          "padding": [
+                            10,
+                            14
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GElAl",
+                              "name": "nextRunCountdownTxt",
+                              "fill": "$accent",
+                              "content": "in 6 days, 3 hours",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FnUkT",
+                      "name": "nsSpacer",
+                      "width": "fill_container",
+                      "height": "fill_container"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "8XErY",
+                      "name": "nsBtnGroup",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "7u2k5",
+                          "name": "nsCreateBtn",
+                          "width": "fill_container",
+                          "fill": "$accent",
+                          "cornerRadius": 8,
+                          "gap": 8,
+                          "padding": [
+                            12,
+                            20
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "8ax6X",
+                              "name": "createIcon",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "check",
+                              "iconFontFamily": "lucide",
+                              "fill": "$bg-primary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "5Vx2E",
+                              "name": "createTxt",
+                              "fill": "$bg-primary",
+                              "content": "Create schedule",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "cajnw",
+                          "name": "nsCancelBtn",
+                          "width": "fill_container",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$divider"
+                          },
+                          "padding": [
+                            12,
+                            20
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "9Tz8j",
+                              "name": "cancelTxt",
+                              "fill": "$text-secondary",
+                              "content": "Cancel",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {

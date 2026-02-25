@@ -111,6 +111,8 @@ export const schedules = pgTable(
     pipelineId: uuid("pipeline_id")
       .references(() => pipelines.id, { onDelete: "cascade" })
       .notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
     cronExpression: text("cron_expression").notNull(),
     timezone: text("timezone").default("UTC").notNull(),
     inputData: jsonb("input_data").default({}).notNull(),

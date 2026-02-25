@@ -79,11 +79,13 @@ textarea:focus-visible,
   position: sticky;
   top: 0;
   z-index: 10;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem 5rem;
+  padding: 1.25rem max(1.5rem, calc((100vw - 1440px) / 2 + 80px));
   border-bottom: 1px solid color-mix(in oklab, var(--divider), transparent 20%);
   background: color-mix(in oklab, var(--bg-primary), transparent 10%);
   backdrop-filter: blur(10px);
@@ -192,6 +194,8 @@ textarea:focus-visible,
   gap: 0.5rem;
   color: var(--text-secondary);
   font-size: 0.75rem;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 500;
 }
 
 .dot {
@@ -205,12 +209,15 @@ textarea:focus-visible,
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 56.25rem;
+  max-width: 100%;
 }
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-size: 4rem;
   line-height: 1.1;
+  text-align: center;
 }
 
 .hero-sub,
@@ -221,10 +228,11 @@ textarea:focus-visible,
 }
 
 .hero-sub {
-  max-width: 44rem;
+  max-width: 43.75rem;
   margin: 0 auto;
   font-size: 1.25rem;
-  line-height: 1.6;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .hero-actions {
@@ -233,12 +241,14 @@ textarea:focus-visible,
 
 .hero-actions .solid-link {
   font-size: 1rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.5rem;
 }
 
 .hero-actions .outline-link {
   font-size: 1rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.5rem;
 }
 
 .arrow-icon {
@@ -248,19 +258,21 @@ textarea:focus-visible,
 /* ── Pipeline Mockup ── */
 .pipeline-mockup {
   width: 100%;
-  max-width: 68rem;
+  max-width: 68.75rem;
   background: var(--bg-surface);
   border: 1px solid var(--divider);
   border-radius: 1rem;
-  padding: 1.5rem;
+  padding: 2rem;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .mock-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
 }
 
 .mock-title {
@@ -270,7 +282,7 @@ textarea:focus-visible,
 }
 
 .status {
-  padding: 0.25rem 0.6rem;
+  padding: 0.375rem 0.75rem;
   border-radius: 999px;
   background: rgb(34 197 94 / 0.12);
   color: #22c55e;
@@ -278,6 +290,8 @@ textarea:focus-visible,
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
 }
 
 .status-dot {
@@ -289,23 +303,24 @@ textarea:focus-visible,
 
 .steps {
   display: flex;
-  align-items: stretch;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
 }
 
 .step {
-  flex: 1;
+  width: 13.75rem;
   padding: 1rem;
-  border-radius: 0.6rem;
-  border: 1px solid color-mix(in oklab, var(--accent), transparent 70%);
+  border-radius: 0.625rem;
+  border: 1px solid #22d3ee33;
   background: var(--bg-inset);
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.625rem;
 }
 
 .step-pending {
-  border-color: var(--divider);
+  border-color: #22d3ee1f;
 }
 
 .step-pending .step-title {
@@ -313,11 +328,14 @@ textarea:focus-visible,
 }
 
 .step-pending .step-icon {
-  opacity: 0.4;
+  color: var(--text-muted);
 }
 
 .step-icon {
-  font-size: 1.1rem;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .step-title {
@@ -330,10 +348,11 @@ textarea:focus-visible,
   color: var(--text-tertiary);
   font-size: 0.6875rem;
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 500;
 }
 
 .step-bar {
-  margin-top: 0.35rem;
+  margin-top: 0;
   height: 4px;
   border-radius: 2px;
   background: var(--bg-surface);
@@ -359,6 +378,7 @@ textarea:focus-visible,
   place-items: center;
   color: var(--text-muted);
   flex-shrink: 0;
+  width: 20px;
 }
 
 /* ── Trust Row ── */
@@ -388,12 +408,19 @@ textarea:focus-visible,
 
 .section-header {
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 43.75rem;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .kicker {
   margin: 0;
   color: var(--accent);
-  letter-spacing: 0.14rem;
+  letter-spacing: 0.125rem;
   font-size: 0.75rem;
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 600;
@@ -401,20 +428,21 @@ textarea:focus-visible,
 
 .section h2 {
   margin: 0.7rem 0 0;
-  font-size: clamp(1.8rem, 4vw, 2.75rem);
+  font-size: 2.75rem;
   line-height: 1.15;
 }
 
 .section-sub {
   margin-top: 0.8rem;
-  max-width: 45rem;
+  max-width: 37.5rem;
   font-size: 1.125rem;
+  line-height: 1.5;
 }
 
 /* ── Card Grid ── */
 .card-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.5rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -425,8 +453,8 @@ textarea:focus-visible,
 .card {
   border: 1px solid var(--divider);
   background: var(--bg-surface);
-  border-radius: 0.8rem;
-  padding: 1.5rem;
+  border-radius: 0.75rem;
+  padding: 2rem;
 }
 
 .card h3 {
@@ -455,13 +483,14 @@ textarea:focus-visible,
 .features-layout {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
-  gap: 1rem;
+  gap: 2.5rem;
 }
 
 .feat-card {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  padding: 1.5rem;
 }
 
 .feat-card h3 {
@@ -482,14 +511,14 @@ textarea:focus-visible,
 .feat-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 /* ── Code Block ── */
 .code-card {
   border: 1px solid var(--divider);
   background: var(--bg-inset);
-  border-radius: 0.8rem;
+  border-radius: 0.75rem;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -499,7 +528,7 @@ textarea:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.25rem;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--divider);
 }
@@ -533,7 +562,7 @@ textarea:focus-visible,
 
 .code-body {
   margin: 0;
-  padding: 1rem;
+  padding: 1.5rem;
   overflow: auto;
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.8125rem;
@@ -554,35 +583,41 @@ textarea:focus-visible,
   display: flex;
   flex-direction: column;
   position: relative;
+  padding: 2rem;
+  gap: 1.5rem;
 }
 
 .popular-badge {
   width: fit-content;
-  padding: 0.2rem 0.6rem;
-  border-radius: 0.3rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
   background: color-mix(in oklab, var(--accent), transparent 80%);
   color: var(--accent);
   font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.09375rem;
+  margin-bottom: 0;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .pricing-card h3 {
   margin: 0;
   font-size: 1.25rem;
+  line-height: 1.2;
 }
 
 .price-row {
   display: flex;
   align-items: baseline;
   gap: 0.25rem;
-  margin: 0.5rem 0 0.25rem;
+  margin: 0;
 }
 
 .price {
   font-size: 2.5rem;
   font-weight: 700;
+  line-height: 1;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .price-period {
@@ -603,12 +638,12 @@ textarea:focus-visible,
 }
 
 .pricing-card ul {
-  margin: 0 0 1.5rem;
+  margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex: 1;
 }
 
@@ -629,8 +664,8 @@ textarea:focus-visible,
 
 .pricing-card.featured {
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in oklab, var(--accent), transparent 40%);
+  border-width: 2px;
+  box-shadow: none;
 }
 
 .pricing-card .solid-link,
@@ -639,6 +674,9 @@ textarea:focus-visible,
   text-align: center;
   margin-top: auto;
   font-size: 0.9375rem;
+  padding: 0.875rem 0;
+  border-radius: 0.5rem;
+  line-height: 1;
 }
 
 /* ── Footer ── */
@@ -675,7 +713,7 @@ textarea:focus-visible,
 .footer-tagline {
   font-size: 0.875rem;
   line-height: 1.5;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -734,6 +772,11 @@ textarea:focus-visible,
   color: var(--text-tertiary);
   display: flex;
   align-items: center;
+}
+
+.footer-social svg {
+  width: 18px;
+  height: 18px;
 }
 
 .footer-social a:hover {
@@ -1453,6 +1496,7 @@ textarea:focus-visible,
   .step {
     flex: 1 1 calc(45% - 1rem);
     min-width: 140px;
+    width: auto;
   }
 
   .arrow {

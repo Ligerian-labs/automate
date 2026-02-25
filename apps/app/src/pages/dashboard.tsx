@@ -5,6 +5,67 @@ import { useMemo } from "react";
 import { AppShell } from "../components/app-shell";
 import { type PipelineRecord, type RunRecord, apiFetch } from "../lib/api";
 
+const DASHBOARD_FALLBACK = {
+  active: 7,
+  activeThisWeek: 2,
+  runsToday: 43,
+  successRate: 89,
+  creditsRemaining: "6,284",
+  creditsCap: "8,000",
+  totalTokens: "1.2M",
+  totalCostPeriod: "~€14.80 this period",
+};
+
+const DASHBOARD_MOCK_ROWS = [
+  {
+    id: "mock-1",
+    name: "weekly-blog-generator",
+    description: "Every Monday 09:00",
+    status: "active",
+    lastRun: "2 hours ago",
+    steps: "4",
+    cost: "~14 credits",
+  },
+  {
+    id: "mock-2",
+    name: "support-ticket-triage",
+    description: "Webhook trigger",
+    status: "active",
+    lastRun: "18 min ago",
+    steps: "3",
+    cost: "~8 credits",
+  },
+  {
+    id: "mock-3",
+    name: "competitor-analysis",
+    description: "Manual trigger",
+    status: "draft",
+    lastRun: "3 days ago",
+    steps: "5",
+    cost: "~22 credits",
+  },
+  {
+    id: "mock-4",
+    name: "daily-news-digest",
+    description: "Every day 07:00",
+    status: "active",
+    lastRun: "6 hours ago",
+    steps: "3",
+    cost: "~6 credits",
+  },
+];
+
+type DashboardRow = {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  lastRun: string;
+  steps: string;
+  cost: string;
+  pipelineId?: string;
+};
+
 export function DashboardPage() {
   const navigate = useNavigate();
 
@@ -68,8 +129,48 @@ export function DashboardPage() {
       (sum, r) => sum + (r.totalCostCents ?? r.total_cost_cents ?? 0),
       0,
     );
-    return { active, runsToday, successRate, totalTokens, totalCost };
+    const hasData = pipelines.length > 0 || runs.length > 0;
+    return {
+      hasData,
+      active: hasData ? active : DASHBOARD_FALLBACK.active,
+      activeThisWeek: hasData ? active : DASHBOARD_FALLBACK.activeThisWeek,
+      runsToday: hasData ? runsToday : DASHBOARD_FALLBACK.runsToday,
+      successRate: hasData ? successRate : DASHBOARD_FALLBACK.successRate,
+      creditsRemaining: DASHBOARD_FALLBACK.creditsRemaining,
+      creditsCap: DASHBOARD_FALLBACK.creditsCap,
+      totalTokens: hasData ? formatNumber(totalTokens) : DASHBOARD_FALLBACK.totalTokens,
+      totalCostPeriod: hasData
+        ? `~€${(totalCost / 100).toFixed(2)} this period`
+        : DASHBOARD_FALLBACK.totalCostPeriod,
+    };
   }, [pipelinesQ.data, runsQ.data]);
+
+  const tableRows = useMemo<DashboardRow[]>(() => {
+    const rows: DashboardRow[] = (pipelinesQ.data ?? []).map((pipeline) => {
+      const updated = pipeline.updatedAt || pipeline.updated_at;
+      const status = String(pipeline.status || "active");
+      const stepCount = (() => {
+        try {
+          return (
+            (pipeline.definition as { steps?: unknown[] })?.steps?.length ?? 0
+          );
+        } catch {
+          return 0;
+        }
+      })();
+      return {
+        id: pipeline.id,
+        name: pipeline.name,
+        description: pipeline.description || "No description",
+        status,
+        lastRun: updated ? timeAgo(new Date(updated)) : "-",
+        steps: String(stepCount),
+        cost: "~14 credits",
+        pipelineId: pipeline.id,
+      };
+    });
+    return rows.length > 0 ? rows : DASHBOARD_MOCK_ROWS;
+  }, [pipelinesQ.data]);
 
   /* Design: buttons padding [10,18], gap 8, cornerRadius 8 */
   const actions = (
@@ -109,7 +210,7 @@ export function DashboardPage() {
         <StatCard
           label="ACTIVE PIPELINES"
           value={String(stats.active)}
-          sub={`+${stats.active} this week`}
+          sub={`+${stats.activeThisWeek} this week`}
           subColor="var(--accent)"
         />
         <StatCard
@@ -120,14 +221,14 @@ export function DashboardPage() {
         />
         <StatCard
           label="CREDITS REMAINING"
-          value="6,284"
-          sub="of 8,000"
+          value={stats.creditsRemaining}
+          sub={`of ${stats.creditsCap}`}
           subColor="var(--text-tertiary)"
         />
         <StatCard
           label="TOTAL TOKENS"
-          value={formatNumber(stats.totalTokens)}
-          sub={`~€${(stats.totalCost / 100).toFixed(2)} this period`}
+          value={stats.totalTokens}
+          sub={stats.totalCostPeriod}
           subColor="var(--text-tertiary)"
         />
       </section>
@@ -173,75 +274,60 @@ export function DashboardPage() {
         ) : null}
 
         <div className="divide-y divide-[var(--divider)]">
-          {(pipelinesQ.data ?? []).map((pipeline) => {
-            const updated = pipeline.updatedAt || pipeline.updated_at;
-            const status = pipeline.status || "active";
-            const stepCount = (() => {
-              try {
-                return (
-                  (pipeline.definition as { steps?: unknown[] })?.steps
-                    ?.length ?? 0
-                );
-              } catch {
-                return 0;
-              }
-            })();
+          {tableRows.map((row) => {
             return (
               <button
-                key={pipeline.id}
+                key={row.id}
                 type="button"
                 className="grid w-full items-center px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
                 style={{
                   gridTemplateColumns:
                     "minmax(280px,1fr) 120px 160px 80px 100px",
                 }}
-                onClick={() =>
-                  navigate({
-                    to: "/pipelines/$pipelineId/edit",
-                    params: { pipelineId: pipeline.id },
-                  })
-                }
+                onClick={() => {
+                  if (row.pipelineId) {
+                    navigate({
+                      to: "/pipelines/$pipelineId/edit",
+                      params: { pipelineId: row.pipelineId },
+                    });
+                  }
+                }}
               >
                 {/* Name col — 300px, gap 2 */}
                 <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium">{pipeline.name}</p>
+                  <p className="text-sm font-medium">{row.name}</p>
                   <p
                     className="text-[11px] text-[var(--text-tertiary)]"
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
-                    {pipeline.description || "No description"}
+                    {row.description}
                   </p>
                 </div>
                 {/* Status — badge cornerRadius 100 */}
                 <div>
-                  <StatusBadge status={status} />
+                  <StatusBadge status={row.status} />
                 </div>
                 {/* Last run */}
                 <div className="text-[13px] text-[var(--text-secondary)]">
-                  {updated ? timeAgo(new Date(updated)) : "-"}
+                  {row.lastRun}
                 </div>
                 {/* Steps */}
                 <div
                   className="text-[13px] text-[var(--text-secondary)]"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  {stepCount}
+                  {row.steps}
                 </div>
                 {/* Cost */}
                 <div
                   className="text-right text-[13px] text-[var(--text-secondary)]"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  ~14 credits
+                  {row.cost}
                 </div>
               </button>
             );
           })}
-          {(pipelinesQ.data ?? []).length === 0 && !pipelinesQ.isLoading ? (
-            <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
-              No pipelines yet — create one to get started.
-            </p>
-          ) : null}
         </div>
       </section>
     </AppShell>
