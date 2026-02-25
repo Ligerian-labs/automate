@@ -1,13 +1,13 @@
 // @ts-nocheck
-import { describe, it, expect, mock } from "bun:test";
+import { describe, it, expect, vi } from "vitest";
 import { SignJWT } from "jose";
 
 const TEST_SECRET = "test-secret-key-that-is-long-enough-for-testing-purposes";
 const secret = new TextEncoder().encode(TEST_SECRET);
 
-const mockUser = { id: "user-123", email: "test@example.com", name: "Test", plan: "pro", creditsRemaining: 8000, createdAt: new Date(), passwordHash: "$2b$12$fake" };
-const mockPipeline = { id: "pipe-1", userId: "user-123", name: "test-pipeline", description: "test", definition: { name: "test", version: 1, steps: [{ id: "s1", name: "S1", type: "llm" }] }, tags: [], status: "active", version: 1, createdAt: new Date(), updatedAt: new Date() };
-const mockRun = { id: "run-1", pipelineId: "pipe-1", userId: "user-123", status: "completed", pipelineVersion: 1, triggerType: "manual", inputData: {}, outputData: null, totalTokens: 100, totalCostCents: 5, error: null, startedAt: new Date(), completedAt: new Date(), createdAt: new Date() };
+const mockUser = { id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4", email: "test@example.com", name: "Test", plan: "pro", creditsRemaining: 8000, createdAt: new Date(), passwordHash: "$2b$12$fake" };
+const mockPipeline = { id: "a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4", userId: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4", name: "test-pipeline", description: "test", definition: { name: "test", version: 1, steps: [{ id: "s1", name: "S1", type: "llm" }] }, tags: [], status: "active", version: 1, createdAt: new Date(), updatedAt: new Date() };
+const mockRun = { id: "b0b0b0b0-c1c1-d2d2-e3e3-f4f4f4f4f4f4", pipelineId: "a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4", userId: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4", status: "completed", pipelineVersion: 1, triggerType: "manual", inputData: {}, outputData: null, totalTokens: 100, totalCostCents: 5, error: null, startedAt: new Date(), completedAt: new Date(), createdAt: new Date() };
 
 function asList(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [value];
@@ -33,7 +33,7 @@ function chainable(resolveValue: unknown): Chainable {
 }
 
 // Mock with data
-mock.module("../db/index.js", () => ({
+vi.mock("../db/index.js", () => ({
   db: {
     select: () => chainable(mockUser),
     insert: () => chainable(mockPipeline),
@@ -42,7 +42,7 @@ mock.module("../db/index.js", () => ({
   },
 }));
 
-mock.module("../lib/env.js", () => ({
+vi.mock("../lib/env.js", () => ({
   config: {
     databaseUrl: "postgres://test:test@localhost:5432/test",
     redisUrl: "redis://localhost:6379",
@@ -56,18 +56,18 @@ mock.module("../lib/env.js", () => ({
   },
 }));
 
-mock.module("../services/queue.js", () => ({
+vi.mock("../services/queue.js", () => ({
   enqueueRun: () => Promise.resolve(),
 }));
 
-mock.module("../services/cron.js", () => ({
+vi.mock("../services/cron.js", () => ({
   getNextCronTick: () => new Date(Date.now() + 86400000),
 }));
 
 const { app } = await import("../app.js");
 
 async function authHeader(): Promise<Record<string, string>> {
-  const token = await new SignJWT({ sub: "user-123", plan: "pro" })
+  const token = await new SignJWT({ sub: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4", plan: "pro" })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("1h")
     .sign(secret);
@@ -142,19 +142,19 @@ describe("Run routes (authenticated)", () => {
 
   it("GET /api/runs with filters", async () => {
     const headers = await authHeader();
-    const res = await app.request("/api/runs?pipeline_id=pipe-1&status=completed&limit=10", { headers });
+    const res = await app.request("/api/runs?pipeline_id=a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4&status=completed&limit=10", { headers });
     expect(res.status).toBe(200);
   });
 
   it("GET /api/runs/:id returns run details", async () => {
     const headers = await authHeader();
-    const res = await app.request("/api/runs/run-1", { headers });
+    const res = await app.request("/api/runs/b0b0b0b0-c1c1-d2d2-e3e3-f4f4f4f4f4f4", { headers });
     expect(res.status).toBe(200);
   });
 
   it("POST /api/runs/:id/cancel cancels a run", async () => {
     const headers = await authHeader();
-    const res = await app.request("/api/runs/run-1/cancel", { method: "POST", headers });
+    const res = await app.request("/api/runs/b0b0b0b0-c1c1-d2d2-e3e3-f4f4f4f4f4f4/cancel", { method: "POST", headers });
     // Should return 200 or similar
     expect([200, 404]).toContain(res.status);
   });

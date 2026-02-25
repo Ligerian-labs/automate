@@ -1,9 +1,9 @@
 // @ts-nocheck
-import { describe, it, expect, mock } from "bun:test";
+import { describe, it, expect, vi } from "vitest";
 import { Hono } from "hono";
 import { SignJWT } from "jose";
 
-mock.module("../lib/env.js", () => ({
+vi.mock("../lib/env.js", () => ({
   config: {
     jwtSecret: "test-secret-key-that-is-long-enough-for-testing-purposes",
     databaseUrl: "",

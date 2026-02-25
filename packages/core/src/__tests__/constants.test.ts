@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { SUPPORTED_MODELS, MARKUP_PERCENTAGE, PLAN_LIMITS, TOKENS_PER_CREDIT } from "../constants.js";
 
 describe("SUPPORTED_MODELS", () => {
