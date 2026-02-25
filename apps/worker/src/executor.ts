@@ -1,5 +1,9 @@
-import { createKmsProvider, decryptSecret, redactSecrets } from "@stepiq/core";
-import type { PipelineDefinition } from "@stepiq/core";
+import {
+  createKmsProvider,
+  decryptSecret,
+  redactSecrets,
+  type PipelineDefinition,
+} from "./core-adapter.js";
 import { and, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import Handlebars from "handlebars";
@@ -9,7 +13,7 @@ import {
   runs,
   stepExecutions,
   userSecrets,
-} from "./db-schema.js";
+} from "./db-executor.js";
 import { callModel } from "./model-router.js";
 
 const dbUrl =
@@ -87,7 +91,7 @@ export async function executePipeline(runId: string) {
 
         if (stepType === "llm") {
           const result = await callModel({
-            model: step.model || "gpt-4o-mini",
+            model: step.model || "gpt-5.2",
             prompt,
             system: step.system_prompt
               ? interpolate(step.system_prompt, context)

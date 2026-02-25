@@ -32,6 +32,17 @@ describe("SUPPORTED_MODELS", () => {
     const ids = SUPPORTED_MODELS.map((m) => m.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("uses provider-specific model id prefixes", () => {
+    for (const model of SUPPORTED_MODELS) {
+      if (model.provider === "anthropic") {
+        expect(model.id.startsWith("claude-")).toBe(true);
+      }
+      if (model.provider === "openai") {
+        expect(model.id.startsWith("gpt-")).toBe(true);
+      }
+    }
+  });
 });
 
 describe("PLAN_LIMITS", () => {
