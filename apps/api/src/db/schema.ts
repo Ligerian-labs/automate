@@ -40,8 +40,10 @@ export const userSecrets = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
     name: text("name").notNull(),
-    encryptedValue: text("encrypted_value").notNull(), // AES-256-GCM encrypted
+    encryptedValue: text("encrypted_value").notNull(), // base64-encoded AES-256-GCM ciphertext (see ENCRYPTION.md §4.1)
+    keyVersion: integer("key_version").default(1).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [uniqueIndex("user_secrets_user_name").on(table.userId, table.name)]
 );

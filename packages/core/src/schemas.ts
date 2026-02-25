@@ -112,6 +112,27 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+// ── Secret Vault Schemas ──
+
+export const createSecretSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "Secret name must be alphanumeric with underscores"),
+  value: z.string().min(1).max(10_000),
+});
+
+export const updateSecretSchema = z.object({
+  value: z.string().min(1).max(10_000),
+});
+
+export const secretNameParam = z
+  .string()
+  .min(1)
+  .max(100)
+  .regex(/^[A-Za-z_][A-Za-z0-9_]*$/);
+
 // ── Query / Param Validation ──
 
 export const uuidParam = z.string().uuid("Invalid ID format");

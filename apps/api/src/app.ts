@@ -9,6 +9,7 @@ import { scheduleRoutes } from "./routes/schedules.js";
 import { modelRoutes } from "./routes/models.js";
 import { userRoutes } from "./routes/user.js";
 import { webhookRoutes } from "./routes/webhooks.js";
+import { secretRoutes } from "./routes/secrets.js";
 import type { Env } from "./lib/env.js";
 
 export const app = new Hono<{ Variables: Env }>();
@@ -37,6 +38,7 @@ app.route("/api/schedules", scheduleRoutes);
 app.route("/api/models", modelRoutes);
 app.route("/api/user", userRoutes);
 app.route("/api/webhooks", webhookRoutes);
+app.route("/api/user/secrets", secretRoutes);
 
 // 404
 app.notFound((c) => c.json({ error: "Not found" }, 404));

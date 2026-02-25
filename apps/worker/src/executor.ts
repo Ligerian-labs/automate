@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import Handlebars from "handlebars";
-import { runs, stepExecutions, pipelineVersions } from "./db-schema.js";
+import { runs, stepExecutions, pipelineVersions, userSecrets } from "./db-schema.js";
 import { callModel } from "./model-router.js";
+import { decryptSecret, redactSecrets, createKmsProvider } from "@stepiq/core";
 import type { PipelineDefinition } from "@stepiq/core";
 
 const dbUrl = process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
@@ -33,9 +34,13 @@ export async function executePipeline(runId: string) {
   // Mark as running
   await db.update(runs).set({ status: "running", startedAt: new Date() }).where(eq(runs.id, runId));
 
+  // Resolve user secrets for {{env.xxx}} interpolation
+  const envSecrets = await resolveUserSecrets(run.userId, definition, db);
+
   const context: Record<string, unknown> = {
     input: run.inputData,
     vars: definition.variables || {},
+    env: envSecrets.values,
     steps: {} as Record<string, { output: unknown }>,
   };
 
@@ -111,12 +116,12 @@ export async function executePipeline(runId: string) {
         totalTokens += inputTokens + outputTokens;
         totalCostCents += costCents;
 
-        // Update step execution
+        // Update step execution (redact secrets from stored prompt)
         await db
           .update(stepExecutions)
           .set({
             status: "completed",
-            promptSent: prompt,
+            promptSent: redactSecrets(prompt, envSecrets.plainValues),
             rawOutput,
             parsedOutput,
             inputTokens,
@@ -129,7 +134,8 @@ export async function executePipeline(runId: string) {
 
         // TODO: Handle on_condition branching
       } catch (stepErr) {
-        const error = stepErr instanceof Error ? stepErr.message : String(stepErr);
+        const rawError = stepErr instanceof Error ? stepErr.message : String(stepErr);
+        const error = redactSecrets(rawError, envSecrets.plainValues);
 
         await db
           .update(stepExecutions)
@@ -159,7 +165,8 @@ export async function executePipeline(runId: string) {
     // TODO: Deliver output (webhook, email, etc.)
     // TODO: Deduct credits from user
   } catch (err) {
-    const error = err instanceof Error ? err.message : String(err);
+    const rawError = err instanceof Error ? err.message : String(err);
+    const error = redactSecrets(rawError, envSecrets.plainValues);
     await db
       .update(runs)
       .set({ status: "failed", error, completedAt: new Date(), totalTokens, totalCostCents })
@@ -170,4 +177,53 @@ export async function executePipeline(runId: string) {
 function interpolate(template: string, context: Record<string, unknown>): string {
   const compiled = Handlebars.compile(template, { noEscape: true });
   return compiled(context);
+}
+
+/**
+ * Resolve user secrets referenced via {{env.xxx}} in prompts.
+ * Decryption ONLY happens in the worker per ENCRYPTION.md §8.
+ */
+async function resolveUserSecrets(
+  userId: string,
+  definition: PipelineDefinition,
+  database: typeof db,
+): Promise<{ values: Record<string, string>; plainValues: string[] }> {
+  // Find all {{env.xxx}} references across all step prompts
+  const allText = definition.steps
+    .map((s) => `${s.prompt || ""} ${s.system_prompt || ""}`)
+    .join(" ");
+  const refs = allText.match(/\{\{env\.(\w+)\}\}/g);
+  if (!refs) return { values: {}, plainValues: [] };
+
+  const names = [...new Set(refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean))] as string[];
+  if (names.length === 0) return { values: {}, plainValues: [] };
+
+  // Fetch encrypted secrets from DB
+  const secrets = await database
+    .select({ name: userSecrets.name, encryptedValue: userSecrets.encryptedValue })
+    .from(userSecrets)
+    .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
+
+  if (secrets.length === 0) return { values: {}, plainValues: [] };
+
+  // Decrypt — lazily init KMS
+  let masterKey: Buffer;
+  try {
+    masterKey = await createKmsProvider().getMasterKey();
+  } catch {
+    console.error("⚠️ KMS not configured — cannot decrypt secrets");
+    return { values: {}, plainValues: [] };
+  }
+
+  const values: Record<string, string> = {};
+  const plainValues: string[] = [];
+
+  for (const secret of secrets) {
+    const blob = Buffer.from(secret.encryptedValue, "base64");
+    const plaintext = await decryptSecret(userId, blob, masterKey);
+    values[secret.name] = plaintext;
+    plainValues.push(plaintext);
+  }
+
+  return { values, plainValues };
 }

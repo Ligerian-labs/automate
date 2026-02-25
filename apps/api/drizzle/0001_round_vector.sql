@@ -1,0 +1,2 @@
+ALTER TABLE "user_secrets" ADD COLUMN "key_version" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
+ALTER TABLE "user_secrets" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;
