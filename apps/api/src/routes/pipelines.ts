@@ -8,6 +8,7 @@ import {
   createScheduleSchema,
   runPipelineSchema,
   updatePipelineSchema,
+  uuidParam,
 } from "@stepiq/core";
 import { getNextCronTick } from "../services/cron.js";
 import { enqueueRun } from "../services/queue.js";
@@ -68,7 +69,10 @@ pipelineRoutes.get("/:id", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const id = c.req.param("id");
+  const _idRaw = c.req.param("id");
+  const _idParsed = uuidParam.safeParse(_idRaw);
+  if (!_idParsed.success) return c.json({ error: "Invalid ID format" }, 400);
+  const id = _idParsed.data;
 
   const [pipeline] = await db
     .select()
@@ -85,7 +89,10 @@ pipelineRoutes.put("/:id", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const id = c.req.param("id");
+  const _idRaw = c.req.param("id");
+  const _idParsed = uuidParam.safeParse(_idRaw);
+  if (!_idParsed.success) return c.json({ error: "Invalid ID format" }, 400);
+  const id = _idParsed.data;
   const body = await c.req.json();
   const parsed = updatePipelineSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
@@ -128,7 +135,10 @@ pipelineRoutes.delete("/:id", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const id = c.req.param("id");
+  const _idRaw = c.req.param("id");
+  const _idParsed = uuidParam.safeParse(_idRaw);
+  if (!_idParsed.success) return c.json({ error: "Invalid ID format" }, 400);
+  const id = _idParsed.data;
 
   const [result] = await db
     .update(pipelines)
@@ -145,7 +155,10 @@ pipelineRoutes.post("/:id/run", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const pipelineId = c.req.param("id");
+  const _pidRaw = c.req.param("id");
+  const _pidParsed = uuidParam.safeParse(_pidRaw);
+  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = _pidParsed.data;
   const body = await c.req.json().catch(() => ({}));
   const parsed = runPipelineSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
@@ -179,7 +192,10 @@ pipelineRoutes.get("/:id/schedules", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const pipelineId = c.req.param("id");
+  const _pidRaw = c.req.param("id");
+  const _pidParsed = uuidParam.safeParse(_pidRaw);
+  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = _pidParsed.data;
   const [pipeline] = await db
     .select({ id: pipelines.id })
     .from(pipelines)
@@ -201,7 +217,10 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const pipelineId = c.req.param("id");
+  const _pidRaw = c.req.param("id");
+  const _pidParsed = uuidParam.safeParse(_pidRaw);
+  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = _pidParsed.data;
   const body = await c.req.json();
   const parsed = createScheduleSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);

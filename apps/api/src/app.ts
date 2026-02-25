@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { bodyLimit } from "hono/body-limit";
 import { authRoutes } from "./routes/auth.js";
 import { pipelineRoutes } from "./routes/pipelines.js";
 import { runRoutes } from "./routes/runs.js";
@@ -21,6 +22,9 @@ app.use(
     credentials: true,
   })
 );
+
+// Body size limit (256KB max)
+app.use("*", bodyLimit({ maxSize: 256 * 1024, onError: (c) => c.json({ error: "Request body too large (max 256KB)" }, 413) }));
 
 // Health check
 app.get("/health", (c) => c.json({ status: "ok", version: "0.0.1" }));

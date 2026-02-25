@@ -3,7 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { schedules, pipelines } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
-import { createScheduleSchema } from "@stepiq/core";
+import { createScheduleSchema, uuidParam } from "@stepiq/core";
 import { getNextCronTick } from "../services/cron.js";
 import type { Env } from "../lib/env.js";
 
@@ -16,7 +16,10 @@ scheduleRoutes.get("/pipelines/:id/schedules", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const pipelineId = c.req.param("id");
+  const _pidRaw = c.req.param("id");
+  const _pidParsed = uuidParam.safeParse(_pidRaw);
+  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = _pidParsed.data;
   const [pipeline] = await db
     .select({ id: pipelines.id })
     .from(pipelines)
@@ -37,7 +40,10 @@ scheduleRoutes.post("/pipelines/:id/schedules", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const pipelineId = c.req.param("id");
+  const _pidRaw = c.req.param("id");
+  const _pidParsed = uuidParam.safeParse(_pidRaw);
+  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = _pidParsed.data;
   const body = await c.req.json();
   const parsed = createScheduleSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
@@ -79,7 +85,10 @@ scheduleRoutes.post("/:id/enable", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const id = c.req.param("id");
+  const _idRaw = c.req.param("id");
+  const _idParsed = uuidParam.safeParse(_idRaw);
+  if (!_idParsed.success) return c.json({ error: "Invalid ID format" }, 400);
+  const id = _idParsed.data;
   const [ownedSchedule] = await db
     .select({ id: schedules.id })
     .from(schedules)
@@ -102,7 +111,10 @@ scheduleRoutes.post("/:id/disable", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const id = c.req.param("id");
+  const _idRaw = c.req.param("id");
+  const _idParsed = uuidParam.safeParse(_idRaw);
+  if (!_idParsed.success) return c.json({ error: "Invalid ID format" }, 400);
+  const id = _idParsed.data;
   const [ownedSchedule] = await db
     .select({ id: schedules.id })
     .from(schedules)
@@ -126,7 +138,10 @@ scheduleRoutes.delete("/:id", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const id = c.req.param("id");
+  const _idRaw = c.req.param("id");
+  const _idParsed = uuidParam.safeParse(_idRaw);
+  if (!_idParsed.success) return c.json({ error: "Invalid ID format" }, 400);
+  const id = _idParsed.data;
   const [ownedSchedule] = await db
     .select({ id: schedules.id })
     .from(schedules)

@@ -111,3 +111,24 @@ export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+
+// ── Query / Param Validation ──
+
+export const uuidParam = z.string().uuid("Invalid ID format");
+
+export const listRunsQuery = z.object({
+  pipeline_id: z.string().uuid().optional(),
+  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+export const listPipelinesQuery = z.object({
+  status: z.enum(["active", "archived", "draft"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+// ── Webhook Trigger Schema ──
+
+export const webhookTriggerSchema = z.object({
+  input_data: z.record(z.unknown()).optional(),
+}).passthrough();
