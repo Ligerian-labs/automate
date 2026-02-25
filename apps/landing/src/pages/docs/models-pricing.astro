@@ -3,10 +3,10 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
 ---
 
 <DocsLayout title="Models & Pricing" breadcrumb={[{ label: "Docs", href: "/docs" }, { label: "Models & Pricing" }]}>
-  <h1>Models & Pricing</h1>
+  <h1 id="overview">Models & Pricing</h1>
   <p>stepIQ is model-agnostic. Each pipeline step can use a different model. We route requests to the provider and handle authentication, retries, and billing.</p>
 
-  <h2>Available models</h2>
+  <h2 id="available-models">Available models</h2>
 
   <div class="docs-card-grid">
     <div class="model-card">
@@ -35,7 +35,7 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
     </div>
   </div>
 
-  <h2>Credit system</h2>
+  <h2 id="credit-system">Credit system</h2>
   <p>Credits are the universal billing unit across all models. 1 credit ≈ 1,000 tokens (input + output combined). Actual token-to-credit conversion varies by model.</p>
 
   <table class="docs-table">
@@ -47,7 +47,7 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
     </tbody>
   </table>
 
-  <h2>Cost estimation</h2>
+  <h2 id="cost-estimation">Cost estimation</h2>
   <p>Before running a pipeline, stepIQ shows an estimated cost breakdown per step. Here's an example:</p>
 
   <div class="code-card">

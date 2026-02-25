@@ -19,7 +19,7 @@ const codeExample = `<span class="hl-key">name:</span> "summarize-article"
 ---
 
 <DocsLayout title="Getting Started" breadcrumb={[{ label: "Docs", href: "/docs" }, { label: "Getting Started" }]}>
-  <h1>Getting Started</h1>
+  <h1 id="overview">Getting Started</h1>
   <p>Create your first AI pipeline in under 5 minutes. This guide walks you through account setup, writing your first pipeline definition, running it, and viewing results.</p>
 
   <h2 id="prerequisites">Prerequisites</h2>
@@ -27,13 +27,13 @@ const codeExample = `<span class="hl-key">name:</span> "summarize-article"
   <ul>
     <li>A stepIQ account (free tier works)</li>
     <li>Basic understanding of YAML or JSON syntax</li>
-    <li>An idea for an AI workflow (or just use our example!)</li>
+    <li>An idea for an AI workflow (or just use our example)</li>
   </ul>
 
-  <h2 id="first-pipeline">Step 1 — Create an account</h2>
-  <p>Sign up at <a href="https://app.stepiq.sh">app.stepiq.sh</a> with your email address. You'll get 100 free credits to start — enough to run several pipeline tests and get a feel for the platform.</p>
+  <h2 id="create-account">Step 1 - Create an account</h2>
+  <p>Sign up at <a href="https://app.stepiq.sh">app.stepiq.sh</a> with your email address. You'll get 100 free credits to start - enough to run several pipeline tests and get a feel for the platform.</p>
 
-  <h2>Step 2 — Write your first pipeline</h2>
+  <h2 id="first-pipeline">Step 2 - Write your first pipeline</h2>
   <p>Create a new pipeline from the dashboard, or write a YAML definition. Here's a minimal example:</p>
 
   <div class="code-card">
@@ -44,10 +44,10 @@ const codeExample = `<span class="hl-key">name:</span> "summarize-article"
     <pre class="code-body"><code set:html={codeExample} /></pre>
   </div>
 
-  <h2 id="run">Step 3 — Run the pipeline</h2>
+  <h2 id="run">Step 3 - Run the pipeline</h2>
   <p>Click "Run" from the dashboard or trigger via API. Provide the required inputs and watch the execution in real-time with SSE streaming.</p>
 
-  <h3>Trigger methods</h3>
+  <h3 id="scheduling">Trigger methods</h3>
   <table class="docs-table">
     <thead><tr><th>Method</th><th>How</th></tr></thead>
     <tbody>
@@ -58,7 +58,7 @@ const codeExample = `<span class="hl-key">name:</span> "summarize-article"
     </tbody>
   </table>
 
-  <h2 id="results">Step 4 — View results</h2>
+  <h2 id="results">Step 4 - View results</h2>
   <p>Each run shows a detailed step-by-step execution log. For every step you can see:</p>
   <ul>
     <li>The interpolated prompt sent to each model</li>
@@ -67,7 +67,7 @@ const codeExample = `<span class="hl-key">name:</span> "summarize-article"
     <li>Duration, retry count, and status per step</li>
   </ul>
 
-  <h2>Next steps</h2>
+  <h2 id="next-steps">Next steps</h2>
   <div class="docs-card-grid">
     <a href="/docs/pipeline-format" class="docs-card">
       <h3>Pipeline Format</h3>

@@ -3,10 +3,10 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
 ---
 
 <DocsLayout title="Architecture" breadcrumb={[{ label: "Docs", href: "/docs" }, { label: "Architecture" }]}>
-  <h1>Architecture</h1>
+  <h1 id="overview">Architecture</h1>
   <p>stepIQ runs on a horizontally scalable architecture with stateless workers, Redis-backed queues, and PostgreSQL for persistent state.</p>
 
-  <h2>System components</h2>
+  <h2 id="system-components">System components</h2>
   <p>The platform consists of five main layers that work together to execute pipelines.</p>
 
   <div class="docs-card-grid">
@@ -37,7 +37,7 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
     </div>
   </div>
 
-  <h2>Worker flow</h2>
+  <h2 id="worker-flow">Worker flow</h2>
   <p>When a pipeline run is triggered, this is the step-by-step execution flow inside a worker:</p>
 
   <div class="flow-step"><span class="flow-num">1</span><span class="flow-text">Job picked up from Redis queue</span></div>
@@ -47,7 +47,7 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
   <div class="flow-step"><span class="flow-num">5</span><span class="flow-text">Deliver output (webhook, email, API response)</span></div>
   <div class="flow-step"><span class="flow-num">6</span><span class="flow-text">Update run record, deduct user credits</span></div>
 
-  <h2>Technology choices</h2>
+  <h2 id="technology-choices">Technology choices</h2>
   <p>Each layer of the stack was chosen for reliability, developer experience, and horizontal scalability.</p>
 
   <table class="docs-table">

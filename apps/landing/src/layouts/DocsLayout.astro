@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { DOCS_PAGES, getDocsPageByRoute } from "../lib/docs/content.js";
 
 interface Props {
   title: string;
@@ -8,30 +9,16 @@ interface Props {
 
 const { title, breadcrumb = [] } = Astro.props;
 
-const sidebarSections = [
-  {
-    label: "GETTING STARTED",
-    items: [
-      { title: "Introduction", href: "/docs/getting-started" },
-      { title: "Prerequisites", href: "/docs/getting-started#prerequisites" },
-      {
-        title: "Your first pipeline",
-        href: "/docs/getting-started#first-pipeline",
-      },
-      { title: "Run the pipeline", href: "/docs/getting-started#run" },
-      { title: "View results", href: "/docs/getting-started#results" },
-    ],
-  },
-  {
-    label: "REFERENCE",
-    items: [
-      { title: "Pipeline Format", href: "/docs/pipeline-format" },
-      { title: "API Reference", href: "/docs/api-reference" },
-      { title: "Models & Pricing", href: "/docs/models-pricing" },
-      { title: "Architecture", href: "/docs/architecture" },
-    ],
-  },
-];
+const currentPath = Astro.url.pathname;
+const currentPage = getDocsPageByRoute(currentPath);
+const referencePages = DOCS_PAGES;
+const sectionLinks: { label: string; href: string; active: boolean }[] = currentPage
+  ? currentPage.sections.map((section, index) => ({
+      label: section.label,
+      href: `${currentPage.route}#${section.id}`,
+      active: index === 0,
+    }))
+  : [];
 ---
 
 <!doctype html>
@@ -44,16 +31,17 @@ const sidebarSections = [
   </head>
   <body>
     <div class="landing">
-      <!-- Header -->
-      <header class="header">
+      <a class="skip-link" href="#docs-main">Skip to main content</a>
+
+      <header class="header" aria-label="Primary">
         <a href="/" class="brand">
           <span class="logo-icon">⚡</span>
           stepIQ
         </a>
-        <nav class="nav-links">
+        <nav class="nav-links" aria-label="Main">
           <a href="/#features">Features</a>
           <a href="/#pricing">Pricing</a>
-          <a href="/docs">Docs</a>
+          <a href="/docs" aria-current={currentPath.startsWith("/docs") ? "page" : undefined}>Docs</a>
         </nav>
         <div class="actions">
           <a href="https://app.stepiq.sh" class="ghost-link">Log in</a>
@@ -62,37 +50,47 @@ const sidebarSections = [
       </header>
 
       <div class="docs-layout">
-        <!-- Sidebar -->
-        <aside class="docs-sidebar">
-          {sidebarSections.map((sec) => (
+        <aside class="docs-sidebar" aria-label="Documentation sidebar">
+          {currentPage && (
             <div class="docs-sidebar-section">
-              <p class="docs-sidebar-label">{sec.label}</p>
-              <nav class="docs-sidebar-nav">
-                {sec.items.map((item) => (
+              <p class="docs-sidebar-label">{currentPage.sidebarLabel}</p>
+              <nav class="docs-sidebar-nav" aria-label={`${currentPage.title} sections`}>
+                {sectionLinks.map((item) => (
                   <a
                     href={item.href}
-                    class:list={["docs-sidebar-link", { active: item.href === Astro.url.pathname }]}
+                    class:list={["docs-sidebar-link", { active: item.active }]}
+                    aria-current={item.active ? "location" : undefined}
                   >
-                    {item.title}
+                    {item.label}
                   </a>
                 ))}
               </nav>
             </div>
-          ))}
+          )}
+
+          <div class="docs-sidebar-section">
+            <p class="docs-sidebar-label">REFERENCE</p>
+            <nav class="docs-sidebar-nav" aria-label="Documentation pages">
+              {referencePages.map((page) => (
+                <a
+                  href={page.route}
+                  class:list={["docs-sidebar-link", { active: page.route === currentPath }]}
+                  aria-current={page.route === currentPath ? "page" : undefined}
+                >
+                  {page.title}
+                </a>
+              ))}
+            </nav>
+          </div>
         </aside>
 
-        <!-- Content -->
-        <main class="docs-content">
+        <main id="docs-main" class="docs-content" tabindex="-1">
           {breadcrumb.length > 0 && (
-            <nav class="docs-breadcrumb">
+            <nav class="docs-breadcrumb" aria-label="Breadcrumb">
               {breadcrumb.map((item, i) => (
                 <>
-                  {i > 0 && <span class="docs-bc-sep">/</span>}
-                  {item.href ? (
-                    <a href={item.href}>{item.label}</a>
-                  ) : (
-                    <span>{item.label}</span>
-                  )}
+                  {i > 0 && <span class="docs-bc-sep" aria-hidden="true">/</span>}
+                  {item.href ? <a href={item.href}>{item.label}</a> : <span aria-current="page">{item.label}</span>}
                 </>
               ))}
             </nav>
@@ -101,7 +99,6 @@ const sidebarSections = [
         </main>
       </div>
 
-      <!-- Footer -->
       <footer class="footer">
         <div class="footer-top">
           <div class="footer-brand">
@@ -109,7 +106,7 @@ const sidebarSections = [
               <span class="logo-icon" style="width:1.75rem;height:1.75rem;font-size:0.7rem;">⚡</span>
               <span class="brand-name">stepIQ</span>
             </div>
-            <p class="footer-tagline">Zapier for AI — AI-native, server-side, and model-agnostic.</p>
+            <p class="footer-tagline">Zapier for AI - AI-native, server-side, and model-agnostic.</p>
           </div>
           <div class="footer-links">
             <div class="footer-col">

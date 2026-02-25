@@ -30,6 +30,45 @@ a {
   text-decoration: none;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -999px;
+  z-index: 100;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+}
+
+.skip-link:focus-visible {
+  top: 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  white-space: nowrap;
+}
+
 .landing {
   max-width: 1440px;
   margin: 0 auto;
@@ -487,7 +526,7 @@ a {
 }
 
 .code-filename {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -768,6 +807,97 @@ a {
   font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* ── Docs Search ── */
+.docs-search {
+  width: min(560px, 100%);
+}
+
+.docs-search-shell {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--divider);
+  border-radius: 0.625rem;
+  padding: 0.75rem 1rem;
+}
+
+.docs-search-icon {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.docs-search-input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  min-width: 0;
+}
+
+.docs-search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.docs-search-input:focus {
+  outline: none;
+}
+
+.docs-search-shortcut {
+  border: 1px solid var(--divider);
+  background: var(--bg-inset);
+  border-radius: 0.375rem;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  padding: 0.25rem 0.5rem;
+}
+
+.docs-search-help {
+  margin: 0.5rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.docs-search-results {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.docs-search-item {
+  border: 1px solid var(--divider);
+  border-radius: 0.5rem;
+  background: var(--bg-surface);
+}
+
+.docs-search-item.active {
+  border-color: var(--accent);
+}
+
+.docs-search-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0.875rem;
+}
+
+.docs-search-link strong {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.docs-search-link span {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
 /* ── Docs Layout ── */
 .docs-layout {
   display: grid;
@@ -795,7 +925,7 @@ a {
 
 .docs-sidebar-label {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -839,17 +969,17 @@ a {
   gap: 0.5rem;
   margin-bottom: 2rem;
   font-size: 0.8125rem;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .docs-breadcrumb a {
-  color: var(--text-tertiary);
-}
-.docs-breadcrumb a:hover {
   color: var(--text-secondary);
 }
+.docs-breadcrumb a:hover {
+  color: var(--text-primary);
+}
 .docs-bc-sep {
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .docs-content h1 {
@@ -929,7 +1059,7 @@ a {
   text-align: left;
   padding: 0.6rem 0.75rem;
   background: var(--bg-inset);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -971,7 +1101,7 @@ a {
 .docs-card p {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 .docs-card-link {
   color: var(--accent);
@@ -1017,7 +1147,7 @@ a {
   color: var(--text-primary);
 }
 .endpoint-desc {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
 }
 
@@ -1037,7 +1167,7 @@ a {
   color: var(--accent);
 }
 .model-pricing {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
   font-family: "JetBrains Mono", ui-monospace, monospace;
 }
