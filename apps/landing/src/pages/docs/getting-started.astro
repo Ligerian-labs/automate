@@ -1,5 +1,21 @@
 ---
 import DocsLayout from "../../layouts/DocsLayout.astro";
+
+const codeExample = `<span class="hl-key">name:</span> "summarize-article"
+<span class="hl-key">version:</span> 1
+
+<span class="hl-key">input:</span>
+  <span class="hl-key">schema:</span>
+    article_url:
+      type: string
+
+<span class="hl-key">steps:</span>
+  - id: summarize
+    model: claude-sonnet-4
+    prompt: |
+      Summarize this article in 3 bullets:
+      {{input.article_url}}
+    output_format: markdown`;
 ---
 
 <DocsLayout title="Getting Started" breadcrumb={[{ label: "Docs", href: "/docs" }, { label: "Getting Started" }]}>
@@ -25,21 +41,7 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
       <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
       <span class="code-filename">my-first-pipeline.yaml</span>
     </div>
-    <pre class="code-body"><code><span class="hl-key">name:</span> "summarize-article"
-<span class="hl-key">version:</span> 1
-
-<span class="hl-key">input:</span>
-  <span class="hl-key">schema:</span>
-    article_url:
-      type: string
-
-<span class="hl-key">steps:</span>
-  - id: summarize
-    model: claude-sonnet-4
-    prompt: |
-      Summarize this article in 3 bullets:
-      {<!-- -->{input.article_url}}
-    output_format: markdown</code></pre>
+    <pre class="code-body"><code set:html={codeExample} /></pre>
   </div>
 
   <h2 id="run">Step 3 — Run the pipeline</h2>
