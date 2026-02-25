@@ -740,6 +740,13 @@ textarea:focus-visible,
   font-size: 0.8125rem;
 }
 
+.footer-col span[aria-disabled="true"] {
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  opacity: 0.75;
+  cursor: default;
+}
+
 .footer-col a:hover {
   color: var(--text-secondary);
 }
@@ -900,9 +907,7 @@ textarea:focus-visible,
 }
 
 .docs-search-help {
-  margin: 0.5rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
+  display: none;
 }
 
 .docs-search-results {
@@ -944,13 +949,14 @@ textarea:focus-visible,
 /* ── Docs Layout ── */
 .docs-layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 280px 1fr;
   min-height: calc(100vh - 4rem);
 }
 
 .docs-sidebar {
+  background: var(--bg-inset);
   border-right: 1px solid var(--divider);
-  padding: 2rem 1.25rem;
+  padding: 2rem 1.5rem;
   position: sticky;
   top: 4rem;
   height: calc(100vh - 4rem);
@@ -968,11 +974,15 @@ textarea:focus-visible,
 
 .docs-sidebar-label {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 1.5px;
   font-family: "JetBrains Mono", ui-monospace, monospace;
+  text-transform: uppercase;
+}
+.docs-sidebar-label-active {
+  color: var(--accent);
 }
 
 .docs-sidebar-nav {
@@ -983,9 +993,9 @@ textarea:focus-visible,
 
 .docs-sidebar-link {
   display: block;
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   transition: background 0.15s, color 0.15s;
 }
@@ -996,14 +1006,14 @@ textarea:focus-visible,
 }
 
 .docs-sidebar-link.active {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  font-weight: 500;
+  background: #22d3ee15;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .docs-content {
-  padding: 2.5rem 3rem 4rem;
-  max-width: 52rem;
+  padding: 3rem 4rem 4rem;
+  max-width: 980px;
 }
 
 .docs-breadcrumb {
@@ -1026,7 +1036,7 @@ textarea:focus-visible,
 }
 
 .docs-content h1 {
-  font-size: 2rem;
+  font-size: 2.25rem;
   margin: 0 0 0.75rem;
 }
 .docs-content h2 {
@@ -1038,6 +1048,15 @@ textarea:focus-visible,
 .docs-content h3 {
   font-size: 1.125rem;
   margin: 1.5rem 0 0.5rem;
+}
+.docs-step-kicker {
+  margin: 2.5rem 0 0.35rem;
+  color: var(--accent);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .docs-content p {
   color: var(--text-secondary);
@@ -1121,35 +1140,69 @@ textarea:focus-visible,
 .docs-card-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 1.5rem;
   margin: 1.5rem 0;
+}
+.docs-card-grid.docs-card-grid-hub {
+  grid-template-columns: repeat(3, 1fr);
 }
 .docs-card {
   background: var(--bg-surface);
   border: 1px solid var(--divider);
   border-radius: 0.75rem;
-  padding: 1.5rem;
+  padding: 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
   transition: border-color 0.15s;
 }
 .docs-card:hover {
   border-color: var(--accent);
 }
+.docs-card-icon {
+  color: var(--accent);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
 .docs-card h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 .docs-card p {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
   color: var(--text-secondary);
 }
 .docs-card-link {
   color: var(--accent);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.docs-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.docs-quick-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-surface);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.docs-quick-link span[aria-hidden="true"] {
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
 }
 
 .docs-badge {
@@ -1181,8 +1234,11 @@ textarea:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--divider);
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.5rem;
+  background: var(--bg-surface);
+  margin-bottom: 0.5rem;
 }
 .endpoint-path {
   font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -1248,8 +1304,15 @@ textarea:focus-visible,
   }
   .docs-content {
     padding: 2rem 1.5rem;
+    max-width: 100%;
   }
   .docs-card-grid {
+    grid-template-columns: 1fr;
+  }
+  .docs-card-grid.docs-card-grid-hub {
+    grid-template-columns: 1fr;
+  }
+  .docs-quick-grid {
     grid-template-columns: 1fr;
   }
 }
