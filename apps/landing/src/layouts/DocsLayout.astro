@@ -3,11 +3,10 @@ import "../styles/global.css";
 
 interface Props {
   title: string;
-  section?: string;
   breadcrumb?: { label: string; href?: string }[];
 }
 
-const { title, section, breadcrumb = [] } = Astro.props;
+const { title, breadcrumb = [] } = Astro.props;
 
 const sidebarSections = [
   {
