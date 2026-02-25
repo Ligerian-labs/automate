@@ -1,17 +1,17 @@
+import {
+  createKmsProvider,
+  createSecretSchema,
+  encryptSecret,
+  secretNameParam,
+  updateSecretSchema,
+  uuidParam,
+} from "@stepiq/core";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { userSecrets } from "../db/schema.js";
-import { requireAuth } from "../middleware/auth.js";
-import {
-  createSecretSchema,
-  updateSecretSchema,
-  secretNameParam,
-  uuidParam,
-  encryptSecret,
-  createKmsProvider,
-} from "@stepiq/core";
 import type { Env } from "../lib/env.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const secretRoutes = new Hono<{ Variables: Env }>();
 
@@ -62,7 +62,10 @@ secretRoutes.post("/", async (c) => {
     .where(and(eq(userSecrets.userId, userId), eq(userSecrets.name, name)))
     .limit(1);
   if (existing)
-    return c.json({ error: `Secret "${name}" already exists. Use PUT to update.` }, 409);
+    return c.json(
+      { error: `Secret "${name}" already exists. Use PUT to update.` },
+      409,
+    );
 
   // Encrypt — API server can encrypt, never decrypt
   const masterKey = await getKms().getMasterKey();
@@ -87,15 +90,18 @@ secretRoutes.put("/:name", async (c) => {
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
   const nameParsed = secretNameParam.safeParse(c.req.param("name"));
-  if (!nameParsed.success)
-    return c.json({ error: "Invalid secret name" }, 400);
+  if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
 
   const body = await c.req.json();
   const parsed = updateSecretSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
 
   const masterKey = await getKms().getMasterKey();
-  const encryptedBlob = await encryptSecret(userId, parsed.data.value, masterKey);
+  const encryptedBlob = await encryptSecret(
+    userId,
+    parsed.data.value,
+    masterKey,
+  );
   const encryptedValue = encryptedBlob.toString("base64");
 
   const [updated] = await db
@@ -123,8 +129,7 @@ secretRoutes.delete("/:name", async (c) => {
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
   const nameParsed = secretNameParam.safeParse(c.req.param("name"));
-  if (!nameParsed.success)
-    return c.json({ error: "Invalid secret name" }, 400);
+  if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
 
   const [deleted] = await db
     .delete(userSecrets)

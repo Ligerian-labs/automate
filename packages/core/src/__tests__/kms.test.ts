@@ -1,12 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach, mock } from "bun:test";
-import { EnvKmsProvider, VaultKmsProvider, createKmsProvider, KEY_LENGTH } from "../index.js";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { randomBytes } from "node:crypto";
+import {
+  EnvKmsProvider,
+  KEY_LENGTH,
+  VaultKmsProvider,
+  createKmsProvider,
+} from "../index.js";
 
 describe("EnvKmsProvider", () => {
   const validHex = randomBytes(KEY_LENGTH).toString("hex");
 
   beforeEach(() => {
-    delete process.env.STEPIQ_MASTER_KEY;
+    process.env.STEPIQ_MASTER_KEY = undefined;
   });
 
   it("reads master key from env var", async () => {
@@ -19,7 +24,9 @@ describe("EnvKmsProvider", () => {
   });
 
   it("throws if env var is missing", () => {
-    expect(() => new EnvKmsProvider()).toThrow("STEPIQ_MASTER_KEY env var is required");
+    expect(() => new EnvKmsProvider()).toThrow(
+      "STEPIQ_MASTER_KEY env var is required",
+    );
   });
 
   it("throws if key is wrong length", () => {
@@ -32,14 +39,15 @@ describe("EnvKmsProvider", () => {
     const provider = new EnvKmsProvider("MY_CUSTOM_KEY");
     const key = await provider.getMasterKey();
     expect(key.length).toBe(KEY_LENGTH);
-    delete process.env.MY_CUSTOM_KEY;
+    process.env.MY_CUSTOM_KEY = undefined;
   });
 });
 
 describe("VaultKmsProvider", () => {
   it("throws if VAULT_TOKEN is missing", () => {
     expect(
-      () => new VaultKmsProvider({ endpoint: "http://localhost:8200", token: "" }),
+      () =>
+        new VaultKmsProvider({ endpoint: "http://localhost:8200", token: "" }),
     ).toThrow("VAULT_TOKEN is required");
   });
 
@@ -56,8 +64,11 @@ describe("VaultKmsProvider", () => {
     const validHex = randomBytes(KEY_LENGTH).toString("hex");
     const originalFetch = globalThis.fetch;
 
-    globalThis.fetch = mock(async () =>
-      new Response(JSON.stringify({ data: { data: { key: validHex } } }), { status: 200 })
+    globalThis.fetch = mock(
+      async () =>
+        new Response(JSON.stringify({ data: { data: { key: validHex } } }), {
+          status: 200,
+        }),
     ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
@@ -80,8 +91,11 @@ describe("VaultKmsProvider", () => {
     const validHex = randomBytes(KEY_LENGTH).toString("hex");
     const originalFetch = globalThis.fetch;
 
-    const mockFetch = mock(async () =>
-      new Response(JSON.stringify({ data: { data: { key: validHex } } }), { status: 200 })
+    const mockFetch = mock(
+      async () =>
+        new Response(JSON.stringify({ data: { data: { key: validHex } } }), {
+          status: 200,
+        }),
     ) as typeof fetch;
     globalThis.fetch = mockFetch;
 
@@ -98,8 +112,8 @@ describe("VaultKmsProvider", () => {
 
   it("throws on Vault API error", async () => {
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = mock(async () =>
-      new Response("permission denied", { status: 403 })
+    globalThis.fetch = mock(
+      async () => new Response("permission denied", { status: 403 }),
     ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
@@ -113,8 +127,9 @@ describe("VaultKmsProvider", () => {
 
   it("throws if key not found in Vault response", async () => {
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = mock(async () =>
-      new Response(JSON.stringify({ data: { data: {} } }), { status: 200 })
+    globalThis.fetch = mock(
+      async () =>
+        new Response(JSON.stringify({ data: { data: {} } }), { status: 200 }),
     ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
@@ -128,8 +143,11 @@ describe("VaultKmsProvider", () => {
 
   it("throws if key from Vault is wrong length", async () => {
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = mock(async () =>
-      new Response(JSON.stringify({ data: { data: { key: "aabb" } } }), { status: 200 })
+    globalThis.fetch = mock(
+      async () =>
+        new Response(JSON.stringify({ data: { data: { key: "aabb" } } }), {
+          status: 200,
+        }),
     ) as typeof fetch;
 
     const provider = new VaultKmsProvider({
@@ -144,9 +162,9 @@ describe("VaultKmsProvider", () => {
 
 describe("createKmsProvider factory", () => {
   afterEach(() => {
-    delete process.env.VAULT_ADDR;
-    delete process.env.VAULT_TOKEN;
-    delete process.env.STEPIQ_MASTER_KEY;
+    process.env.VAULT_ADDR = undefined;
+    process.env.VAULT_TOKEN = undefined;
+    process.env.STEPIQ_MASTER_KEY = undefined;
   });
 
   it("returns VaultKmsProvider when Vault env vars are set", () => {

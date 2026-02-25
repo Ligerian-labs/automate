@@ -1,14 +1,14 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { randomBytes } from "node:crypto";
 import {
-  encryptSecret,
-  decryptSecret,
-  deriveUserKey,
-  reWrapSecret,
-  redactSecrets,
-  KEY_LENGTH,
   FORMAT_VERSION,
   HEADER_SIZE,
+  KEY_LENGTH,
+  decryptSecret,
+  deriveUserKey,
+  encryptSecret,
+  reWrapSecret,
+  redactSecrets,
 } from "../crypto.js";
 
 // Generate a fresh master key for tests
@@ -120,9 +120,7 @@ describe("decryptSecret", () => {
 
   it("fails with wrong userId (different user key)", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
-    expect(
-      decryptSecret(TEST_USER_ID_2, blob, TEST_MK),
-    ).rejects.toThrow();
+    expect(decryptSecret(TEST_USER_ID_2, blob, TEST_MK)).rejects.toThrow();
   });
 
   it("fails with tampered ciphertext", async () => {
@@ -148,16 +146,16 @@ describe("decryptSecret", () => {
   it("fails with truncated blob", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
     const truncated = blob.subarray(0, 50);
-    expect(
-      decryptSecret(TEST_USER_ID, truncated, TEST_MK),
-    ).rejects.toThrow("Ciphertext too short");
+    expect(decryptSecret(TEST_USER_ID, truncated, TEST_MK)).rejects.toThrow(
+      "Ciphertext too short",
+    );
   });
 
   it("rejects wrong master key length", async () => {
     const blob = await encryptSecret(TEST_USER_ID, "secret", TEST_MK);
-    expect(
-      decryptSecret(TEST_USER_ID, blob, Buffer.alloc(16)),
-    ).rejects.toThrow("Master key must be 32 bytes");
+    expect(decryptSecret(TEST_USER_ID, blob, Buffer.alloc(16))).rejects.toThrow(
+      "Master key must be 32 bytes",
+    );
   });
 });
 
@@ -275,8 +273,6 @@ describe("crypto-shredding", () => {
     const secret = "shred-me";
     const blob = await encryptSecret(TEST_USER_ID, secret, TEST_MK);
     blob.fill(0);
-    expect(
-      decryptSecret(TEST_USER_ID, blob, TEST_MK),
-    ).rejects.toThrow();
+    expect(decryptSecret(TEST_USER_ID, blob, TEST_MK)).rejects.toThrow();
   });
 });

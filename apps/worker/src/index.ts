@@ -22,7 +22,7 @@ const worker = new Worker(
   {
     connection,
     concurrency: 5,
-  }
+  },
 );
 
 worker.on("completed", (job) => {

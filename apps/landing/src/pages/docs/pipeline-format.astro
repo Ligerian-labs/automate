@@ -4,10 +4,19 @@ import DocsLayout from "../../layouts/DocsLayout.astro";
 const varsTable = [
   { syntax: "{{input.xxx}}", desc: "Trigger-time inputs from the user" },
   { syntax: "{{vars.xxx}}", desc: "Pipeline-level global variables" },
-  { syntax: "{{steps.&lt;id&gt;.output}}", desc: "Full output from a previous step" },
-  { syntax: "{{steps.&lt;id&gt;.output.field}}", desc: "JSON field access on step output" },
+  {
+    syntax: "{{steps.&lt;id&gt;.output}}",
+    desc: "Full output from a previous step",
+  },
+  {
+    syntax: "{{steps.&lt;id&gt;.output.field}}",
+    desc: "JSON field access on step output",
+  },
   { syntax: "{{env.xxx}}", desc: "User-defined encrypted secrets" },
-  { syntax: "{{#if condition}}...{{/if}}", desc: "Conditional blocks (Handlebars-like)" },
+  {
+    syntax: "{{#if condition}}...{{/if}}",
+    desc: "Conditional blocks (Handlebars-like)",
+  },
 ];
 ---
 

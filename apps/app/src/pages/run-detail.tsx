@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
-import { apiFetch, type RunRecord, type StepExecutionRecord } from "../lib/api";
+import { type RunRecord, type StepExecutionRecord, apiFetch } from "../lib/api";
 
 export function RunDetailPage() {
   const { runId } = useParams({ strict: false }) as { runId: string };
@@ -16,24 +16,38 @@ export function RunDetailPage() {
   });
 
   const cancelMut = useMutation({
-    mutationFn: () => apiFetch<{ cancelled: boolean }>(`/api/runs/${runId}/cancel`, { method: "POST", body: "{}" }),
+    mutationFn: () =>
+      apiFetch<{ cancelled: boolean }>(`/api/runs/${runId}/cancel`, {
+        method: "POST",
+        body: "{}",
+      }),
     onSuccess: () => runQ.refetch(),
   });
 
   useEffect(() => {
     if (!runId) return;
-    const es = new EventSource(`${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/runs/${runId}/stream`);
+    const es = new EventSource(
+      `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/runs/${runId}/stream`,
+    );
     es.onopen = () => setSseState("connected");
-    es.onerror = () => { setSseState("fallback polling"); es.close(); };
+    es.onerror = () => {
+      setSseState("fallback polling");
+      es.close();
+    };
     return () => es.close();
   }, [runId]);
 
   const run = runQ.data;
   const stats = useMemo(() => {
     if (!run) return { duration: "-", tokens: "-", cost: "-", steps: "-" };
-    const dur = run.completedAt && run.startedAt
-      ? Math.round((new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()) / 1000)
-      : null;
+    const dur =
+      run.completedAt && run.startedAt
+        ? Math.round(
+            (new Date(run.completedAt).getTime() -
+              new Date(run.startedAt).getTime()) /
+              1000,
+          )
+        : null;
     return {
       duration: dur ? `${dur}s` : "running",
       tokens: String(run.totalTokens ?? run.total_tokens ?? 0),
@@ -58,9 +72,17 @@ export function RunDetailPage() {
   );
 
   return (
-    <AppShell title={`Run ${runId?.slice(0, 8)}...`} subtitle={`Pipeline run · SSE: ${sseState}`} actions={actions}>
-      {runQ.isLoading ? <p className="text-sm text-[var(--text-tertiary)]">Loading run...</p> : null}
-      {runQ.isError ? <p className="text-sm text-red-300">Failed to load run</p> : null}
+    <AppShell
+      title={`Run ${runId?.slice(0, 8)}...`}
+      subtitle={`Pipeline run · SSE: ${sseState}`}
+      actions={actions}
+    >
+      {runQ.isLoading ? (
+        <p className="text-sm text-[var(--text-tertiary)]">Loading run...</p>
+      ) : null}
+      {runQ.isError ? (
+        <p className="text-sm text-red-300">Failed to load run</p>
+      ) : null}
 
       {/* Stats — cornerRadius 10, padding 20 */}
       <section className="grid grid-cols-4 gap-4">
@@ -101,10 +123,18 @@ export function RunDetailPage() {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
-      <p className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)]" style={{ fontFamily: "var(--font-mono)", letterSpacing: "1.5px" }}>
+      <p
+        className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)]"
+        style={{ fontFamily: "var(--font-mono)", letterSpacing: "1.5px" }}
+      >
         {label}
       </p>
-      <p className="mt-2 text-[28px] font-bold leading-none" style={{ fontFamily: "var(--font-mono)" }}>{value}</p>
+      <p
+        className="mt-2 text-[28px] font-bold leading-none"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -113,16 +143,29 @@ function RunStatusBadge({ status }: { status: string }) {
   const isSuccess = status === "completed";
   const isRunning = status === "running";
   const isFailed = status === "failed";
-  let bg = "var(--bg-inset)"; let fg = "var(--text-tertiary)";
-  if (isSuccess) { bg = "#22C55E20"; fg = "#22C55E"; }
-  if (isRunning) { bg = "#22D3EE20"; fg = "#22D3EE"; }
-  if (isFailed) { bg = "#EF444420"; fg = "#EF4444"; }
+  let bg = "var(--bg-inset)";
+  let fg = "var(--text-tertiary)";
+  if (isSuccess) {
+    bg = "#22C55E20";
+    fg = "#22C55E";
+  }
+  if (isRunning) {
+    bg = "#22D3EE20";
+    fg = "#22D3EE";
+  }
+  if (isFailed) {
+    bg = "#EF444420";
+    fg = "#EF4444";
+  }
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
       style={{ background: bg, color: fg, fontFamily: "var(--font-mono)" }}
     >
-      <span className="inline-block size-1.5 rounded-full" style={{ background: fg }} />
+      <span
+        className="inline-block size-1.5 rounded-full"
+        style={{ background: fg }}
+      />
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
@@ -133,27 +176,56 @@ function StepCard({ step }: { step: StepExecutionRecord }) {
   const isSuccess = status === "completed";
   const isFailed = status === "failed";
   return (
-    <div className={`rounded-[10px] border bg-[var(--bg-surface)] p-5 ${
-      isFailed ? "border-red-500/30" : isSuccess ? "border-emerald-500/20" : "border-[var(--divider)]"
-    }`}>
+    <div
+      className={`rounded-[10px] border bg-[var(--bg-surface)] p-5 ${
+        isFailed
+          ? "border-red-500/30"
+          : isSuccess
+            ? "border-emerald-500/20"
+            : "border-[var(--divider)]"
+      }`}
+    >
       <div className="flex items-start gap-5">
         {/* Left: 200px */}
         <div className="w-[200px] shrink-0">
           <RunStatusBadge status={status} />
-          <p className="mt-2 text-sm font-medium">{step.stepId || step.step_id || "step"}</p>
-          <p className="text-xs text-[var(--text-tertiary)]" style={{ fontFamily: "var(--font-mono)" }}>
+          <p className="mt-2 text-sm font-medium">
+            {step.stepId || step.step_id || "step"}
+          </p>
+          <p
+            className="text-xs text-[var(--text-tertiary)]"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
             model: {step.model || "n/a"}
           </p>
         </div>
         {/* Right: metrics */}
         <div className="flex flex-1 items-center gap-6">
-          <Metric label="Duration" value={`${step.durationMs || step.duration_ms || 0}ms`} />
-          <Metric label="Tokens" value={String((step.inputTokens ?? step.input_tokens ?? 0) + (step.outputTokens ?? step.output_tokens ?? 0))} />
-          <Metric label="Cost" value={`€${((step.costCents || step.cost_cents || 0) / 100).toFixed(2)}`} />
-          {step.rawOutput || step.raw_output ? <Metric label="Output" value="✓" /> : null}
+          <Metric
+            label="Duration"
+            value={`${step.durationMs || step.duration_ms || 0}ms`}
+          />
+          <Metric
+            label="Tokens"
+            value={String(
+              (step.inputTokens ?? step.input_tokens ?? 0) +
+                (step.outputTokens ?? step.output_tokens ?? 0),
+            )}
+          />
+          <Metric
+            label="Cost"
+            value={`€${((step.costCents || step.cost_cents || 0) / 100).toFixed(2)}`}
+          />
+          {step.rawOutput || step.raw_output ? (
+            <Metric label="Output" value="✓" />
+          ) : null}
         </div>
       </div>
-      {step.error ? <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{step.error}</p> : null}
+      {step.error ? (
+        <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          {step.error}
+        </p>
+      ) : null}
       {step.rawOutput || step.raw_output ? (
         <pre
           className="mt-3 max-h-[200px] overflow-auto rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] p-3 text-xs leading-relaxed text-[var(--text-tertiary)]"
@@ -169,8 +241,18 @@ function StepCard({ step }: { step: StepExecutionRecord }) {
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase text-[var(--text-muted)]" style={{ fontFamily: "var(--font-mono)", letterSpacing: "1px" }}>{label}</p>
-      <p className="text-sm font-medium text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-mono)" }}>{value}</p>
+      <p
+        className="text-[10px] uppercase text-[var(--text-muted)]"
+        style={{ fontFamily: "var(--font-mono)", letterSpacing: "1px" }}
+      >
+        {label}
+      </p>
+      <p
+        className="text-sm font-medium text-[var(--text-secondary)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </p>
     </div>
   );
 }

@@ -1,8 +1,8 @@
+import type { PipelineDefinition } from "@stepiq/core";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppShell } from "../components/app-shell";
-import { apiFetch, type PipelineRecord } from "../lib/api";
-import type { PipelineDefinition } from "@stepiq/core";
+import { type PipelineRecord, apiFetch } from "../lib/api";
 
 export function PipelinesListPage() {
   const navigate = useNavigate();
@@ -11,17 +11,35 @@ export function PipelinesListPage() {
     const baseDefinition: PipelineDefinition = {
       name: "Untitled pipeline",
       version: 1,
-      steps: [{ id: "step_1", name: "First step", type: "llm", model: "gpt-4o-mini", prompt: "Hello from stepIQ" }],
+      steps: [
+        {
+          id: "step_1",
+          name: "First step",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "Hello from stepIQ",
+        },
+      ],
     };
     const created = await apiFetch<PipelineRecord>("/api/pipelines", {
       method: "POST",
-      body: JSON.stringify({ name: "Untitled pipeline", description: "New pipeline", definition: baseDefinition }),
+      body: JSON.stringify({
+        name: "Untitled pipeline",
+        description: "New pipeline",
+        definition: baseDefinition,
+      }),
     });
-    navigate({ to: "/pipelines/$pipelineId/edit", params: { pipelineId: created.id } });
+    navigate({
+      to: "/pipelines/$pipelineId/edit",
+      params: { pipelineId: created.id },
+    });
   }
 
   const createMut = useMutation({ mutationFn: createPipeline });
-  const pipelinesQ = useQuery({ queryKey: ["pipelines"], queryFn: () => apiFetch<PipelineRecord[]>("/api/pipelines") });
+  const pipelinesQ = useQuery({
+    queryKey: ["pipelines"],
+    queryFn: () => apiFetch<PipelineRecord[]>("/api/pipelines"),
+  });
 
   const actions = (
     <>
@@ -42,28 +60,55 @@ export function PipelinesListPage() {
   );
 
   return (
-    <AppShell title="Pipelines" subtitle="Manage and create AI pipelines" actions={actions}>
+    <AppShell
+      title="Pipelines"
+      subtitle="Manage and create AI pipelines"
+      actions={actions}
+    >
       {createMut.isError ? (
         <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">
-          {createMut.error instanceof Error ? createMut.error.message : "Failed to create pipeline"}
+          {createMut.error instanceof Error
+            ? createMut.error.message
+            : "Failed to create pipeline"}
         </p>
       ) : null}
 
       <section className="overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
         <div
           className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
-          style={{ gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px", fontFamily: "var(--font-mono)" }}
+          style={{
+            gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px",
+            fontFamily: "var(--font-mono)",
+          }}
         >
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Pipeline</span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Status</span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Last Run</span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Steps</span>
-          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Cost</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+            Pipeline
+          </span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+            Status
+          </span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+            Last Run
+          </span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+            Steps
+          </span>
+          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+            Cost
+          </span>
         </div>
 
-        {pipelinesQ.isLoading ? <p className="p-5 text-sm text-[var(--text-tertiary)]">Loading pipelines...</p> : null}
+        {pipelinesQ.isLoading ? (
+          <p className="p-5 text-sm text-[var(--text-tertiary)]">
+            Loading pipelines...
+          </p>
+        ) : null}
         {pipelinesQ.isError ? (
-          <p className="p-5 text-sm text-red-300">{pipelinesQ.error instanceof Error ? pipelinesQ.error.message : "Failed to load"}</p>
+          <p className="p-5 text-sm text-red-300">
+            {pipelinesQ.error instanceof Error
+              ? pipelinesQ.error.message
+              : "Failed to load"}
+          </p>
         ) : null}
 
         <div className="divide-y divide-[var(--divider)]">
@@ -71,19 +116,37 @@ export function PipelinesListPage() {
             const updated = pipeline.updatedAt || pipeline.updated_at;
             const status = pipeline.status || "active";
             const stepCount = (() => {
-              try { return ((pipeline.definition as { steps?: unknown[] })?.steps?.length ?? 0); } catch { return 0; }
+              try {
+                return (
+                  (pipeline.definition as { steps?: unknown[] })?.steps
+                    ?.length ?? 0
+                );
+              } catch {
+                return 0;
+              }
             })();
             return (
               <button
                 key={pipeline.id}
                 type="button"
                 className="grid w-full items-center px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
-                style={{ gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px" }}
-                onClick={() => navigate({ to: "/pipelines/$pipelineId/edit", params: { pipelineId: pipeline.id } })}
+                style={{
+                  gridTemplateColumns:
+                    "minmax(280px,1fr) 120px 160px 80px 100px",
+                }}
+                onClick={() =>
+                  navigate({
+                    to: "/pipelines/$pipelineId/edit",
+                    params: { pipelineId: pipeline.id },
+                  })
+                }
               >
                 <div className="flex flex-col gap-0.5">
                   <p className="text-sm font-medium">{pipeline.name}</p>
-                  <p className="text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: "var(--font-mono)" }}>
+                  <p
+                    className="text-[11px] text-[var(--text-tertiary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
                     {pipeline.description || "No description"}
                   </p>
                 </div>
@@ -93,17 +156,25 @@ export function PipelinesListPage() {
                 <div className="text-[13px] text-[var(--text-secondary)]">
                   {updated ? timeAgo(new Date(updated)) : "-"}
                 </div>
-                <div className="text-[13px] text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-mono)" }}>
+                <div
+                  className="text-[13px] text-[var(--text-secondary)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
                   {stepCount}
                 </div>
-                <div className="text-right text-[13px] text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-mono)" }}>
+                <div
+                  className="text-right text-[13px] text-[var(--text-secondary)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
                   —
                 </div>
               </button>
             );
           })}
           {(pipelinesQ.data ?? []).length === 0 && !pipelinesQ.isLoading ? (
-            <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">No pipelines yet — create one to get started.</p>
+            <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
+              No pipelines yet — create one to get started.
+            </p>
           ) : null}
         </div>
       </section>
@@ -112,16 +183,24 @@ export function PipelinesListPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const isActive = status === "active" || status === "running" || status === "completed";
+  const isActive =
+    status === "active" || status === "running" || status === "completed";
   const isDraft = status === "draft";
   const bg = isActive ? "#22C55E20" : isDraft ? "#EAB30820" : "var(--bg-inset)";
-  const fg = isActive ? "#22C55E" : isDraft ? "#EAB308" : "var(--text-tertiary)";
+  const fg = isActive
+    ? "#22C55E"
+    : isDraft
+      ? "#EAB308"
+      : "var(--text-tertiary)";
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
       style={{ background: bg, color: fg, fontFamily: "var(--font-mono)" }}
     >
-      <span className="inline-block size-1.5 rounded-full" style={{ background: fg }} />
+      <span
+        className="inline-block size-1.5 rounded-full"
+        style={{ background: fg }}
+      />
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );

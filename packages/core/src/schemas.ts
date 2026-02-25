@@ -14,9 +14,24 @@ export const stepConditionSchema = z.object({
 });
 
 export const pipelineStepSchema = z.object({
-  id: z.string().regex(/^[a-z0-9_]+$/, "Step ID must be lowercase alphanumeric with underscores"),
+  id: z
+    .string()
+    .regex(
+      /^[a-z0-9_]+$/,
+      "Step ID must be lowercase alphanumeric with underscores",
+    ),
   name: z.string().min(1).max(100),
-  type: z.enum(["llm", "transform", "condition", "parallel", "webhook", "human_review", "code"]).default("llm"),
+  type: z
+    .enum([
+      "llm",
+      "transform",
+      "condition",
+      "parallel",
+      "webhook",
+      "human_review",
+      "code",
+    ])
+    .default("llm"),
   model: z.string().optional(),
   prompt: z.string().optional(),
   system_prompt: z.string().optional(),
@@ -63,20 +78,28 @@ export const pipelineDefinitionSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
   version: z.number().int().min(1).default(1),
-  variables: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
-  input: z.object({
-    schema: z.record(variableSchema),
-  }).optional(),
+  variables: z
+    .record(z.union([z.string(), z.number(), z.boolean()]))
+    .optional(),
+  input: z
+    .object({
+      schema: z.record(variableSchema),
+    })
+    .optional(),
   steps: z.array(pipelineStepSchema).min(1).max(20),
-  output: z.object({
-    from: z.string(),
-    deliver: z.array(deliveryTargetSchema).optional(),
-  }).optional(),
+  output: z
+    .object({
+      from: z.string(),
+      deliver: z.array(deliveryTargetSchema).optional(),
+    })
+    .optional(),
   schedule: scheduleSchema.optional(),
-  notifications: z.object({
-    on_success: z.array(notificationSchema).optional(),
-    on_failure: z.array(notificationSchema).optional(),
-  }).optional(),
+  notifications: z
+    .object({
+      on_success: z.array(notificationSchema).optional(),
+      on_failure: z.array(notificationSchema).optional(),
+    })
+    .optional(),
 });
 
 // ── API Payload Schemas ──
@@ -119,7 +142,10 @@ export const createSecretSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "Secret name must be alphanumeric with underscores"),
+    .regex(
+      /^[A-Za-z_][A-Za-z0-9_]*$/,
+      "Secret name must be alphanumeric with underscores",
+    ),
   value: z.string().min(1).max(10_000),
 });
 
@@ -139,7 +165,9 @@ export const uuidParam = z.string().uuid("Invalid ID format");
 
 export const listRunsQuery = z.object({
   pipeline_id: z.string().uuid().optional(),
-  status: z.enum(["pending", "running", "completed", "failed", "cancelled"]).optional(),
+  status: z
+    .enum(["pending", "running", "completed", "failed", "cancelled"])
+    .optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
@@ -150,6 +178,8 @@ export const listPipelinesQuery = z.object({
 
 // ── Webhook Trigger Schema ──
 
-export const webhookTriggerSchema = z.object({
-  input_data: z.record(z.unknown()).optional(),
-}).passthrough();
+export const webhookTriggerSchema = z
+  .object({
+    input_data: z.record(z.unknown()).optional(),
+  })
+  .passthrough();

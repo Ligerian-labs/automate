@@ -12,5 +12,8 @@
     "outDir": "dist-types"
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/core" }, { "path": "../../packages/ui" }]
+  "references": [
+    { "path": "../../packages/core" },
+    { "path": "../../packages/ui" }
+  ]
 }

@@ -1,11 +1,11 @@
-import { Hono } from "hono";
-import { eq, and } from "drizzle-orm";
-import { db } from "../db/index.js";
-import { schedules, pipelines } from "../db/schema.js";
-import { requireAuth } from "../middleware/auth.js";
 import { createScheduleSchema, uuidParam } from "@stepiq/core";
-import { getNextCronTick } from "../services/cron.js";
+import { and, eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { db } from "../db/index.js";
+import { pipelines, schedules } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
+import { requireAuth } from "../middleware/auth.js";
+import { getNextCronTick } from "../services/cron.js";
 
 export const scheduleRoutes = new Hono<{ Variables: Env }>();
 
@@ -18,7 +18,8 @@ scheduleRoutes.get("/pipelines/:id/schedules", async (c) => {
 
   const _pidRaw = c.req.param("id");
   const _pidParsed = uuidParam.safeParse(_pidRaw);
-  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!_pidParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = _pidParsed.data;
   const [pipeline] = await db
     .select({ id: pipelines.id })
@@ -42,7 +43,8 @@ scheduleRoutes.post("/pipelines/:id/schedules", async (c) => {
 
   const _pidRaw = c.req.param("id");
   const _pidParsed = uuidParam.safeParse(_pidRaw);
-  if (!_pidParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!_pidParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = _pidParsed.data;
   const body = await c.req.json();
   const parsed = createScheduleSchema.safeParse(body);
@@ -59,7 +61,10 @@ scheduleRoutes.post("/pipelines/:id/schedules", async (c) => {
 
   let nextRun: Date;
   try {
-    nextRun = getNextCronTick(parsed.data.cron_expression, parsed.data.timezone);
+    nextRun = getNextCronTick(
+      parsed.data.cron_expression,
+      parsed.data.timezone,
+    );
   } catch (err) {
     const error = err instanceof Error ? err.message : "Invalid schedule";
     return c.json({ error }, 400);

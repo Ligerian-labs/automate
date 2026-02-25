@@ -1,11 +1,11 @@
+import { listRunsQuery, uuidParam } from "@stepiq/core";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
-import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { runs, stepExecutions } from "../db/schema.js";
-import { requireAuth } from "../middleware/auth.js";
-import { uuidParam, listRunsQuery } from "@stepiq/core";
 import type { Env } from "../lib/env.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const runRoutes = new Hono<{ Variables: Env }>();
 
@@ -21,7 +21,8 @@ runRoutes.get("/", async (c) => {
     status: c.req.query("status"),
     limit: c.req.query("limit"),
   });
-  if (!queryParsed.success) return c.json({ error: queryParsed.error.flatten() }, 400);
+  if (!queryParsed.success)
+    return c.json({ error: queryParsed.error.flatten() }, 400);
 
   const { pipeline_id, status, limit } = queryParsed.data;
 
@@ -29,7 +30,8 @@ runRoutes.get("/", async (c) => {
   if (pipeline_id) whereClauses.push(eq(runs.pipelineId, pipeline_id));
   if (status) whereClauses.push(eq(runs.status, status));
 
-  const where = whereClauses.length === 1 ? whereClauses[0] : and(...whereClauses);
+  const where =
+    whereClauses.length === 1 ? whereClauses[0] : and(...whereClauses);
   const result = await db.select().from(runs).where(where).limit(limit);
   return c.json(result);
 });
@@ -70,10 +72,17 @@ runRoutes.post("/:id/cancel", async (c) => {
   const [result] = await db
     .update(runs)
     .set({ status: "cancelled", completedAt: new Date() })
-    .where(and(eq(runs.id, idParsed.data), eq(runs.userId, userId), eq(runs.status, "running")))
+    .where(
+      and(
+        eq(runs.id, idParsed.data),
+        eq(runs.userId, userId),
+        eq(runs.status, "running"),
+      ),
+    )
     .returning({ id: runs.id });
 
-  if (!result) return c.json({ error: "Run not found or not cancellable" }, 404);
+  if (!result)
+    return c.json({ error: "Run not found or not cancellable" }, 404);
   return c.json({ cancelled: true });
 });
 
@@ -94,6 +103,9 @@ runRoutes.get("/:id/stream", async (c) => {
   if (!run) return c.json({ error: "Not found" }, 404);
 
   return streamSSE(c, async (stream) => {
-    await stream.writeSSE({ data: JSON.stringify({ type: "connected", run_id: idParsed.data }), event: "connected" });
+    await stream.writeSSE({
+      data: JSON.stringify({ type: "connected", run_id: idParsed.data }),
+      event: "connected",
+    });
   });
 });

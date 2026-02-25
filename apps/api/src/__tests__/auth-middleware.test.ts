@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, mock } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 import { Hono } from "hono";
 import { SignJWT } from "jose";
 
@@ -20,12 +20,12 @@ mock.module("../lib/env.js", () => ({
 const { requireAuth } = await import("../middleware/auth.js");
 
 const secret = new TextEncoder().encode(
-  "test-secret-key-that-is-long-enough-for-testing-purposes"
+  "test-secret-key-that-is-long-enough-for-testing-purposes",
 );
 
 async function makeToken(
   payload: Record<string, unknown>,
-  exp = "7d"
+  exp = "7d",
 ): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })

@@ -1,13 +1,19 @@
+import { createKmsProvider, decryptSecret, redactSecrets } from "@stepiq/core";
+import type { PipelineDefinition } from "@stepiq/core";
 import { and, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
 import Handlebars from "handlebars";
-import { runs, stepExecutions, pipelineVersions, userSecrets } from "./db-schema.js";
+import postgres from "postgres";
+import {
+  pipelineVersions,
+  runs,
+  stepExecutions,
+  userSecrets,
+} from "./db-schema.js";
 import { callModel } from "./model-router.js";
-import { decryptSecret, redactSecrets, createKmsProvider } from "@stepiq/core";
-import type { PipelineDefinition } from "@stepiq/core";
 
-const dbUrl = process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
+const dbUrl =
+  process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
 const client = postgres(dbUrl);
 const db = drizzle(client);
 
@@ -32,7 +38,10 @@ export async function executePipeline(runId: string) {
   if (!definition) throw new Error("Pipeline definition not found");
 
   // Mark as running
-  await db.update(runs).set({ status: "running", startedAt: new Date() }).where(eq(runs.id, runId));
+  await db
+    .update(runs)
+    .set({ status: "running", startedAt: new Date() })
+    .where(eq(runs.id, runId));
 
   // Resolve user secrets for {{env.xxx}} interpolation
   const envSecrets = await resolveUserSecrets(run.userId, definition, db);
@@ -80,7 +89,9 @@ export async function executePipeline(runId: string) {
           const result = await callModel({
             model: step.model || "gpt-4o-mini",
             prompt,
-            system: step.system_prompt ? interpolate(step.system_prompt, context) : undefined,
+            system: step.system_prompt
+              ? interpolate(step.system_prompt, context)
+              : undefined,
             temperature: step.temperature,
             max_tokens: step.max_tokens,
             output_format: step.output_format,
@@ -134,7 +145,8 @@ export async function executePipeline(runId: string) {
 
         // TODO: Handle on_condition branching
       } catch (stepErr) {
-        const rawError = stepErr instanceof Error ? stepErr.message : String(stepErr);
+        const rawError =
+          stepErr instanceof Error ? stepErr.message : String(stepErr);
         const error = redactSecrets(rawError, envSecrets.plainValues);
 
         await db
@@ -147,8 +159,12 @@ export async function executePipeline(runId: string) {
     }
 
     // Get final output
-    const outputStepId = definition.output?.from || definition.steps[definition.steps.length - 1].id;
-    const outputData = (context.steps as Record<string, { output: unknown }>)[outputStepId]?.output;
+    const outputStepId =
+      definition.output?.from ||
+      definition.steps[definition.steps.length - 1].id;
+    const outputData = (context.steps as Record<string, { output: unknown }>)[
+      outputStepId
+    ]?.output;
 
     // Mark run as completed
     await db
@@ -169,12 +185,21 @@ export async function executePipeline(runId: string) {
     const error = redactSecrets(rawError, envSecrets.plainValues);
     await db
       .update(runs)
-      .set({ status: "failed", error, completedAt: new Date(), totalTokens, totalCostCents })
+      .set({
+        status: "failed",
+        error,
+        completedAt: new Date(),
+        totalTokens,
+        totalCostCents,
+      })
       .where(eq(runs.id, runId));
   }
 }
 
-function interpolate(template: string, context: Record<string, unknown>): string {
+function interpolate(
+  template: string,
+  context: Record<string, unknown>,
+): string {
   const compiled = Handlebars.compile(template, { noEscape: true });
   return compiled(context);
 }
@@ -195,14 +220,23 @@ async function resolveUserSecrets(
   const refs = allText.match(/\{\{env\.(\w+)\}\}/g);
   if (!refs) return { values: {}, plainValues: [] };
 
-  const names = [...new Set(refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean))] as string[];
+  const names = [
+    ...new Set(
+      refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean),
+    ),
+  ] as string[];
   if (names.length === 0) return { values: {}, plainValues: [] };
 
   // Fetch encrypted secrets from DB
   const secrets = await database
-    .select({ name: userSecrets.name, encryptedValue: userSecrets.encryptedValue })
+    .select({
+      name: userSecrets.name,
+      encryptedValue: userSecrets.encryptedValue,
+    })
     .from(userSecrets)
-    .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
+    .where(
+      and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)),
+    );
 
   if (secrets.length === 0) return { values: {}, plainValues: [] };
 

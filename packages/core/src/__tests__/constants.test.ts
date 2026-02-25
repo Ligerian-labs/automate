@@ -1,5 +1,10 @@
-import { describe, it, expect } from "bun:test";
-import { SUPPORTED_MODELS, MARKUP_PERCENTAGE, PLAN_LIMITS, TOKENS_PER_CREDIT } from "../constants.js";
+import { describe, expect, it } from "bun:test";
+import {
+  MARKUP_PERCENTAGE,
+  PLAN_LIMITS,
+  SUPPORTED_MODELS,
+  TOKENS_PER_CREDIT,
+} from "../constants.js";
 
 describe("SUPPORTED_MODELS", () => {
   it("contains at least one model", () => {

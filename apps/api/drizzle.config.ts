@@ -5,6 +5,8 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq",
+    url:
+      process.env.DATABASE_URL ||
+      "postgres://stepiq:stepiq@localhost:5432/stepiq",
   },
 });

@@ -1,12 +1,13 @@
-import type { Redis as IORedis } from "ioredis";
 import { Queue } from "bullmq";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { lte, eq, and } from "drizzle-orm";
 import { CronExpressionParser } from "cron-parser";
-import { schedules, runs, pipelines } from "./db-schema.js";
+import { and, eq, lte } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import type { Redis as IORedis } from "ioredis";
+import postgres from "postgres";
+import { pipelines, runs, schedules } from "./db-schema.js";
 
-const dbUrl = process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
+const dbUrl =
+  process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
 const client = postgres(dbUrl);
 const db = drizzle(client);
 
@@ -62,23 +63,31 @@ export function startScheduler(connection: IORedis) {
           .returning();
 
         // Enqueue
-        await queue.add("execute", { runId: run.id }, {
-          attempts: 1,
-          removeOnComplete: 1000,
-          removeOnFail: 5000,
-        });
+        await queue.add(
+          "execute",
+          { runId: run.id },
+          {
+            attempts: 1,
+            removeOnComplete: 1000,
+            removeOnFail: 5000,
+          },
+        );
 
         // Update next run time
         const nextRun = CronExpressionParser.parse(schedule.cronExpression, {
           tz: schedule.timezone,
-        }).next().toDate();
+        })
+          .next()
+          .toDate();
 
         await db
           .update(schedules)
           .set({ nextRunAt: nextRun, lastRunAt: now })
           .where(eq(schedules.id, schedule.id));
 
-        console.log(`⏰ Scheduled run for pipeline ${schedule.pipelineId}, next: ${nextRun.toISOString()}`);
+        console.log(
+          `⏰ Scheduled run for pipeline ${schedule.pipelineId}, next: ${nextRun.toISOString()}`,
+        );
       }
     } catch (err) {
       console.error("Scheduler error:", err);

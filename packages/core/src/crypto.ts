@@ -16,8 +16,8 @@
 import {
   createCipheriv,
   createDecipheriv,
-  randomBytes,
   hkdf,
+  randomBytes,
 } from "node:crypto";
 
 // ── Constants ──
@@ -33,7 +33,8 @@ const HKDF_INFO_PREFIX = "stepiq:user-key:";
 // [version:1][dekNonce:12][encryptedDek:32][dekTag:16][secretNonce:12][ciphertext:N][secretTag:16]
 // Total overhead = 1 + 12 + 32 + 16 + 12 + 16 = 89 bytes
 
-const HEADER_SIZE = 1 + NONCE_LENGTH + KEY_LENGTH + AUTH_TAG_LENGTH + NONCE_LENGTH;
+const HEADER_SIZE =
+  1 + NONCE_LENGTH + KEY_LENGTH + AUTH_TAG_LENGTH + NONCE_LENGTH;
 // = 73 bytes before ciphertext
 
 // ── Key Derivation ──
@@ -134,8 +135,13 @@ export async function decryptSecret(
   const encryptedDek = encryptedBlob.subarray(o2, o3);
   const dekTag = encryptedBlob.subarray(o3, o4);
   const secretNonce = encryptedBlob.subarray(o4, o5);
-  const ciphertext = encryptedBlob.subarray(o5, encryptedBlob.length - AUTH_TAG_LENGTH);
-  const secretTag = encryptedBlob.subarray(encryptedBlob.length - AUTH_TAG_LENGTH);
+  const ciphertext = encryptedBlob.subarray(
+    o5,
+    encryptedBlob.length - AUTH_TAG_LENGTH,
+  );
+  const secretTag = encryptedBlob.subarray(
+    encryptedBlob.length - AUTH_TAG_LENGTH,
+  );
 
   // 2. Derive user key
   const userKey = await deriveUserKey(masterKey, userId);
@@ -218,10 +224,7 @@ export async function reWrapSecret(
 
 // ── Log Redaction ──
 
-export function redactSecrets(
-  text: string,
-  secretValues?: string[],
-): string {
+export function redactSecrets(text: string, secretValues?: string[]): string {
   // Redact {{env.xxx}} patterns
   let redacted = text.replace(/\{\{env\.\w+\}\}/g, "[REDACTED]");
   // Redact actual secret values if known

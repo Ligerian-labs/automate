@@ -1,12 +1,13 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 // Standalone migration script — does NOT import env.ts to avoid
 // requiring JWT_SECRET and other API-only env vars.
-const databaseUrl = process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
+const databaseUrl =
+  process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const migrationsFolder = path.resolve(__dirname, "../../drizzle");

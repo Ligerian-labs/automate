@@ -1,11 +1,26 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { cn } from "./cn.js";
 
-export function SurfaceCard({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]", className)} {...props} />;
+export function SurfaceCard({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
-export function UiButton({ className, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
+export function UiButton({
+  className,
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
   return (
     <button
       className={cn(

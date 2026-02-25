@@ -1,9 +1,9 @@
-import { Hono } from "hono";
 import { eq } from "drizzle-orm";
+import { Hono } from "hono";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
-import { requireAuth } from "../middleware/auth.js";
 import type { Env } from "../lib/env.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const userRoutes = new Hono<{ Variables: Env }>();
 

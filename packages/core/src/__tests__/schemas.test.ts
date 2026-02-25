@@ -1,18 +1,18 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import {
-  registerSchema,
-  loginSchema,
   createPipelineSchema,
-  runPipelineSchema,
   createScheduleSchema,
-  pipelineStepSchema,
-  pipelineDefinitionSchema,
   createSecretSchema,
-  updateSecretSchema,
-  secretNameParam,
-  uuidParam,
-  listRunsQuery,
   listPipelinesQuery,
+  listRunsQuery,
+  loginSchema,
+  pipelineDefinitionSchema,
+  pipelineStepSchema,
+  registerSchema,
+  runPipelineSchema,
+  secretNameParam,
+  updateSecretSchema,
+  uuidParam,
   webhookTriggerSchema,
 } from "../schemas.js";
 
@@ -100,9 +100,21 @@ describe("pipelineStepSchema", () => {
   });
 
   it("accepts all valid step types", () => {
-    const types = ["llm", "transform", "condition", "parallel", "webhook", "human_review", "code"];
+    const types = [
+      "llm",
+      "transform",
+      "condition",
+      "parallel",
+      "webhook",
+      "human_review",
+      "code",
+    ];
     for (const type of types) {
-      const result = pipelineStepSchema.safeParse({ id: "s1", name: "S", type });
+      const result = pipelineStepSchema.safeParse({
+        id: "s1",
+        name: "S",
+        type,
+      });
       expect(result.success).toBe(true);
     }
   });
@@ -122,7 +134,9 @@ describe("pipelineDefinitionSchema", () => {
     const result = pipelineDefinitionSchema.safeParse({
       name: "Test Pipeline",
       version: 1,
-      steps: [{ id: "step1", name: "Step 1", model: "gpt-4o-mini", prompt: "Hello" }],
+      steps: [
+        { id: "step1", name: "Step 1", model: "gpt-4o-mini", prompt: "Hello" },
+      ],
     });
     expect(result.success).toBe(true);
   });
@@ -243,12 +257,18 @@ describe("createScheduleSchema", () => {
 
 describe("createSecretSchema", () => {
   it("accepts valid secret", () => {
-    const result = createSecretSchema.safeParse({ name: "OPENAI_KEY", value: "sk-abc123" });
+    const result = createSecretSchema.safeParse({
+      name: "OPENAI_KEY",
+      value: "sk-abc123",
+    });
     expect(result.success).toBe(true);
   });
 
   it("accepts underscore-prefixed name", () => {
-    const result = createSecretSchema.safeParse({ name: "_INTERNAL", value: "v" });
+    const result = createSecretSchema.safeParse({
+      name: "_INTERNAL",
+      value: "v",
+    });
     expect(result.success).toBe(true);
   });
 
@@ -278,17 +298,26 @@ describe("createSecretSchema", () => {
   });
 
   it("rejects name longer than 100 chars", () => {
-    const result = createSecretSchema.safeParse({ name: "A".repeat(101), value: "v" });
+    const result = createSecretSchema.safeParse({
+      name: "A".repeat(101),
+      value: "v",
+    });
     expect(result.success).toBe(false);
   });
 
   it("rejects value longer than 10000 chars", () => {
-    const result = createSecretSchema.safeParse({ name: "KEY", value: "x".repeat(10_001) });
+    const result = createSecretSchema.safeParse({
+      name: "KEY",
+      value: "x".repeat(10_001),
+    });
     expect(result.success).toBe(false);
   });
 
   it("accepts value at max length (10000)", () => {
-    const result = createSecretSchema.safeParse({ name: "KEY", value: "x".repeat(10_000) });
+    const result = createSecretSchema.safeParse({
+      name: "KEY",
+      value: "x".repeat(10_000),
+    });
     expect(result.success).toBe(true);
   });
 });
@@ -329,7 +358,9 @@ describe("secretNameParam", () => {
 
 describe("uuidParam", () => {
   it("accepts valid UUIDs", () => {
-    expect(uuidParam.safeParse("550e8400-e29b-41d4-a716-446655440000").success).toBe(true);
+    expect(
+      uuidParam.safeParse("550e8400-e29b-41d4-a716-446655440000").success,
+    ).toBe(true);
   });
 
   it("rejects non-UUID strings", () => {
@@ -377,13 +408,21 @@ describe("listPipelinesQuery", () => {
   });
 
   it("accepts valid status filter", () => {
-    expect(listPipelinesQuery.safeParse({ status: "active" }).success).toBe(true);
-    expect(listPipelinesQuery.safeParse({ status: "archived" }).success).toBe(true);
-    expect(listPipelinesQuery.safeParse({ status: "draft" }).success).toBe(true);
+    expect(listPipelinesQuery.safeParse({ status: "active" }).success).toBe(
+      true,
+    );
+    expect(listPipelinesQuery.safeParse({ status: "archived" }).success).toBe(
+      true,
+    );
+    expect(listPipelinesQuery.safeParse({ status: "draft" }).success).toBe(
+      true,
+    );
   });
 
   it("rejects invalid status", () => {
-    expect(listPipelinesQuery.safeParse({ status: "deleted" }).success).toBe(false);
+    expect(listPipelinesQuery.safeParse({ status: "deleted" }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -398,8 +437,12 @@ describe("webhookTriggerSchema", () => {
   });
 
   it("passes through extra fields", () => {
-    const result = webhookTriggerSchema.safeParse({ input_data: {}, extra: "ok" });
+    const result = webhookTriggerSchema.safeParse({
+      input_data: {},
+      extra: "ok",
+    });
     expect(result.success).toBe(true);
-    if (result.success) expect((result.data as any).extra).toBe("ok");
+    if (result.success)
+      expect((result.data as Record<string, unknown>).extra).toBe("ok");
   });
 });

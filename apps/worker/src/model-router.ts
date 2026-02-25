@@ -1,8 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { MARKUP_PERCENTAGE, SUPPORTED_MODELS } from "@stepiq/core";
 import OpenAI from "openai";
-import { SUPPORTED_MODELS, MARKUP_PERCENTAGE } from "@stepiq/core";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || "",
+});
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 interface ModelRequest {
@@ -25,7 +27,7 @@ interface ModelResponse {
 
 export async function callModel(req: ModelRequest): Promise<ModelResponse> {
   const modelInfo = SUPPORTED_MODELS.find(
-    (m: (typeof SUPPORTED_MODELS)[number]) => m.id === req.model
+    (m: (typeof SUPPORTED_MODELS)[number]) => m.id === req.model,
   );
   if (!modelInfo) throw new Error(`Unsupported model: ${req.model}`);
 
@@ -44,7 +46,7 @@ export async function callModel(req: ModelRequest): Promise<ModelResponse> {
 async function callAnthropic(
   req: ModelRequest,
   modelInfo: (typeof SUPPORTED_MODELS)[number],
-  start: number
+  start: number,
 ): Promise<ModelResponse> {
   const response = await anthropic.messages.create({
     model: req.model,
@@ -74,7 +76,7 @@ async function callAnthropic(
 async function callOpenAI(
   req: ModelRequest,
   modelInfo: (typeof SUPPORTED_MODELS)[number],
-  start: number
+  start: number,
 ): Promise<ModelResponse> {
   const response = await openai.chat.completions.create({
     model: req.model,
@@ -84,7 +86,9 @@ async function callOpenAI(
       ...(req.system ? [{ role: "system" as const, content: req.system }] : []),
       { role: "user" as const, content: req.prompt },
     ],
-    ...(req.output_format === "json" ? { response_format: { type: "json_object" } } : {}),
+    ...(req.output_format === "json"
+      ? { response_format: { type: "json_object" } }
+      : {}),
   });
 
   const output = response.choices[0]?.message?.content || "";
@@ -105,10 +109,12 @@ async function callOpenAI(
 function calculateCost(
   inputTokens: number,
   outputTokens: number,
-  modelInfo: (typeof SUPPORTED_MODELS)[number]
+  modelInfo: (typeof SUPPORTED_MODELS)[number],
 ): number {
-  const inputCost = (inputTokens / 1_000_000) * modelInfo.input_cost_per_million;
-  const outputCost = (outputTokens / 1_000_000) * modelInfo.output_cost_per_million;
+  const inputCost =
+    (inputTokens / 1_000_000) * modelInfo.input_cost_per_million;
+  const outputCost =
+    (outputTokens / 1_000_000) * modelInfo.output_cost_per_million;
   const baseCost = inputCost + outputCost;
   const withMarkup = baseCost * (1 + MARKUP_PERCENTAGE / 100);
   return Math.ceil(withMarkup); // cents

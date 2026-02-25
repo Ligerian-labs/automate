@@ -25,7 +25,8 @@ export class VaultKmsProvider implements KmsProvider {
     token?: string;
     secretPath?: string;
   }) {
-    this.endpoint = opts?.endpoint || process.env.VAULT_ADDR || "http://127.0.0.1:8200";
+    this.endpoint =
+      opts?.endpoint || process.env.VAULT_ADDR || "http://127.0.0.1:8200";
     this.token = opts?.token || process.env.VAULT_TOKEN || "";
     this.secretPath = opts?.secretPath || "secret/data/stepiq/master-key";
 

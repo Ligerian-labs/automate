@@ -1,8 +1,11 @@
-import { describe, it, expect } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import Handlebars from "handlebars";
 
 // Test the interpolation logic (extracted from executor)
-function interpolate(template: string, context: Record<string, unknown>): string {
+function interpolate(
+  template: string,
+  context: Record<string, unknown>,
+): string {
   const compiled = Handlebars.compile(template, { noEscape: true });
   return compiled(context);
 }
@@ -49,24 +52,22 @@ describe("interpolate (Handlebars template engine)", () => {
     };
     const result = interpolate(
       "Write in {{vars.language}} about {{input.url}}",
-      context
+      context,
     );
     expect(result).toBe("Write in fr about https://example.com");
   });
 
   it("handles conditionals", () => {
-    const result = interpolate(
-      "{{#if active}}Active{{else}}Inactive{{/if}}",
-      { active: true }
-    );
+    const result = interpolate("{{#if active}}Active{{else}}Inactive{{/if}}", {
+      active: true,
+    });
     expect(result).toBe("Active");
   });
 
   it("handles iteration", () => {
-    const result = interpolate(
-      "{{#each items}}{{this}} {{/each}}",
-      { items: ["a", "b", "c"] }
-    );
+    const result = interpolate("{{#each items}}{{this}} {{/each}}", {
+      items: ["a", "b", "c"],
+    });
     expect(result).toBe("a b c ");
   });
 });
@@ -77,7 +78,7 @@ describe("cost calculation logic", () => {
     outputTokens: number,
     inputCostPerMillion: number,
     outputCostPerMillion: number,
-    markupPercentage: number
+    markupPercentage: number,
   ): number {
     const inputCost = (inputTokens / 1_000_000) * inputCostPerMillion;
     const outputCost = (outputTokens / 1_000_000) * outputCostPerMillion;
