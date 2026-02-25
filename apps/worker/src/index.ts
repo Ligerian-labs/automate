@@ -1,6 +1,5 @@
 import { Worker } from "bullmq";
 import { Redis as IORedis } from "ioredis";
-import { serve } from "bun";
 import { executePipeline } from "./executor.js";
 import { startScheduler } from "./scheduler.js";
 
@@ -41,22 +40,4 @@ worker.on("error", (err) => {
 // Start cron scheduler
 startScheduler(connection);
 
-// Health check server
-const healthPort = Number(process.env.HEALTH_PORT) || 3002;
-serve({
-  port: healthPort,
-  fetch(req) {
-    const url = new URL(req.url);
-    if (url.pathname === "/health") {
-      const status = worker.isRunning() ? "ok" : "not_running";
-      const redisStatus = connection.status;
-      return new Response(
-        JSON.stringify({ status, redis: redisStatus, queue: "pipeline-runs" }),
-        { headers: { "content-type": "application/json" } },
-      );
-    }
-    return new Response("Not found", { status: 404 });
-  },
-});
-
-console.log(`🏭 Stepiq Worker started (health: http://0.0.0.0:${healthPort}/health)`);
+console.log("🏭 Stepiq Worker started");
