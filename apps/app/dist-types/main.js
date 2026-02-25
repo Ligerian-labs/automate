@@ -1,11 +1,12 @@
-import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx } from "react/jsx-runtime";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, createRoute, createRouter, Outlet, RouterProvider, redirect, } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import { DashboardPage } from "./pages/dashboard";
+import { PipelinesListPage } from "./pages/pipelines-list";
 import { PipelineEditorPage } from "./pages/pipeline-editor";
+import { RunsListPage } from "./pages/runs-list";
 import { RunDetailPage } from "./pages/run-detail";
 import { SettingsPage } from "./pages/settings";
 import { AuthPage } from "./pages/auth-page";
@@ -13,7 +14,7 @@ import { isAuthenticated } from "./lib/auth";
 import "./styles.css";
 const queryClient = new QueryClient();
 function RootLayout() {
-    return (_jsxs(_Fragment, { children: [_jsx(Outlet, {}), _jsx(TanStackRouterDevtools, {})] }));
+    return _jsx(Outlet, {});
 }
 const rootRoute = createRootRoute({ component: RootLayout });
 function requireAuth() {
@@ -51,11 +52,23 @@ const dashboardRoute = createRoute({
     beforeLoad: requireAuth,
     component: DashboardPage,
 });
+const pipelinesRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/pipelines",
+    beforeLoad: requireAuth,
+    component: PipelinesListPage,
+});
 const editorRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: "/pipelines/$pipelineId/edit",
     beforeLoad: requireAuth,
     component: PipelineEditorPage,
+});
+const runsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/runs",
+    beforeLoad: requireAuth,
+    component: RunsListPage,
 });
 const runRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -74,7 +87,9 @@ const routeTree = rootRoute.addChildren([
     loginRoute,
     registerRoute,
     dashboardRoute,
+    pipelinesRoute,
     editorRoute,
+    runsRoute,
     runRoute,
     settingsRoute,
 ]);
