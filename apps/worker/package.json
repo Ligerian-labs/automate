@@ -4,11 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "biome lint src",
-    "typecheck": "tsc -b",
-    "test": "bun test"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test src/__tests__"
   },
   "dependencies": {
     "@stepiq/api": "*",

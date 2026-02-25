@@ -16,12 +16,17 @@ interface StepDef {
   retries?: number;
 }
 
+interface ModelOption {
+  id: string;
+  name: string;
+}
+
 function newStep(index: number): StepDef {
   return {
     id: `step_${index}`,
     name: `Step ${index}`,
     type: "llm",
-    model: "gpt-4o-mini",
+    model: "gpt-5.2",
     prompt: "",
     outputFormat: "text",
     timeout: 30,
@@ -39,6 +44,11 @@ export function PipelineEditorPage() {
     enabled: Boolean(pipelineId),
   });
 
+  const modelsQ = useQuery({
+    queryKey: ["models"],
+    queryFn: () => apiFetch<ModelOption[]>("/api/models", undefined, false),
+  });
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<StepDef[]>([]);
@@ -49,6 +59,21 @@ export function PipelineEditorPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [yamlMode, setYamlMode] = useState(false);
   const [rawYaml, setRawYaml] = useState("");
+
+  const modelOptions = (() => {
+    const fromApi = (modelsQ.data ?? []).map((model) => ({
+      id: model.id,
+      label: `${model.name} (${model.id})`,
+    }));
+    const fromSteps = steps
+      .map((step) => step.model)
+      .filter(Boolean)
+      .map((id) => ({ id, label: id }));
+    const merged = [...fromApi, ...fromSteps];
+    return merged.filter(
+      (item, index) => merged.findIndex((x) => x.id === item.id) === index,
+    );
+  })();
 
   // Load pipeline data
   useEffect(() => {
@@ -65,7 +90,7 @@ export function PipelineEditorPage() {
         id: s.id || `step_${i + 1}`,
         name: s.name || `Step ${i + 1}`,
         type: s.type || "llm",
-        model: s.model || "gpt-4o-mini",
+        model: s.model || "gpt-5.2",
         prompt: s.prompt || "",
         outputFormat: s.outputFormat || "text",
         timeout: s.timeout ?? 30,
@@ -426,18 +451,11 @@ export function PipelineEditorPage() {
                               updateStep(idx, { model: e.target.value })
                             }
                           >
-                            <option value="gpt-4o-mini">gpt-4o-mini</option>
-                            <option value="gpt-4o">gpt-4o</option>
-                            <option value="gpt-4-turbo">gpt-4-turbo</option>
-                            <option value="claude-3-5-sonnet-20241022">
-                              claude-3.5-sonnet
-                            </option>
-                            <option value="claude-3-haiku-20240307">
-                              claude-3-haiku
-                            </option>
-                            <option value="mistral-large-latest">
-                              mistral-large
-                            </option>
+                            {modelOptions.map((model) => (
+                              <option key={model.id} value={model.id}>
+                                {model.label}
+                              </option>
+                            ))}
                           </select>
                         </label>
                       </div>

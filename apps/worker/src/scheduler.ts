@@ -4,7 +4,7 @@ import { and, eq, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import type { Redis as IORedis } from "ioredis";
 import postgres from "postgres";
-import { pipelines, runs, schedules } from "./db-schema.js";
+import { pipelines, runs, schedules } from "./db-scheduler.js";
 
 const dbUrl =
   process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";

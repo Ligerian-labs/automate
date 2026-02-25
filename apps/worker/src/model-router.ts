@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { MARKUP_PERCENTAGE, SUPPORTED_MODELS } from "@stepiq/core";
+import { MARKUP_PERCENTAGE, SUPPORTED_MODELS } from "./core-adapter.js";
 import OpenAI from "openai";
 
 const anthropic = new Anthropic({

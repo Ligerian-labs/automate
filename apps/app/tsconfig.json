@@ -9,7 +9,7 @@
     "composite": true,
     "types": ["vite/client"],
     "rootDir": "src",
-    "outDir": "dist-types"
+    "outDir": "dist"
   },
   "include": ["src"],
   "references": [

@@ -2,6 +2,42 @@ import type { ModelInfo, Plan } from "./types.js";
 
 export const SUPPORTED_MODELS: ModelInfo[] = [
   {
+    id: "claude-opus-4-6",
+    name: "Claude Opus 4.6",
+    provider: "anthropic",
+    input_cost_per_million: 5_000, // $5.00
+    output_cost_per_million: 25_000, // $25.00
+    max_tokens: 8192,
+    supports_json: true,
+  },
+  {
+    id: "gpt-5.2",
+    name: "GPT-5.2",
+    provider: "openai",
+    input_cost_per_million: 1_750, // $1.75
+    output_cost_per_million: 14_000, // $14.00
+    max_tokens: 128000,
+    supports_json: true,
+  },
+  {
+    id: "gpt-5.2-chat-latest",
+    name: "GPT-5.2 Instant",
+    provider: "openai",
+    input_cost_per_million: 1_750, // $1.75
+    output_cost_per_million: 14_000, // $14.00
+    max_tokens: 128000,
+    supports_json: true,
+  },
+  {
+    id: "gpt-5.3-codex",
+    name: "GPT-5.3-Codex",
+    provider: "openai",
+    input_cost_per_million: 1_750, // $1.75
+    output_cost_per_million: 14_000, // $14.00
+    max_tokens: 128000,
+    supports_json: true,
+  },
+  {
     id: "claude-sonnet-4-20250514",
     name: "Claude Sonnet 4",
     provider: "anthropic",
@@ -11,7 +47,7 @@ export const SUPPORTED_MODELS: ModelInfo[] = [
     supports_json: true,
   },
   {
-    id: "claude-haiku-3.5",
+    id: "claude-3-5-haiku-20241022",
     name: "Claude Haiku 3.5",
     provider: "anthropic",
     input_cost_per_million: 250, // $0.25
