@@ -1,0 +1,68 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+---
+
+<DocsLayout title="Models & Pricing" breadcrumb={[{ label: "Docs", href: "/docs" }, { label: "Models & Pricing" }]}>
+  <h1>Models & Pricing</h1>
+  <p>stepIQ is model-agnostic. Each pipeline step can use a different model. We route requests to the provider and handle authentication, retries, and billing.</p>
+
+  <h2>Available models</h2>
+
+  <div class="docs-card-grid">
+    <div class="model-card">
+      <span class="model-provider">Anthropic</span>
+      <h3>Claude Sonnet 4</h3>
+      <p style="color:var(--text-secondary);font-size:0.875rem;margin:0;">Best for complex reasoning, long-form writing, and multi-step analysis.</p>
+      <span class="model-pricing">$3.00 / 1M in • $15.00 / 1M out</span>
+    </div>
+    <div class="model-card">
+      <span class="model-provider">OpenAI</span>
+      <h3>GPT-4o</h3>
+      <p style="color:var(--text-secondary);font-size:0.875rem;margin:0;">Versatile model for a wide range of tasks. Fast and reliable.</p>
+      <span class="model-pricing">$2.50 / 1M in • $10.00 / 1M out</span>
+    </div>
+    <div class="model-card">
+      <span class="model-provider">OpenAI</span>
+      <h3>GPT-4o mini</h3>
+      <p style="color:var(--text-secondary);font-size:0.875rem;margin:0;">Lightweight and cheap. Great for simple tasks, classification, and extraction.</p>
+      <span class="model-pricing">$0.15 / 1M in • $0.60 / 1M out</span>
+    </div>
+    <div class="model-card">
+      <span class="model-provider">Meta</span>
+      <h3>Llama 3 70B</h3>
+      <p style="color:var(--text-secondary);font-size:0.875rem;margin:0;">Open-source powerhouse. Cost-effective for high-volume pipelines.</p>
+      <span class="model-pricing">$0.80 / 1M in • $0.80 / 1M out</span>
+    </div>
+  </div>
+
+  <h2>Credit system</h2>
+  <p>Credits are the universal billing unit across all models. 1 credit ≈ 1,000 tokens (input + output combined). Actual token-to-credit conversion varies by model.</p>
+
+  <table class="docs-table">
+    <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>1 credit</td><td>~1,000 tokens</td></tr>
+      <tr><td>Our markup</td><td>+25% (average)</td></tr>
+      <tr><td>Balance tracking</td><td>Real-time</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Cost estimation</h2>
+  <p>Before running a pipeline, stepIQ shows an estimated cost breakdown per step. Here's an example:</p>
+
+  <div class="code-card">
+    <div class="code-header">
+      <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+      <span class="code-filename">cost-estimate.txt</span>
+    </div>
+    <pre class="code-body"><code>Pipeline: weekly-blog-generator
+Estimated cost: 12-18 credits (~€0.15)
+
+  Step 1 (research, claude-sonnet):   ~4 credits
+  Step 2 (pick_topic, gpt-4o):        ~2 credits
+  Step 3 (write_draft, claude-sonnet): ~8 credits
+  Step 4 (review, claude-sonnet):      ~4 credits
+
+Your balance: 1,847 credits</code></pre>
+  </div>
+</DocsLayout>
