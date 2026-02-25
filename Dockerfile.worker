@@ -14,4 +14,7 @@ COPY packages/core packages/core
 COPY apps/api apps/api
 COPY apps/worker apps/worker
 RUN bun tsc -p packages/core/tsconfig.json && bun tsc -p apps/api/tsconfig.json && bun tsc -p apps/worker/tsconfig.json
-CMD ["bun", "run", "apps/worker/dist/index.js"]
+COPY apps/api/drizzle ./apps/api/drizzle
+COPY apps/worker/start.sh ./apps/worker/start.sh
+RUN chmod +x ./apps/worker/start.sh
+CMD ["sh", "./apps/worker/start.sh"]
