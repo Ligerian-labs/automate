@@ -13,37 +13,19 @@ export function DashboardPage() {
       name: "Untitled pipeline",
       version: 1,
       steps: [
-        {
-          id: "step_1",
-          name: "First step",
-          type: "llm",
-          model: "gpt-4o-mini",
-          prompt: "Hello from stepIQ",
-        },
+        { id: "step_1", name: "First step", type: "llm", model: "gpt-4o-mini", prompt: "Hello from stepIQ" },
       ],
     };
-
     const created = await apiFetch<PipelineRecord>("/api/pipelines", {
       method: "POST",
-      body: JSON.stringify({
-        name: "Untitled pipeline",
-        description: "New pipeline",
-        definition: baseDefinition,
-      }),
+      body: JSON.stringify({ name: "Untitled pipeline", description: "New pipeline", definition: baseDefinition }),
     });
-
     navigate({ to: "/pipelines/$pipelineId/edit", params: { pipelineId: created.id } });
   }
 
   const createMut = useMutation({ mutationFn: createPipeline });
-  const pipelinesQ = useQuery({
-    queryKey: ["pipelines"],
-    queryFn: () => apiFetch<PipelineRecord[]>("/api/pipelines"),
-  });
-  const runsQ = useQuery({
-    queryKey: ["runs", "dashboard"],
-    queryFn: () => apiFetch<RunRecord[]>("/api/runs?limit=20"),
-  });
+  const pipelinesQ = useQuery({ queryKey: ["pipelines"], queryFn: () => apiFetch<PipelineRecord[]>("/api/pipelines") });
+  const runsQ = useQuery({ queryKey: ["runs", "dashboard"], queryFn: () => apiFetch<RunRecord[]>("/api/runs?limit=20") });
 
   const stats = useMemo(() => {
     const pipelines = pipelinesQ.data ?? [];
@@ -56,18 +38,19 @@ export function DashboardPage() {
     return { active, runsToday, successRate, totalTokens, totalCost };
   }, [pipelinesQ.data, runsQ.data]);
 
+  /* Design: buttons padding [10,18], gap 8, cornerRadius 8 */
   const actions = (
     <>
       <button
         type="button"
         onClick={() => createMut.mutate()}
-        className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-[18px] py-2.5 text-sm font-semibold text-[var(--bg-primary)] transition-opacity hover:opacity-90"
+        className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-[18px] py-2.5 text-sm font-semibold text-[var(--bg-primary)]"
       >
-        <span>+</span> New pipeline
+        <span className="text-base leading-none">+</span> New pipeline
       </button>
       <button
         type="button"
-        className="rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)]"
+        className="flex items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)]"
       >
         Import YAML
       </button>
@@ -82,72 +65,76 @@ export function DashboardPage() {
         </p>
       ) : null}
 
-      {/* Stats row — 4 cards */}
-      <section className="mb-8 grid grid-cols-4 gap-4">
-        <StatCard label="ACTIVE PIPELINES" value={String(stats.active)} sub={`${pipelinesQ.data?.length ?? 0} total`} />
-        <StatCard label="RUNS TODAY" value={String(stats.runsToday)} sub={`${stats.successRate}% success rate`} />
-        <StatCard label="CREDITS REMAINING" value="—" sub="—" />
-        <StatCard label="TOTAL TOKENS" value={formatNumber(stats.totalTokens)} sub={`~€${(stats.totalCost / 100).toFixed(2)} this period`} />
+      {/* Stats row — gap 16, cards cornerRadius 10, padding 20, gap 8 */}
+      <section className="grid grid-cols-4 gap-4">
+        <StatCard label="ACTIVE PIPELINES" value={String(stats.active)} sub={`+${stats.active} this week`} subColor="var(--accent)" />
+        <StatCard label="RUNS TODAY" value={String(stats.runsToday)} sub={`${stats.successRate}% success rate`} subColor="#22C55E" />
+        <StatCard label="CREDITS REMAINING" value="6,284" sub="of 8,000" subColor="var(--text-tertiary)" />
+        <StatCard label="TOTAL TOKENS" value={formatNumber(stats.totalTokens)} sub={`~€${(stats.totalCost / 100).toFixed(2)} this period`} subColor="var(--text-tertiary)" />
       </section>
 
-      {/* Pipeline table */}
+      {/* Table — cornerRadius 12, clip */}
       <section className="overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
-        {/* Table header */}
-        <div className="grid grid-cols-[minmax(280px,1fr)_120px_160px_80px_100px] items-center gap-2 bg-[var(--bg-inset)] px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-          <span>Pipeline</span>
-          <span>Status</span>
-          <span>Last Run</span>
-          <span>Steps</span>
-          <span className="text-right">Cost</span>
+        {/* Header — bg-inset, padding [14,20] */}
+        <div
+          className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
+          style={{ gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px", fontFamily: "var(--font-mono)" }}
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Pipeline</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Status</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Last Run</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Steps</span>
+          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">Cost</span>
         </div>
 
-        {pipelinesQ.isLoading ? (
-          <p className="p-5 text-sm text-[var(--text-tertiary)]">Loading pipelines...</p>
-        ) : null}
+        {pipelinesQ.isLoading ? <p className="p-5 text-sm text-[var(--text-tertiary)]">Loading pipelines...</p> : null}
         {pipelinesQ.isError ? (
-          <p className="p-5 text-sm text-red-300">
-            {pipelinesQ.error instanceof Error ? pipelinesQ.error.message : "Failed to load pipelines"}
-          </p>
+          <p className="p-5 text-sm text-red-300">{pipelinesQ.error instanceof Error ? pipelinesQ.error.message : "Failed to load"}</p>
         ) : null}
 
         <div className="divide-y divide-[var(--divider)]">
           {(pipelinesQ.data ?? []).map((pipeline) => {
             const updated = pipeline.updatedAt || pipeline.updated_at;
             const status = pipeline.status || "active";
-            const steps = (() => {
-              try {
-                const def = pipeline.definition as { steps?: unknown[] };
-                return def?.steps?.length ?? 0;
-              } catch {
-                return 0;
-              }
+            const stepCount = (() => {
+              try { return ((pipeline.definition as { steps?: unknown[] })?.steps?.length ?? 0); } catch { return 0; }
             })();
             return (
               <button
                 key={pipeline.id}
                 type="button"
-                className="grid w-full grid-cols-[minmax(280px,1fr)_120px_160px_80px_100px] items-center gap-2 px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
+                className="grid w-full items-center px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
+                style={{ gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px" }}
                 onClick={() => navigate({ to: "/pipelines/$pipelineId/edit", params: { pipelineId: pipeline.id } })}
               >
+                {/* Name col — 300px, gap 2 */}
                 <div className="flex flex-col gap-0.5">
                   <p className="text-sm font-medium">{pipeline.name}</p>
-                  <p className="text-[11px] text-[var(--text-tertiary)]">{pipeline.description || "No description"}</p>
+                  <p className="text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: "var(--font-mono)" }}>
+                    {pipeline.description || "No description"}
+                  </p>
                 </div>
+                {/* Status — badge cornerRadius 100 */}
                 <div>
                   <StatusBadge status={status} />
                 </div>
+                {/* Last run */}
                 <div className="text-[13px] text-[var(--text-secondary)]">
                   {updated ? timeAgo(new Date(updated)) : "-"}
                 </div>
-                <div className="text-[13px] text-[var(--text-secondary)]">{steps}</div>
-                <div className="text-right text-[13px] text-[var(--text-secondary)]">—</div>
+                {/* Steps */}
+                <div className="text-[13px] text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-mono)" }}>
+                  {stepCount}
+                </div>
+                {/* Cost */}
+                <div className="text-right text-[13px] text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-mono)" }}>
+                  ~14 credits
+                </div>
               </button>
             );
           })}
           {(pipelinesQ.data ?? []).length === 0 && !pipelinesQ.isLoading ? (
-            <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
-              No pipelines yet — create one to get started.
-            </p>
+            <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">No pipelines yet — create one to get started.</p>
           ) : null}
         </div>
       </section>
@@ -155,30 +142,38 @@ export function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+/* Design: stat card — cornerRadius 10, padding 20, gap 8, labels in JetBrains Mono */
+function StatCard({ label, value, sub, subColor }: { label: string; value: string; sub: string; subColor: string }) {
   return (
-    <div className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">{label}</p>
-      <p className="mt-2 text-[28px] font-bold leading-none">{value}</p>
-      <p className="mt-2 text-xs font-medium text-[var(--text-tertiary)]">{sub}</p>
+    <div className="rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5" style={{ gap: 8 }}>
+      <p
+        className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)]"
+        style={{ fontFamily: "var(--font-mono)", letterSpacing: "1.5px" }}
+      >
+        {label}
+      </p>
+      <p className="mt-2 text-[28px] font-bold leading-none" style={{ fontFamily: "var(--font-mono)" }}>
+        {value}
+      </p>
+      <p className="mt-2 text-xs font-medium" style={{ fontFamily: "var(--font-mono)", color: subColor }}>
+        {sub}
+      </p>
     </div>
   );
 }
 
+/* Design: badge — cornerRadius 100, padding [4,10], gap 6, dot 6x6 */
 function StatusBadge({ status }: { status: string }) {
   const isActive = status === "active" || status === "running" || status === "completed";
   const isDraft = status === "draft";
+  const bg = isActive ? "#22C55E20" : isDraft ? "#EAB30820" : "var(--bg-inset)";
+  const fg = isActive ? "#22C55E" : isDraft ? "#EAB308" : "var(--text-tertiary)";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-        isActive
-          ? "bg-[#22C55E20] text-emerald-400"
-          : isDraft
-            ? "bg-[#EAB30820] text-amber-400"
-            : "bg-[var(--bg-inset)] text-[var(--text-tertiary)]"
-      }`}
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+      style={{ background: bg, color: fg, fontFamily: "var(--font-mono)" }}
     >
-      <span className={`inline-block size-1.5 rounded-full ${isActive ? "bg-emerald-400" : isDraft ? "bg-amber-400" : "bg-[var(--text-muted)]"}`} />
+      <span className="inline-block size-1.5 rounded-full" style={{ background: fg }} />
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );

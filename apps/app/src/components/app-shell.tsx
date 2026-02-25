@@ -27,17 +27,19 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      {/* Sidebar — 260px, matches design */}
-      <aside className="flex w-[260px] shrink-0 flex-col border-r border-[var(--divider)] bg-[var(--bg-inset)] px-5 py-6">
-        {/* Logo */}
-        <div className="mb-8 flex items-center gap-2">
-          <div className="grid size-7 place-items-center rounded-md bg-[var(--accent)] text-xs font-bold text-[var(--bg-primary)]">
+      {/* Sidebar — 260px, padding [24,20], gap 32 */}
+      <aside className="flex w-[260px] shrink-0 flex-col border-r border-[var(--divider)] bg-[var(--bg-inset)] px-5 py-6" style={{ gap: 32 }}>
+        {/* Logo — 28x28, cornerRadius 6, gap 8 */}
+        <div className="flex items-center gap-2">
+          <div className="grid size-7 place-items-center rounded-[6px] bg-[var(--accent)] text-[10px] font-bold text-[var(--bg-primary)]">
             sQ
           </div>
-          <span className="text-base font-bold tracking-tight">stepIQ</span>
+          <span className="font-[var(--font-mono)] text-base font-bold tracking-tight" style={{ fontFamily: "var(--font-mono)" }}>
+            stepIQ
+          </span>
         </div>
 
-        {/* Main nav */}
+        {/* Main nav — gap 4 */}
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => {
             const active = item.to && location.pathname.startsWith(item.to);
@@ -48,7 +50,7 @@ export function AppShell({
                   key={item.label}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] opacity-60"
                 >
-                  <span className="w-4 text-center text-xs">{item.icon}</span>
+                  <span className="w-[18px] text-center text-[var(--text-tertiary)]">{item.icon}</span>
                   {item.label}
                 </span>
               );
@@ -64,7 +66,9 @@ export function AppShell({
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
                 )}
               >
-                <span className="w-4 text-center text-xs">{item.icon}</span>
+                <span className={cn("w-[18px] text-center", active ? "text-[var(--accent)]" : "text-[var(--text-tertiary)]")}>
+                  {item.icon}
+                </span>
                 {item.label}
               </Link>
             );
@@ -74,8 +78,8 @@ export function AppShell({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Settings */}
-        <nav className="mb-4 flex flex-col gap-1">
+        {/* Settings — gap 4 */}
+        <nav className="flex flex-col gap-1">
           <Link
             to="/settings"
             className={cn(
@@ -85,22 +89,24 @@ export function AppShell({
                 : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
             )}
           >
-            <span className="w-4 text-center text-xs">⚙</span>
+            <span className={cn("w-[18px] text-center", location.pathname.startsWith("/settings") ? "text-[var(--accent)]" : "text-[var(--text-tertiary)]")}>
+              ⚙
+            </span>
             Settings
           </Link>
         </nav>
 
         {/* Divider */}
-        <div className="mb-4 h-px bg-[var(--divider)]" />
+        <div className="-mx-5 h-px bg-[var(--divider)]" />
 
-        {/* User row */}
+        {/* User row — gap 12 */}
         <div className="flex items-center gap-3">
-          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--bg-surface)] text-[11px] font-semibold">
+          <div className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--bg-surface)] text-[11px] font-semibold text-[var(--text-secondary)]" style={{ fontFamily: "var(--font-mono)" }}>
             VD
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-medium">Valentin D.</p>
-            <p className="truncate text-[11px] text-[var(--text-tertiary)]">Pro plan</p>
+            <p className="truncate text-[11px] text-[var(--text-tertiary)]" style={{ fontFamily: "var(--font-mono)" }}>Pro plan</p>
           </div>
           <button
             type="button"
@@ -120,10 +126,10 @@ export function AppShell({
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex flex-1 flex-col overflow-auto px-10 py-8">
+      {/* Main content — padding [32,40], gap 32 */}
+      <main className="flex flex-1 flex-col overflow-auto px-10 py-8" style={{ gap: 32 }}>
         {/* Top bar */}
-        <header className="mb-8 flex items-start justify-between">
+        <header className="flex items-start justify-between">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-bold">{title}</h1>
             {subtitle ? (
