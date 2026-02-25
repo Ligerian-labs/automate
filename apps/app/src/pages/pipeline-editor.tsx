@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import YAML from "yaml";
 import { AppShell } from "../components/app-shell";
 import { apiFetch, type PipelineRecord, type RunRecord } from "../lib/api";
 
@@ -44,8 +45,8 @@ export function PipelineEditorPage() {
   const [variables, setVariables] = useState<{ key: string; value: string }[]>([]);
   const [expandedStep, setExpandedStep] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
-  const [jsonMode, setJsonMode] = useState(false);
-  const [rawJson, setRawJson] = useState("");
+  const [yamlMode, setYamlMode] = useState(false);
+  const [rawYaml, setRawYaml] = useState("");
 
   // Load pipeline data
   useEffect(() => {
@@ -68,13 +69,13 @@ export function PipelineEditorPage() {
     );
     const vars = def.variables ?? {};
     setVariables(Object.entries(vars).map(([key, value]) => ({ key, value: String(value) })));
-    setRawJson(JSON.stringify(p.definition ?? {}, null, 2));
+    setRawYaml(YAML.stringify(p.definition ?? {}));
   }, [pipelineQ.data]);
 
   // Build definition from structured state
   const buildDefinition = useCallback(() => {
-    if (jsonMode) {
-      try { return JSON.parse(rawJson); } catch { return {}; }
+    if (yamlMode) {
+      try { return YAML.parse(rawYaml); } catch { return {}; }
     }
     const vars: Record<string, string> = {};
     for (const v of variables) { if (v.key) vars[v.key] = v.value; }
@@ -93,13 +94,13 @@ export function PipelineEditorPage() {
       })),
       variables: Object.keys(vars).length > 0 ? vars : undefined,
     };
-  }, [jsonMode, rawJson, name, steps, variables, pipelineQ.data]);
+  }, [yamlMode, rawYaml, name, steps, variables, pipelineQ.data]);
 
-  // Sync rawJson when switching to JSON mode
+  // Sync rawYaml when switching to YAML mode
   useEffect(() => {
-    if (jsonMode) setRawJson(JSON.stringify(buildDefinition(), null, 2));
+    if (yamlMode) setRawYaml(YAML.stringify(buildDefinition()));
     // eslint-disable-next-line
-  }, [jsonMode, buildDefinition]);
+  }, [yamlMode, buildDefinition]);
 
   // Step mutations
   const updateStep = (idx: number, patch: Partial<StepDef>) => {
@@ -250,26 +251,26 @@ export function PipelineEditorPage() {
             </div>
           </div>
 
-          {/* JSON toggle */}
+          {/* YAML editor */}
           <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold">Raw JSON</h2>
+              <h2 className="text-[15px] font-semibold">YAML</h2>
               <button
                 type="button"
-                onClick={() => setJsonMode(!jsonMode)}
+                onClick={() => setYamlMode(!yamlMode)}
                 className={`rounded-[6px] px-2.5 py-1 text-[11px] font-semibold ${
-                  jsonMode ? "bg-[var(--accent)] text-[var(--bg-primary)]" : "bg-[var(--bg-inset)] text-[var(--text-secondary)]"
+                  yamlMode ? "bg-[var(--accent)] text-[var(--bg-primary)]" : "bg-[var(--bg-inset)] text-[var(--text-secondary)]"
                 }`}
               >
-                {jsonMode ? "Editing JSON" : "View only"}
+                {yamlMode ? "Editing YAML" : "View only"}
               </button>
             </div>
             <textarea
               className="min-h-[180px] w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] p-3 text-xs leading-relaxed focus:border-[var(--accent)] focus:outline-none"
               style={{ fontFamily: "var(--font-mono)" }}
-              value={jsonMode ? rawJson : JSON.stringify(buildDefinition(), null, 2)}
-              onChange={(e) => jsonMode && setRawJson(e.target.value)}
-              readOnly={!jsonMode}
+              value={yamlMode ? rawYaml : YAML.stringify(buildDefinition())}
+              onChange={(e) => yamlMode && setRawYaml(e.target.value)}
+              readOnly={!yamlMode}
             />
           </div>
         </div>
