@@ -19,15 +19,12 @@
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",
     "typecheck": "turbo run typecheck",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test": "bun test"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@types/node": "^22.0.0",
-    "@vitest/coverage-v8": "^4.0.18",
     "turbo": "^2.8.10",
-    "typescript": "^5.7.0",
-    "vitest": "^4.0.18"
+    "typescript": "^5.7.0"
   }
 }

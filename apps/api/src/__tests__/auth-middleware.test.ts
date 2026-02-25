@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeAll } from "vitest";
+// @ts-nocheck
+import { describe, it, expect, mock } from "bun:test";
 import { Hono } from "hono";
 import { SignJWT } from "jose";
 
-vi.mock("../lib/env.js", () => ({
+mock.module("../lib/env.js", () => ({
   config: {
-    jwtSecret: "test-secret-key-for-auth-middleware-testing-12345",
+    jwtSecret: "test-secret-key-that-is-long-enough-for-testing-purposes",
     databaseUrl: "",
     redisUrl: "",
     stripeSecretKey: "",
@@ -16,11 +17,10 @@ vi.mock("../lib/env.js", () => ({
   },
 }));
 
-import { requireAuth } from "../middleware/auth.js";
-import type { Env } from "../lib/env.js";
+const { requireAuth } = await import("../middleware/auth.js");
 
 const secret = new TextEncoder().encode(
-  "test-secret-key-for-auth-middleware-testing-12345"
+  "test-secret-key-that-is-long-enough-for-testing-purposes"
 );
 
 async function makeToken(
@@ -34,7 +34,7 @@ async function makeToken(
 }
 
 function createTestApp() {
-  const app = new Hono<{ Variables: Env }>();
+  const app = new Hono();
   app.use("*", requireAuth);
   app.get("/test", (c) => {
     return c.json({
@@ -74,7 +74,7 @@ describe("requireAuth middleware", () => {
   it("rejects expired JWT", async () => {
     const token = await new SignJWT({ sub: "user-1", plan: "pro" })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("-1h") // expired 1 hour ago
+      .setExpirationTime("-1h")
       .sign(secret);
 
     const res = await app.request("/test", {

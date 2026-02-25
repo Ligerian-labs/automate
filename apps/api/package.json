@@ -10,7 +10,7 @@
     "seed": "tsx src/db/seed.ts",
     "lint": "biome lint src",
     "typecheck": "tsc -b",
-    "test": "vitest run"
+    "test": "bun test"
   },
   "dependencies": {
     "@stepiq/core": "*",

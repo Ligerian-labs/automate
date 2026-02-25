@@ -1,23 +1,33 @@
-import { describe, it, expect, vi, beforeAll } from "vitest";
+// @ts-nocheck
+import { describe, it, expect, mock, beforeAll } from "bun:test";
+import { Hono } from "hono";
 
-// Mock DB and env before imports
-vi.mock("../db/index.js", () => ({
+// Mock DB before importing app
+mock.module("../db/index.js", () => ({
   db: {
-    select: vi.fn().mockReturnThis(),
-    from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue([]),
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockResolvedValue([]),
-    update: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
-    orderBy: vi.fn().mockResolvedValue([]),
-    delete: vi.fn().mockReturnThis(),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => Promise.resolve([]),
+          orderBy: () => Promise.resolve([]),
+        }),
+        orderBy: () => Promise.resolve([]),
+      }),
+    }),
+    insert: () => ({
+      values: () => ({
+        returning: () => Promise.resolve([]),
+      }),
+    }),
+    update: () => ({
+      set: () => ({
+        where: () => Promise.resolve([]),
+      }),
+    }),
   },
 }));
 
-vi.mock("../lib/env.js", () => ({
+mock.module("../lib/env.js", () => ({
   config: {
     databaseUrl: "postgres://test:test@localhost:5432/test",
     redisUrl: "redis://localhost:6379",
@@ -31,7 +41,7 @@ vi.mock("../lib/env.js", () => ({
   },
 }));
 
-import { app } from "../app.js";
+const { app } = await import("../app.js");
 
 describe("Health check", () => {
   it("GET /health returns ok", async () => {
@@ -104,7 +114,6 @@ describe("Models route", () => {
   it("models have markup applied", async () => {
     const res = await app.request("/api/models");
     const body = await res.json();
-    // With 25% markup, GPT-4o mini input should be ceil(150 * 1.25) = 188
     const mini = body.find((m: { id: string }) => m.id === "gpt-4o-mini");
     expect(mini).toBeDefined();
     expect(mini.input_cost_per_million).toBe(Math.ceil(150 * 1.25));
