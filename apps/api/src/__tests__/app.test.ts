@@ -87,6 +87,7 @@ describe("Protected routes require auth", () => {
     ["GET", "/api/runs"],
     ["GET", "/api/user/me"],
     ["GET", "/api/user/usage"],
+    ["GET", "/api/user/secrets"],
   ];
 
   for (const [method, path] of protectedPaths) {

@@ -119,3 +119,14 @@ export interface UsageRecord {
   runs_today: number;
   total_cost_cents: number;
 }
+
+export interface SecretRecord {
+  id: string;
+  name: string;
+  keyVersion?: number;
+  key_version?: number;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+}
