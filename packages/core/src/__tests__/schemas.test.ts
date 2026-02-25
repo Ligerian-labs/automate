@@ -236,6 +236,8 @@ describe("runPipelineSchema", () => {
 describe("createScheduleSchema", () => {
   it("accepts valid schedule", () => {
     const result = createScheduleSchema.safeParse({
+      name: "Weekly blog generation",
+      description: "Generate weekly blog on Mondays",
       cron_expression: "0 9 * * 1",
       timezone: "Europe/Paris",
     });
@@ -244,12 +246,38 @@ describe("createScheduleSchema", () => {
 
   it("defaults timezone to UTC", () => {
     const result = createScheduleSchema.safeParse({
+      name: "Daily digest",
       cron_expression: "0 9 * * *",
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.timezone).toBe("UTC");
     }
+  });
+
+  it("rejects empty name", () => {
+    const result = createScheduleSchema.safeParse({
+      name: "   ",
+      cron_expression: "0 9 * * *",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid cron field count", () => {
+    const result = createScheduleSchema.safeParse({
+      name: "Bad cron",
+      cron_expression: "0 9 * *",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid timezone", () => {
+    const result = createScheduleSchema.safeParse({
+      name: "Bad timezone",
+      cron_expression: "0 9 * * *",
+      timezone: "Mars/Olympus",
+    });
+    expect(result.success).toBe(false);
   });
 });
 

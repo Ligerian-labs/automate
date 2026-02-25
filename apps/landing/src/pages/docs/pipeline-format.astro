@@ -21,14 +21,14 @@ const varsTable = [
 ---
 
 <DocsLayout title="Pipeline Format" breadcrumb={[{ label: "Docs", href: "/docs" }, { label: "Pipeline Format" }]}>
-  <h1>Pipeline Format</h1>
+  <h1 id="overview">Pipeline Format</h1>
   <p>Pipelines are defined in YAML or JSON. Each pipeline has a name, optional variables, an input schema, a list of steps, and output delivery configuration.</p>
 
   <div class="docs-info-box">
     You can validate any pipeline definition without saving it using <code>POST /api/pipelines/validate</code>
   </div>
 
-  <h2>Pipeline definition</h2>
+  <h2 id="pipeline-definition">Pipeline definition</h2>
   <p>The top-level fields of a pipeline definition:</p>
 
   <table class="docs-table">
@@ -43,7 +43,7 @@ const varsTable = [
     </tbody>
   </table>
 
-  <h2>Step types</h2>
+  <h2 id="step-types">Step types</h2>
   <p>Each step in a pipeline has a type that determines how it executes. The default type is <code>llm</code>.</p>
 
   <table class="docs-table">
@@ -74,7 +74,7 @@ const varsTable = [
     </tbody>
   </table>
 
-  <h2>Output delivery</h2>
+  <h2 id="output-delivery">Output delivery</h2>
   <p>Configure where the final pipeline output gets delivered. Multiple delivery targets can be specified.</p>
 
   <div class="docs-card-grid">

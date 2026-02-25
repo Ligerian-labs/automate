@@ -12,10 +12,12 @@ import { createRoot } from "react-dom/client";
 import { isAuthenticated } from "./lib/auth";
 import { AuthPage } from "./pages/auth-page";
 import { DashboardPage } from "./pages/dashboard";
+import { NewSchedulePage } from "./pages/new-schedule";
 import { PipelineEditorPage } from "./pages/pipeline-editor";
 import { PipelinesListPage } from "./pages/pipelines-list";
 import { RunDetailPage } from "./pages/run-detail";
 import { RunsListPage } from "./pages/runs-list";
+import { SchedulesPage } from "./pages/schedules";
 import { SettingsPage } from "./pages/settings";
 import "./styles.css";
 
@@ -93,6 +95,20 @@ const runRoute = createRoute({
   component: RunDetailPage,
 });
 
+const schedulesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/schedules",
+  beforeLoad: requireAuth,
+  component: SchedulesPage,
+});
+
+const newScheduleRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/schedules/new",
+  beforeLoad: requireAuth,
+  component: NewSchedulePage,
+});
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
@@ -109,6 +125,8 @@ const routeTree = rootRoute.addChildren([
   editorRoute,
   runsRoute,
   runRoute,
+  schedulesRoute,
+  newScheduleRoute,
   settingsRoute,
 ]);
 

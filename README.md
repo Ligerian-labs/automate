@@ -17,20 +17,73 @@ Monorepo with runtime apps and reusable packages:
 | `packages/core` | Shared types, schemas, constants | Zod, TypeScript |
 | `packages/ui` | Shared UI/helpers for React apps | TypeScript, React |
 
-## Quick Start
+## Quick Start (Manual Local Debug)
+
+### 1. Create `.env`
+
+From repo root:
 
 ```bash
-# 1. Start infra
-cd docker && docker compose up -d
+cp .env.example .env
+```
 
-# 2. Install deps
+Then update `.env` to:
+
+```env
+DATABASE_URL=postgres://stepiq:stepiq@localhost:5433/stepiq
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=local-dev-jwt-secret-change-me-please
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+CORS_ORIGIN=http://localhost:5173
+PUBLIC_API_URL=http://localhost:3001
+VITE_API_URL=http://localhost:3001
+```
+
+### 2. Start local infra
+
+```bash
+docker compose -f compose.yaml up -d
+```
+
+### 3. Install dependencies and run migrations
+
+```bash
 bun install
-
-# 3. Run migrations
+set -a; source .env; set +a
 bun run db:migrate
+```
 
-# 4. Start all services
-bun run dev
+### 4. Start services (4 terminals)
+
+Terminal A (API):
+
+```bash
+set -a; source .env; set +a
+bun run --filter @stepiq/api dev
+```
+
+Terminal B (Worker):
+
+```bash
+set -a; source .env; set +a
+bun run --filter @stepiq/worker dev
+```
+
+Terminal C (App):
+
+```bash
+set -a; source .env; set +a
+bun run --filter @stepiq/app dev
+```
+
+Terminal D (Landing):
+
+```bash
+set -a; source .env; set +a
+bun run --filter @stepiq/landing dev
 ```
 
 Services:
@@ -39,12 +92,22 @@ Services:
 - **API:** http://localhost:3001
 - **API Health:** http://localhost:3001/health
 
-## Environment
-
-Copy `.env.example` to `.env` and fill in your API keys:
+### 5. Verify
 
 ```bash
-cp .env.example .env
+curl http://localhost:3001/health
+```
+
+Expected:
+
+```json
+{"status":"ok","version":"0.0.1"}
+```
+
+### 6. Stop infra (optional)
+
+```bash
+docker compose -f compose.yaml down
 ```
 
 ## Project Structure
@@ -59,7 +122,8 @@ stepiq/
 ├── packages/
 │   ├── core/         # Shared types, Zod schemas, constants
 │   └── ui/           # Shared React UI utilities/components
-├── docker/           # Docker Compose for local dev
+├── compose.yaml      # Local dev infra (Postgres + Redis)
+├── docker/           # Container files for other environments
 └── biome.json        # Linter/formatter config
 ```
 

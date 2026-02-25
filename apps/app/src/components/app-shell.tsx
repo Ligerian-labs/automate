@@ -4,12 +4,124 @@ import type { ReactNode } from "react";
 import { clearToken } from "../lib/auth";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: "⊞" },
-  { to: "/pipelines", label: "Pipelines", icon: "◇" },
-  { to: "/runs", label: "Runs", icon: "▷" },
-  { to: "/schedules", label: "Schedules", icon: "◷" },
-  { to: "/templates", label: "Templates", icon: "▤" },
+  { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
+  { to: "/pipelines", label: "Pipelines", icon: "workflow" },
+  { to: "/runs", label: "Runs", icon: "play" },
+  { to: "/schedules", label: "Schedules", icon: "timer" },
+  { to: "/templates", label: "Templates", icon: "layout-template" },
 ];
+
+function NavIcon({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
+  if (name === "dashboard") {
+    return (
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        className={className}
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="3" width="7" height="7" rx="1.2" />
+        <rect x="14" y="3" width="7" height="7" rx="1.2" />
+        <rect x="3" y="14" width="7" height="7" rx="1.2" />
+        <rect x="14" y="14" width="7" height="7" rx="1.2" />
+      </svg>
+    );
+  }
+  if (name === "workflow") {
+    return (
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        className={className}
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="6" cy="6" r="2" />
+        <circle cx="18" cy="6" r="2" />
+        <circle cx="12" cy="18" r="2" />
+        <path d="M8 6h8M7.5 7.5l3.5 8M16.5 7.5l-3.5 8" />
+      </svg>
+    );
+  }
+  if (name === "play") {
+    return (
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        className={className}
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polygon points="8 6 18 12 8 18 8 6" />
+      </svg>
+    );
+  }
+  if (name === "timer") {
+    return (
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        className={className}
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="13" r="8" />
+        <path d="M12 9v4l3 2M9 3h6" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="4" width="8" height="7" rx="1.2" />
+      <rect x="13" y="4" width="8" height="7" rx="1.2" />
+      <rect x="3" y="13" width="8" height="7" rx="1.2" />
+      <rect x="13" y="13" width="8" height="7" rx="1.2" />
+    </svg>
+  );
+}
 
 export function AppShell({
   title,
@@ -17,7 +129,7 @@ export function AppShell({
   actions,
   children,
 }: {
-  title: string;
+  title?: string;
   subtitle?: string;
   actions?: ReactNode;
   children: ReactNode;
@@ -34,11 +146,27 @@ export function AppShell({
       >
         {/* Logo — 28x28, cornerRadius 6, gap 8 */}
         <div className="flex items-center gap-2">
-          <div className="grid size-7 place-items-center rounded-[6px] bg-[var(--accent)] text-[10px] font-bold text-[var(--bg-primary)]">
-            sQ
+          <div className="grid size-7 place-items-center rounded-[6px] bg-[var(--accent)] text-[var(--bg-primary)]">
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+              <path d="M7 10v4a3 3 0 0 0 3 3h4" />
+              <circle cx="17.5" cy="6.5" r="3.5" />
+            </svg>
           </div>
           <span
-            className="font-[var(--font-mono)] text-base font-bold tracking-tight"
+            className="font-[var(--font-mono)] text-base font-bold"
             style={{ fontFamily: "var(--font-mono)" }}
           >
             stepIQ
@@ -52,16 +180,18 @@ export function AppShell({
             const isPlaceholder =
               item.to !== "/dashboard" &&
               item.to !== "/pipelines" &&
-              item.to !== "/runs";
+              item.to !== "/runs" &&
+              item.to !== "/schedules";
             if (isPlaceholder) {
               return (
                 <span
                   key={item.label}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)] opacity-60"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-secondary)]"
                 >
-                  <span className="w-[18px] text-center text-[var(--text-tertiary)]">
-                    {item.icon}
-                  </span>
+                  <NavIcon
+                    name={item.icon}
+                    className="w-[18px] text-[var(--text-tertiary)]"
+                  />
                   {item.label}
                 </span>
               );
@@ -77,16 +207,15 @@ export function AppShell({
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
                 )}
               >
-                <span
+                <NavIcon
+                  name={item.icon}
                   className={cn(
-                    "w-[18px] text-center",
+                    "w-[18px]",
                     active
                       ? "text-[var(--accent)]"
                       : "text-[var(--text-tertiary)]",
                   )}
-                >
-                  {item.icon}
-                </span>
+                />
                 {item.label}
               </Link>
             );
@@ -107,16 +236,27 @@ export function AppShell({
                 : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
             )}
           >
-            <span
+            <svg
+              aria-hidden="true"
+              focusable="false"
               className={cn(
-                "w-[18px] text-center",
+                "w-[18px]",
                 location.pathname.startsWith("/settings")
                   ? "text-[var(--accent)]"
                   : "text-[var(--text-tertiary)]",
               )}
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              ⚙
-            </span>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.7 1.7 0 0 0-1.82-.33 1.7 1.7 0 0 0-1 1.54V21a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1-1.54 1.7 1.7 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.7 1.7 0 0 0 .33-1.82 1.7 1.7 0 0 0-1.54-1H3a2 2 0 0 1 0-4h.09a1.7 1.7 0 0 0 1.54-1 1.7 1.7 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.7 1.7 0 0 0 1.82.33h.01a1.7 1.7 0 0 0 1-1.54V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.54 1.7 1.7 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.7 1.7 0 0 0-.33 1.82v.01a1.7 1.7 0 0 0 1.54 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.54 1Z" />
+            </svg>
             Settings
           </Link>
         </nav>
@@ -176,17 +316,19 @@ export function AppShell({
         style={{ gap: 32 }}
       >
         {/* Top bar */}
-        <header className="flex items-start justify-between">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold">{title}</h1>
-            {subtitle ? (
-              <p className="text-sm text-[var(--text-tertiary)]">{subtitle}</p>
+        {title || subtitle || actions ? (
+          <header className="flex items-start justify-between">
+            <div className="flex flex-col gap-1">
+              {title ? <h1 className="text-2xl font-bold">{title}</h1> : null}
+              {subtitle ? (
+                <p className="text-sm text-[var(--text-tertiary)]">{subtitle}</p>
+              ) : null}
+            </div>
+            {actions ? (
+              <div className="flex items-center gap-3">{actions}</div>
             ) : null}
-          </div>
-          {actions ? (
-            <div className="flex items-center gap-3">{actions}</div>
-          ) : null}
-        </header>
+          </header>
+        ) : null}
         {children}
       </main>
     </div>

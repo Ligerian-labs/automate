@@ -218,6 +218,59 @@ describe("Run routes (authenticated)", () => {
   });
 });
 
+describe("Schedule routes (authenticated)", () => {
+  it("POST /api/pipelines/:id/schedules creates a schedule", async () => {
+    const headers = await authHeader();
+    const res = await app.request(
+      "/api/pipelines/a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4/schedules",
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: "Weekly blog generation",
+          description: "Generate weekly blog content",
+          cron_expression: "0 9 * * MON",
+          timezone: "UTC",
+        }),
+      },
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it("POST /api/pipelines/:id/schedules rejects missing name", async () => {
+    const headers = await authHeader();
+    const res = await app.request(
+      "/api/pipelines/a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4/schedules",
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          cron_expression: "0 9 * * MON",
+          timezone: "UTC",
+        }),
+      },
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /api/pipelines/:id/schedules rejects invalid cron field count", async () => {
+    const headers = await authHeader();
+    const res = await app.request(
+      "/api/pipelines/a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4/schedules",
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: "Bad cron",
+          cron_expression: "0 9 * *",
+          timezone: "UTC",
+        }),
+      },
+    );
+    expect(res.status).toBe(400);
+  });
+});
+
 describe("Auth routes (with data)", () => {
   it("POST /api/auth/register with valid data", async () => {
     const res = await app.request("/api/auth/register", {

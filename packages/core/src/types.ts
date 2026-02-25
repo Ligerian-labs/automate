@@ -173,6 +173,8 @@ export interface StepExecution {
 export interface Schedule {
   id: string;
   pipeline_id: string;
+  name: string;
+  description: string | null;
   cron_expression: string;
   timezone: string;
   input_data: Record<string, unknown>;
@@ -218,6 +220,8 @@ export interface RunPipelinePayload {
 }
 
 export interface CreateSchedulePayload {
+  name: string;
+  description?: string;
   cron_expression: string;
   timezone?: string;
   input_data?: Record<string, unknown>;

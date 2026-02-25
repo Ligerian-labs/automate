@@ -11,8 +11,8 @@ import { db } from "../db/index.js";
 import { pipelineVersions, pipelines, runs, schedules } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
-import { getNextCronTick } from "../services/cron.js";
 import { enqueueRun } from "../services/queue.js";
+import { createScheduleForPipeline } from "../services/schedule-create.js";
 
 export const pipelineRoutes = new Hono<{ Variables: Env }>();
 
@@ -227,38 +227,13 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
   const body = await c.req.json();
   const parsed = createScheduleSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
-
-  const [pipeline] = await db
-    .select()
-    .from(pipelines)
-    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
-    .limit(1);
-
-  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
-
-  let nextRun: Date;
-  try {
-    nextRun = getNextCronTick(
-      parsed.data.cron_expression,
-      parsed.data.timezone,
-    );
-  } catch (err) {
-    const error = err instanceof Error ? err.message : "Invalid schedule";
-    return c.json({ error }, 400);
+  const result = await createScheduleForPipeline(userId, pipelineId, parsed.data);
+  if (result.error) {
+    if (result.error === "Pipeline not found") return c.json({ error: result.error }, 404);
+    return c.json({ error: result.error }, 400);
   }
-  const [schedule] = await db
-    .insert(schedules)
-    .values({
-      pipelineId,
-      cronExpression: parsed.data.cron_expression,
-      timezone: parsed.data.timezone || "UTC",
-      inputData: parsed.data.input_data || {},
-      enabled: parsed.data.enabled ?? true,
-      nextRunAt: nextRun,
-    })
-    .returning();
 
-  return c.json(schedule, 201);
+  return c.json(result.schedule, 201);
 });
 
 // Validate pipeline definition

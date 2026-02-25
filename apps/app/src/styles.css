@@ -31,6 +31,14 @@ body {
   color: var(--text-primary);
 }
 
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

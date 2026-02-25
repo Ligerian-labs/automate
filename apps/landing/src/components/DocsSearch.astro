@@ -1,0 +1,197 @@
+---
+import type { DocsSearchEntry } from "../lib/docs/content.js";
+
+interface Props {
+  entries: DocsSearchEntry[];
+}
+
+const { entries } = Astro.props;
+---
+
+<section class="docs-search" aria-labelledby="docs-search-title">
+  <h2 id="docs-search-title" class="sr-only">Search documentation</h2>
+  <div class="docs-search-shell" data-docs-search>
+    <label class="sr-only" for="docs-search-input">Search documentation</label>
+    <span aria-hidden="true" class="docs-search-icon">⌕</span>
+    <input
+      id="docs-search-input"
+      class="docs-search-input"
+      type="search"
+      name="q"
+      autocomplete="off"
+      placeholder="Search documentation..."
+      data-docs-search-input
+      aria-describedby="docs-search-help docs-search-status"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-controls="docs-search-results"
+      aria-expanded="false"
+    />
+    <kbd class="docs-search-shortcut" aria-hidden="true">Ctrl K</kbd>
+  </div>
+  <p id="docs-search-help" class="docs-search-help">Type to search by topic, section, or keyword.</p>
+  <p id="docs-search-status" class="sr-only" aria-live="polite"></p>
+  <ul id="docs-search-results" class="docs-search-results" data-docs-search-results role="listbox"></ul>
+</section>
+
+<script is:inline type="application/json" id="docs-search-data" set:html={JSON.stringify(entries)}></script>
+
+<script is:inline>
+  const DATA_EL = document.getElementById("docs-search-data");
+  const root = document.querySelector("[data-docs-search]");
+
+  if (DATA_EL && root) {
+    const input = root.querySelector("[data-docs-search-input]");
+    const results = document.querySelector("[data-docs-search-results]");
+    const status = document.getElementById("docs-search-status");
+    const entries = JSON.parse(DATA_EL.textContent || "[]");
+
+    let activeIndex = -1;
+    let visible = [];
+
+    const normalize = (value) =>
+      value
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+
+    const scoreEntry = (entry, query) => {
+      const terms = query.split(" ").filter(Boolean);
+      if (terms.length === 0) {
+        return 0;
+      }
+
+      const haystack = normalize(`${entry.title} ${entry.excerpt} ${entry.keywords.join(" ")}`);
+
+      let score = 0;
+      for (const term of terms) {
+        if (entry.title.toLowerCase().includes(term)) {
+          score += 6;
+        }
+        if (entry.excerpt.toLowerCase().includes(term)) {
+          score += 3;
+        }
+        if (haystack.includes(term)) {
+          score += 1;
+        }
+      }
+
+      return score;
+    };
+
+    const updateExpanded = () => {
+      input?.setAttribute("aria-expanded", visible.length > 0 ? "true" : "false");
+    };
+
+    const renderResults = () => {
+      if (!results || !status) {
+        return;
+      }
+
+      results.innerHTML = "";
+
+      if (visible.length === 0) {
+        status.textContent = "No results";
+        updateExpanded();
+        return;
+      }
+
+      visible.forEach((entry, index) => {
+        const item = document.createElement("li");
+        item.className = "docs-search-item";
+        item.setAttribute("role", "option");
+        item.id = `docs-search-option-${index}`;
+
+        const link = document.createElement("a");
+        link.href = entry.href;
+        link.className = "docs-search-link";
+        link.innerHTML = `<strong>${entry.title}</strong><span>${entry.excerpt}</span>`;
+
+        if (index === activeIndex) {
+          item.classList.add("active");
+          link.setAttribute("aria-current", "true");
+        }
+
+        item.appendChild(link);
+        results.appendChild(item);
+      });
+
+      status.textContent = `${visible.length} result${visible.length === 1 ? "" : "s"}`;
+      updateExpanded();
+    };
+
+    const runSearch = (raw) => {
+      const query = normalize(raw);
+      if (!query) {
+        visible = [];
+        activeIndex = -1;
+        renderResults();
+        input?.removeAttribute("aria-activedescendant");
+        return;
+      }
+
+      const scored = entries
+        .map((entry) => ({ entry, score: scoreEntry(entry, query) }))
+        .filter((row) => row.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8)
+        .map((row) => row.entry);
+
+      visible = scored;
+      activeIndex = visible.length > 0 ? 0 : -1;
+      renderResults();
+
+      if (activeIndex >= 0) {
+        input?.setAttribute("aria-activedescendant", `docs-search-option-${activeIndex}`);
+      } else {
+        input?.removeAttribute("aria-activedescendant");
+      }
+    };
+
+    input?.addEventListener("input", (event) => {
+      runSearch(event.target.value);
+    });
+
+    input?.addEventListener("keydown", (event) => {
+      if (visible.length === 0) {
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        activeIndex = (activeIndex + 1) % visible.length;
+        renderResults();
+        input?.setAttribute("aria-activedescendant", `docs-search-option-${activeIndex}`);
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        activeIndex = (activeIndex - 1 + visible.length) % visible.length;
+        renderResults();
+        input?.setAttribute("aria-activedescendant", `docs-search-option-${activeIndex}`);
+      }
+
+      if (event.key === "Enter" && activeIndex >= 0) {
+        event.preventDefault();
+        window.location.href = visible[activeIndex].href;
+      }
+
+      if (event.key === "Escape") {
+        visible = [];
+        activeIndex = -1;
+        renderResults();
+        input?.removeAttribute("aria-activedescendant");
+      }
+    });
+
+    window.addEventListener("keydown", (event) => {
+      const isShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+      if (!isShortcut) {
+        return;
+      }
+
+      event.preventDefault();
+      input?.focus();
+    });
+  }
+</script>

@@ -1,16 +1,23 @@
 ---
 import "../../styles/global.css";
 import Layout from "../../layouts/Layout.astro";
+import DocsSearch from "../../components/DocsSearch.astro";
+import { DOCS_PAGES, getDocsSearchEntries } from "../../lib/docs/content.js";
+
+const searchEntries = getDocsSearchEntries();
+const featuredPages = DOCS_PAGES;
 ---
 
-<Layout title="Documentation — stepIQ">
+<Layout title="Documentation - stepIQ">
   <div class="landing">
-    <header class="header">
+    <a class="skip-link" href="#docs-main">Skip to main content</a>
+
+    <header class="header" aria-label="Primary">
       <a href="/" class="brand"><span class="logo-icon">⚡</span> stepIQ</a>
-      <nav class="nav-links">
+      <nav class="nav-links" aria-label="Main">
         <a href="/#features">Features</a>
         <a href="/#pricing">Pricing</a>
-        <a href="/docs">Docs</a>
+        <a href="/docs" aria-current="page">Docs</a>
       </nav>
       <div class="actions">
         <a href="https://app.stepiq.sh" class="ghost-link">Log in</a>
@@ -18,59 +25,44 @@ import Layout from "../../layouts/Layout.astro";
       </div>
     </header>
 
-    <section class="hero" style="padding-bottom:3rem;">
-      <p class="kicker">DOCUMENTATION</p>
-      <div class="hero-text-wrap">
-        <h1>Learn stepIQ</h1>
-        <p class="hero-sub">Everything you need to build, run, and scale AI pipelines.</p>
-      </div>
-    </section>
+    <main id="docs-main" tabindex="-1">
+      <section class="hero" style="padding-bottom:3rem;">
+        <p class="kicker">DOCUMENTATION</p>
+        <div class="hero-text-wrap">
+          <h1>Learn stepIQ</h1>
+          <p class="hero-sub">Everything you need to build, run, and scale AI pipelines.</p>
+        </div>
+        <DocsSearch entries={searchEntries} />
+      </section>
 
-    <section class="section" style="padding-top:2rem;">
-      <h2 style="margin-top:0;">Browse by category</h2>
-      <div class="docs-card-grid" style="grid-template-columns:repeat(3,1fr);">
-        <a href="/docs/getting-started" class="docs-card">
-          <h3>Getting Started</h3>
-          <p>Create your first pipeline in 5 minutes. Install, configure, and run your first AI workflow.</p>
-          <span class="docs-card-link">Start building →</span>
-        </a>
-        <a href="/docs/pipeline-format" class="docs-card">
-          <h3>Pipeline Format</h3>
-          <p>YAML/JSON schema reference. Step types, variables, interpolation, conditions, and output delivery.</p>
-          <span class="docs-card-link">View reference →</span>
-        </a>
-        <a href="/docs/api-reference" class="docs-card">
-          <h3>API Reference</h3>
-          <p>REST API endpoints for pipelines, runs, schedules, templates, and user management.</p>
-          <span class="docs-card-link">Explore API →</span>
-        </a>
-        <a href="/docs/models-pricing" class="docs-card">
-          <h3>Models & Pricing</h3>
-          <p>Supported models, token pricing, credit system, and cost estimation for your pipelines.</p>
-          <span class="docs-card-link">View pricing →</span>
-        </a>
-        <a href="/docs/architecture" class="docs-card">
-          <h3>Architecture</h3>
-          <p>Execution engine, worker flow, model router, cron scheduler, and infrastructure overview.</p>
-          <span class="docs-card-link">Learn more →</span>
-        </a>
-        <a href="/docs/getting-started#scheduling" class="docs-card">
-          <h3>Scheduling</h3>
-          <p>Cron expressions, timezone support, distributed locking, and automated pipeline triggers.</p>
-          <span class="docs-card-link">Set up schedules →</span>
-        </a>
-      </div>
-    </section>
+      <section class="section" style="padding-top:2rem;">
+        <h2 style="margin-top:0;">Browse by category</h2>
+        <div class="docs-card-grid" style="grid-template-columns:repeat(3,1fr);">
+          {featuredPages.map((page) => (
+            <a href={page.route} class="docs-card" aria-label={`Open ${page.title} documentation`}>
+              <h3>{page.title}</h3>
+              <p>{page.description}</p>
+              <span class="docs-card-link">Open docs →</span>
+            </a>
+          ))}
+          <a href="/docs/api-reference#schedules" class="docs-card" aria-label="Open scheduling documentation">
+            <h3>Scheduling</h3>
+            <p>Cron expressions, timezone support, distributed locking, and automated pipeline triggers.</p>
+            <span class="docs-card-link">Set up schedules →</span>
+          </a>
+        </div>
+      </section>
 
-    <section class="section">
-      <h2 style="margin-top:0;">Quick links</h2>
-      <ul>
-        <li><a href="/docs/pipeline-format" style="color:var(--accent);">Pipeline YAML Schema</a></li>
-        <li><a href="/docs/api-reference#authentication" style="color:var(--accent);">Authentication & API Keys</a></li>
-        <li><a href="/docs/pipeline-format#variables" style="color:var(--accent);">Variable Interpolation</a></li>
-        <li><a href="/docs/api-reference#webhooks" style="color:var(--accent);">Webhooks & Triggers</a></li>
-      </ul>
-    </section>
+      <section class="section">
+        <h2 style="margin-top:0;">Quick links</h2>
+        <ul>
+          <li><a href="/docs/pipeline-format#pipeline-definition" style="color:var(--accent);">Pipeline YAML Schema</a></li>
+          <li><a href="/docs/api-reference#authentication" style="color:var(--accent);">Authentication & API Keys</a></li>
+          <li><a href="/docs/pipeline-format#variables" style="color:var(--accent);">Variable Interpolation</a></li>
+          <li><a href="/docs/api-reference#webhooks" style="color:var(--accent);">Webhooks & Triggers</a></li>
+        </ul>
+      </section>
+    </main>
 
     <footer class="footer">
       <div class="footer-top">
@@ -79,7 +71,7 @@ import Layout from "../../layouts/Layout.astro";
             <span class="logo-icon" style="width:1.75rem;height:1.75rem;font-size:0.7rem;">⚡</span>
             <span class="brand-name">stepIQ</span>
           </div>
-          <p class="footer-tagline">Zapier for AI — AI-native, server-side, and model-agnostic.</p>
+          <p class="footer-tagline">Zapier for AI - AI-native, server-side, and model-agnostic.</p>
         </div>
         <div class="footer-links">
           <div class="footer-col"><h4>Product</h4><a href="/#features">Features</a><a href="/#pricing">Pricing</a></div>
