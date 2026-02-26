@@ -231,6 +231,58 @@ describe("executePipeline runtime behavior", () => {
     expect(state.stepExecutions[0]?.promptSent).toContain("[REDACTED]");
   });
 
+  it("resolves step output through 1-based numeric alias", async () => {
+    state.definition = {
+      name: "Numeric alias pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "step_1",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "First prompt",
+        },
+        {
+          id: "step_2",
+          type: "transform",
+          prompt: "Second {{steps.1.output}}",
+        },
+      ],
+      output: { from: "step_2" },
+    };
+
+    await executePipeline("run-1");
+
+    expect(state.run?.status).toBe("completed");
+    expect(state.run?.outputData).toBe("Second model-output");
+  });
+
+  it("resolves step output through 0-based numeric alias", async () => {
+    state.definition = {
+      name: "Numeric zero alias pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "step_1",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "First prompt",
+        },
+        {
+          id: "step_2",
+          type: "transform",
+          prompt: "Second {{steps.0.output}}",
+        },
+      ],
+      output: { from: "step_2" },
+    };
+
+    await executePipeline("run-1");
+
+    expect(state.run?.status).toBe("completed");
+    expect(state.run?.outputData).toBe("Second model-output");
+  });
+
   it("fails run and marks step failed when model call throws", async () => {
     state.callModelImpl = async () => {
       throw new Error("provider error with super-secret-value");
