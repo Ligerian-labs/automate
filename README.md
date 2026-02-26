@@ -39,6 +39,11 @@ ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_STARTER_MONTHLY_EUR=
+STRIPE_PRICE_STARTER_YEARLY_EUR=
+STRIPE_PRICE_PRO_MONTHLY_EUR=
+STRIPE_PRICE_PRO_YEARLY_EUR=
+APP_URL=http://localhost:5173
 CORS_ORIGIN=http://localhost:5173
 PUBLIC_API_URL=http://localhost:3001
 VITE_API_URL=http://localhost:3001
@@ -143,6 +148,12 @@ See [full spec](https://github.com/Ligerian-labs/brainstorm/blob/main/products/a
 - `GET /api/runs/:id/stream` - SSE real-time updates
 - `POST /api/pipelines/:id/schedules` - Create cron schedule
 - `GET /api/models` - List available models + pricing
+
+### Stripe webhook (local)
+
+```bash
+stripe listen --forward-to localhost:3001/api/billing/stripe/webhook
+```
 
 ## Master Key Rotation
 

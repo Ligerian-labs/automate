@@ -18,6 +18,13 @@ export const users = pgTable("users", {
   plan: text("plan").default("free").notNull(),
   creditsRemaining: integer("credits_remaining").default(100).notNull(),
   stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripePriceId: text("stripe_price_id"),
+  stripeSubscriptionStatus: text("stripe_subscription_status"),
+  stripeBillingInterval: text("stripe_billing_interval"),
+  stripeCurrentPeriodEnd: timestamp("stripe_current_period_end", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -182,3 +189,11 @@ export const stepExecutions = pgTable(
   },
   (table) => [index("step_exec_run").on(table.runId)],
 );
+
+export const stripeEvents = pgTable("stripe_events", {
+  eventId: text("event_id").primaryKey(),
+  eventType: text("event_type").notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});

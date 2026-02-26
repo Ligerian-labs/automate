@@ -112,6 +112,7 @@ export const SUPPORTED_MODELS: ModelInfo[] = [
 ];
 
 export const MARKUP_PERCENTAGE = 25; // 25% markup on model costs
+export const YEARLY_DISCOUNT_PERCENT = 10;
 
 export const PLAN_LIMITS: Record<
   Plan,
@@ -172,6 +173,23 @@ export const PLAN_LIMITS: Record<
     overage_per_credit_cents: 0,
   },
 };
+
+export function getYearlyPriceCents(monthlyPriceCents: number): number {
+  const discounted = monthlyPriceCents * 12 * (1 - YEARLY_DISCOUNT_PERCENT / 100);
+  // Round to whole-euro cents (e.g. 20520 -> 20500)
+  return Math.round(discounted / 100) * 100;
+}
+
+export const PLAN_BILLING_PRICES = {
+  starter: {
+    monthly_cents: PLAN_LIMITS.starter.price_cents,
+    yearly_cents: getYearlyPriceCents(PLAN_LIMITS.starter.price_cents),
+  },
+  pro: {
+    monthly_cents: PLAN_LIMITS.pro.price_cents,
+    yearly_cents: getYearlyPriceCents(PLAN_LIMITS.pro.price_cents),
+  },
+} as const;
 
 // 1 credit ≈ 1,000 tokens
 export const TOKENS_PER_CREDIT = 1_000;

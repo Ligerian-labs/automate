@@ -22,6 +22,12 @@ export const config = {
   jwtSecret,
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || "",
+  stripePriceStarterMonthly:
+    process.env.STRIPE_PRICE_STARTER_MONTHLY_EUR || "",
+  stripePriceStarterYearly: process.env.STRIPE_PRICE_STARTER_YEARLY_EUR || "",
+  stripePriceProMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY_EUR || "",
+  stripePriceProYearly: process.env.STRIPE_PRICE_PRO_YEARLY_EUR || "",
+  appUrl: process.env.APP_URL || "http://localhost:5173",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
   openaiApiKey: process.env.OPENAI_API_KEY || "",
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:4321",
