@@ -33,6 +33,8 @@ Then update `.env` to:
 DATABASE_URL=postgres://stepiq:stepiq@localhost:5433/stepiq
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=local-dev-jwt-secret-change-me-please
+# 64 hex chars (32 bytes), required for user secrets encryption
+STEPIQ_MASTER_KEY=
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 STRIPE_SECRET_KEY=
@@ -141,6 +143,60 @@ See [full spec](https://github.com/Ligerian-labs/brainstorm/blob/main/products/a
 - `GET /api/runs/:id/stream` - SSE real-time updates
 - `POST /api/pipelines/:id/schedules` - Create cron schedule
 - `GET /api/models` - List available models + pricing
+
+## Master Key Rotation
+
+Secrets are stored with envelope encryption and can be re-wrapped to a new master key.
+
+1. Generate a new key (do not overwrite current key yet):
+
+```bash
+openssl rand -hex 32
+```
+
+2. Run a dry run:
+
+```bash
+ROTATE_OLD_MASTER_KEY="<current-64-hex>" \
+ROTATE_NEW_MASTER_KEY="<new-64-hex>" \
+ROTATE_NEW_KEY_VERSION=2 \
+ROTATE_DRY_RUN=true \
+bun run --filter @stepiq/api rotate:master-key
+```
+
+3. Run the real rotation:
+
+```bash
+ROTATE_OLD_MASTER_KEY="<current-64-hex>" \
+ROTATE_NEW_MASTER_KEY="<new-64-hex>" \
+ROTATE_NEW_KEY_VERSION=2 \
+bun run --filter @stepiq/api rotate:master-key
+```
+
+4. Update runtime env (`STEPIQ_MASTER_KEY`) to the new key and restart API + worker.
+
+## Dokploy Runbook (Rotation)
+
+Recommended setup on Dokploy:
+- API service env includes `STEPIQ_MASTER_KEY` (current key)
+- Worker service env includes the same `STEPIQ_MASTER_KEY`
+- Postgres and Redis envs are configured as usual
+
+Rotation on Dokploy:
+1. Open API service shell / one-off command runner.
+2. Run dry run inside the API container:
+
+```bash
+ROTATE_OLD_MASTER_KEY="<current-64-hex>" \
+ROTATE_NEW_MASTER_KEY="<new-64-hex>" \
+ROTATE_NEW_KEY_VERSION=2 \
+ROTATE_DRY_RUN=true \
+bun run apps/api/dist/scripts/rotate-master-key.js
+```
+
+3. Run the real rotation (same command without `ROTATE_DRY_RUN=true`).
+4. Update `STEPIQ_MASTER_KEY` in Dokploy env for **both API and worker** to the new key.
+5. Redeploy/restart API and worker.
 
 ## License
 
