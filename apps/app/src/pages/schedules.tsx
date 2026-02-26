@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AppShell } from "../components/app-shell";
-import { type PipelineRecord, apiFetch } from "../lib/api";
+import { ApiError, type PipelineRecord, apiFetch } from "../lib/api";
 
 type ScheduleRecord = {
   id: string;
@@ -25,6 +25,7 @@ type ScheduleRow = {
   frequency: string;
   nextRun: string;
   status: "active" | "paused" | "failed";
+  isFallback: boolean;
 };
 
 const FALLBACK_ROWS: ScheduleRow[] = [
@@ -36,6 +37,7 @@ const FALLBACK_ROWS: ScheduleRow[] = [
     frequency: "Every Monday 09:00",
     nextRun: "in 14 minutes",
     status: "active",
+    isFallback: true,
   },
   {
     id: "fallback-2",
@@ -45,6 +47,7 @@ const FALLBACK_ROWS: ScheduleRow[] = [
     frequency: "Every day 08:00",
     nextRun: "in 6 hours",
     status: "active",
+    isFallback: true,
   },
   {
     id: "fallback-3",
@@ -54,6 +57,7 @@ const FALLBACK_ROWS: ScheduleRow[] = [
     frequency: "Every Friday 06:00",
     nextRun: "in 3 days",
     status: "paused",
+    isFallback: true,
   },
   {
     id: "fallback-4",
@@ -63,6 +67,7 @@ const FALLBACK_ROWS: ScheduleRow[] = [
     frequency: "Every day 02:00",
     nextRun: "in 10 hours",
     status: "active",
+    isFallback: true,
   },
   {
     id: "fallback-5",
@@ -72,10 +77,12 @@ const FALLBACK_ROWS: ScheduleRow[] = [
     frequency: "1st of month 10:00",
     nextRun: "in 5 days",
     status: "failed",
+    isFallback: true,
   },
 ];
 
 export function SchedulesPage() {
+  const queryClient = useQueryClient();
   const pipelinesQ = useQuery({
     queryKey: ["pipelines"],
     queryFn: () => apiFetch<PipelineRecord[]>("/api/pipelines"),
@@ -101,6 +108,17 @@ export function SchedulesPage() {
     },
   });
 
+  const deleteMut = useMutation({
+    mutationFn: (scheduleId: string) =>
+      apiFetch<{ deleted: boolean }>(`/api/schedules/${scheduleId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["schedules"] });
+    },
+  });
+
   const rows: ScheduleRow[] = (() => {
     const mapped = (schedulesQ.data ?? []).map(({ schedule, pipeline }) => {
       const cron = schedule.cronExpression || schedule.cron_expression || "* * * * *";
@@ -117,6 +135,7 @@ export function SchedulesPage() {
         frequency: cronToFrequency(cron),
         nextRun: relativeUntil(schedule.nextRunAt || schedule.next_run_at),
         status,
+        isFallback: false,
       };
     });
     return mapped.length > 0 ? mapped : FALLBACK_ROWS;
@@ -173,7 +192,8 @@ export function SchedulesPage() {
         <div
           className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
           style={{
-            gridTemplateColumns: "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px",
+            gridTemplateColumns:
+              "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px 110px",
             fontFamily: "var(--font-mono)",
           }}
         >
@@ -192,6 +212,9 @@ export function SchedulesPage() {
           <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
             Status
           </span>
+          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+            Actions
+          </span>
         </div>
 
         {pipelinesQ.isLoading || schedulesQ.isLoading ? (
@@ -204,6 +227,13 @@ export function SchedulesPage() {
             Failed to load schedules.
           </p>
         ) : null}
+        {deleteMut.isError ? (
+          <p className="p-5 text-sm text-red-300">
+            {deleteMut.error instanceof ApiError
+              ? deleteMut.error.message
+              : "Failed to delete schedule"}
+          </p>
+        ) : null}
 
         <div className="divide-y divide-[var(--divider)]">
           {rows.map((row) => (
@@ -211,7 +241,8 @@ export function SchedulesPage() {
               key={row.id}
               className="grid items-center px-5 py-4"
               style={{
-                gridTemplateColumns: "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px",
+                gridTemplateColumns:
+                  "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px 110px",
               }}
             >
               <div className="flex flex-col gap-0.5">
@@ -232,6 +263,16 @@ export function SchedulesPage() {
                 {row.nextRun}
               </p>
               <ScheduleStatusBadge status={row.status} />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => deleteMut.mutate(row.id)}
+                  disabled={deleteMut.isPending || row.isFallback}
+                  className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>

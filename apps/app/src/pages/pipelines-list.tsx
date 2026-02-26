@@ -1,11 +1,12 @@
 import type { PipelineDefinition } from "@stepiq/core";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppShell } from "../components/app-shell";
-import { type PipelineRecord, apiFetch } from "../lib/api";
+import { ApiError, type PipelineRecord, apiFetch } from "../lib/api";
 
 export function PipelinesListPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   async function createPipeline() {
     const baseDefinition: PipelineDefinition = {
@@ -36,6 +37,15 @@ export function PipelinesListPage() {
   }
 
   const createMut = useMutation({ mutationFn: createPipeline });
+  const deleteMut = useMutation({
+    mutationFn: (pipelineId: string) =>
+      apiFetch<{ deleted: boolean }>(`/api/pipelines/${pipelineId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+    },
+  });
   const pipelinesQ = useQuery({
     queryKey: ["pipelines"],
     queryFn: () => apiFetch<PipelineRecord[]>("/api/pipelines"),
@@ -72,12 +82,20 @@ export function PipelinesListPage() {
             : "Failed to create pipeline"}
         </p>
       ) : null}
+      {deleteMut.isError ? (
+        <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">
+          {deleteMut.error instanceof ApiError
+            ? deleteMut.error.message
+            : "Failed to delete pipeline"}
+        </p>
+      ) : null}
 
       <section className="overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
         <div
           className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
           style={{
-            gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px",
+            gridTemplateColumns:
+              "minmax(280px,1fr) 120px 160px 80px 100px 120px",
             fontFamily: "var(--font-mono)",
           }}
         >
@@ -95,6 +113,9 @@ export function PipelinesListPage() {
           </span>
           <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
             Cost
+          </span>
+          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+            Actions
           </span>
         </div>
 
@@ -126,22 +147,24 @@ export function PipelinesListPage() {
               }
             })();
             return (
-              <button
+              <div
                 key={pipeline.id}
-                type="button"
-                className="grid w-full items-center px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
+                className="grid items-center px-5 py-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
                 style={{
                   gridTemplateColumns:
-                    "minmax(280px,1fr) 120px 160px 80px 100px",
+                    "minmax(280px,1fr) 120px 160px 80px 100px 120px",
                 }}
-                onClick={() =>
-                  navigate({
-                    to: "/pipelines/$pipelineId/edit",
-                    params: { pipelineId: pipeline.id },
-                  })
-                }
               >
-                <div className="flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  className="flex flex-col gap-0.5 text-left"
+                  onClick={() =>
+                    navigate({
+                      to: "/pipelines/$pipelineId/edit",
+                      params: { pipelineId: pipeline.id },
+                    })
+                  }
+                >
                   <p className="text-sm font-medium">{pipeline.name}</p>
                   <p
                     className="text-[11px] text-[var(--text-tertiary)]"
@@ -149,7 +172,7 @@ export function PipelinesListPage() {
                   >
                     {pipeline.description || "No description"}
                   </p>
-                </div>
+                </button>
                 <div>
                   <StatusBadge status={status} />
                 </div>
@@ -168,7 +191,17 @@ export function PipelinesListPage() {
                 >
                   —
                 </div>
-              </button>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => deleteMut.mutate(pipeline.id)}
+                    disabled={deleteMut.isPending}
+                    className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             );
           })}
           {(pipelinesQ.data ?? []).length === 0 && !pipelinesQ.isLoading ? (
