@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import YAML from "yaml";
 import { AppShell } from "../components/app-shell";
 import {
@@ -22,9 +22,46 @@ interface StepDef {
   retries?: number;
 }
 
+interface DefinitionStep {
+  id?: string;
+  name?: string;
+  type?: string;
+  model?: string;
+  prompt?: string;
+  outputFormat?: string;
+  output_format?: string;
+  timeout?: number;
+  timeout_seconds?: number;
+  retries?: number;
+  retry?: {
+    max_attempts?: number;
+    backoff_ms?: number;
+  };
+}
+
 interface ModelOption {
   id: string;
   name: string;
+}
+
+function getPromptTemplateWarning(prompt: string, stepIds: string[]): string | null {
+  const openCount = (prompt.match(/\{\{/g) || []).length;
+  const closeCount = (prompt.match(/\}\}/g) || []).length;
+  if (openCount !== closeCount) {
+    return "Unbalanced Handlebars braces. Check {{ and }}.";
+  }
+
+  const refs = [...prompt.matchAll(/\{\{\s*steps\.([a-zA-Z0-9_]+)\.output\s*\}\}/g)];
+  for (const ref of refs) {
+    const key = ref[1] || "";
+    if (!key) continue;
+    const isNumeric = /^\d+$/.test(key);
+    if (!isNumeric && !stepIds.includes(key)) {
+      return `Unknown step reference "${key}". Use an existing step id or a numeric alias.`;
+    }
+  }
+
+  return null;
 }
 
 function newStep(index: number): StepDef {
@@ -79,6 +116,10 @@ export function PipelineEditorPage() {
   >(null);
   const [yamlMode, setYamlMode] = useState(false);
   const [rawYaml, setRawYaml] = useState("");
+  const [selectedPrevStepToken, setSelectedPrevStepToken] = useState<
+    Record<number, string>
+  >({});
+  const promptRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
 
   const modelOptions = (() => {
     const fromApi = (modelsQ.data ?? []).map((model) => ({
@@ -108,7 +149,7 @@ export function PipelineEditorPage() {
     setName(p.name);
     setDescription(p.description || "");
     const def = (p.definition ?? {}) as {
-      steps?: StepDef[];
+      steps?: DefinitionStep[];
       variables?: Record<string, string>;
     };
     setSteps(
@@ -118,9 +159,9 @@ export function PipelineEditorPage() {
         type: s.type || "llm",
         model: s.model || "gpt-5.2",
         prompt: s.prompt || "",
-        outputFormat: s.outputFormat || "text",
-        timeout: s.timeout ?? 30,
-        retries: s.retries ?? 2,
+        outputFormat: s.output_format || s.outputFormat || "text",
+        timeout: s.timeout_seconds ?? s.timeout ?? 30,
+        retries: s.retry?.max_attempts ?? s.retries ?? 2,
       })),
     );
     const vars = def.variables ?? {};
@@ -155,9 +196,12 @@ export function PipelineEditorPage() {
         type: s.type,
         model: s.model,
         prompt: s.prompt,
-        outputFormat: s.outputFormat,
-        timeout: s.timeout,
-        retries: s.retries,
+        output_format: s.outputFormat,
+        timeout_seconds: s.timeout,
+        retry: {
+          max_attempts: s.retries ?? 1,
+          backoff_ms: 1000,
+        },
       })),
       variables: Object.keys(vars).length > 0 ? vars : undefined,
     };
@@ -197,6 +241,28 @@ export function PipelineEditorPage() {
       return copy;
     });
     setExpandedStep(target);
+  };
+
+  const insertPromptToken = (idx: number, token: string) => {
+    const target = promptRefs.current[idx];
+    if (!target) {
+      const current = steps[idx]?.prompt || "";
+      updateStep(idx, { prompt: `${current}${current ? " " : ""}${token}` });
+      return;
+    }
+    const start = target.selectionStart ?? target.value.length;
+    const end = target.selectionEnd ?? target.value.length;
+    const next =
+      target.value.slice(0, start) + token + target.value.slice(end);
+    updateStep(idx, { prompt: next });
+
+    requestAnimationFrame(() => {
+      const node = promptRefs.current[idx];
+      if (!node) return;
+      const pos = start + token.length;
+      node.focus();
+      node.setSelectionRange(pos, pos);
+    });
   };
 
   // Variable mutations
@@ -624,6 +690,11 @@ export function PipelineEditorPage() {
 
           {steps.map((step, idx) => {
             const isExpanded = expandedStep === idx;
+            const previousSteps = steps.slice(0, idx);
+            const promptTemplateWarning = getPromptTemplateWarning(
+              step.prompt,
+              steps.map((s) => s.id),
+            );
             return (
               <div
                 key={step.id}
@@ -716,11 +787,105 @@ export function PipelineEditorPage() {
                         <textarea
                           className="min-h-[100px] w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] leading-relaxed focus:border-[var(--accent)] focus:outline-none"
                           value={step.prompt}
+                          ref={(el) => {
+                            promptRefs.current[idx] = el;
+                          }}
                           onChange={(e) =>
                             updateStep(idx, { prompt: e.target.value })
                           }
                           placeholder="Enter the prompt for this step..."
                         />
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => insertPromptToken(idx, "{{input.topic}}")}
+                            className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
+                          >
+                            + input.topic
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => insertPromptToken(idx, "{{vars.language}}")}
+                            className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
+                          >
+                            + vars.language
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              insertPromptToken(idx, "{{env.OPENAI_API_KEY}}")
+                            }
+                            className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
+                          >
+                            + env.OPENAI_API_KEY
+                          </button>
+                          {previousSteps.length > 0 && previousSteps.length <= 4
+                            ? previousSteps.map((prevStep, prevIdx) => (
+                                <button
+                                  key={`${prevStep.id}-token`}
+                                  type="button"
+                                  onClick={() =>
+                                    insertPromptToken(
+                                      idx,
+                                      `{{steps.${prevStep.id}.output}}`,
+                                    )
+                                  }
+                                  className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
+                                  title={`Also available: {{steps.${prevIdx + 1}.output}}`}
+                                >
+                                  + steps.{prevStep.id}.output
+                                </button>
+                              ))
+                            : null}
+                          {previousSteps.length > 4 ? (
+                            <div className="flex items-center gap-1.5">
+                              <select
+                                className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
+                                style={{ fontFamily: "var(--font-mono)" }}
+                                value={selectedPrevStepToken[idx] || ""}
+                                onChange={(e) =>
+                                  setSelectedPrevStepToken((prev) => ({
+                                    ...prev,
+                                    [idx]: e.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">Select step output...</option>
+                                {previousSteps.map((prevStep, prevIdx) => (
+                                  <option
+                                    key={`${prevStep.id}-token-option`}
+                                    value={`{{steps.${prevStep.id}.output}}`}
+                                  >
+                                    {`${prevIdx + 1}. ${prevStep.name || prevStep.id} (${prevStep.id})`}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                disabled={!selectedPrevStepToken[idx]}
+                                onClick={() =>
+                                  selectedPrevStepToken[idx] &&
+                                  insertPromptToken(idx, selectedPrevStepToken[idx])
+                                }
+                                className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                + Insert step output
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                        <p className="text-[11px] text-[var(--text-muted)]">
+                          Supports: <code>{"{{input.field}}"}</code>,{" "}
+                          <code>{"{{vars.name}}"}</code>,{" "}
+                          <code>{"{{steps.step_1.output}}"}</code>,{" "}
+                          <code>{"{{steps.1.output}}"}</code>,{" "}
+                          <code>{"{{env.OPENAI_API_KEY}}"}</code>.
+                        </p>
+                        {promptTemplateWarning ? (
+                          <p className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-200">
+                            {promptTemplateWarning}
+                          </p>
+                        ) : null}
                       </label>
 
                       {/* Config row — Output Format, Timeout, Retries */}

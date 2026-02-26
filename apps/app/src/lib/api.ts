@@ -91,6 +91,8 @@ export interface StepExecutionRecord {
   step_index?: number;
   status: string;
   model?: string | null;
+  promptSent?: string | null;
+  prompt_sent?: string | null;
   durationMs?: number | null;
   duration_ms?: number | null;
   inputTokens?: number;
@@ -101,7 +103,15 @@ export interface StepExecutionRecord {
   cost_cents?: number;
   rawOutput?: string | null;
   raw_output?: string | null;
+  parsedOutput?: unknown;
+  parsed_output?: unknown;
   error?: string | null;
+  retryCount?: number;
+  retry_count?: number;
+  startedAt?: string | null;
+  started_at?: string | null;
+  completedAt?: string | null;
+  completed_at?: string | null;
 }
 
 export interface UserMe {

@@ -151,10 +151,16 @@ export async function executePipeline(runId: string) {
 
         const durationMs = Date.now() - startTime;
 
-        // Store step result in context
-        (context.steps as Record<string, { output: unknown }>)[step.id] = {
-          output: parsedOutput,
-        };
+        // Store step result in context.
+        // Canonical key is step.id, plus numeric aliases for easier template authoring.
+        const stepContext = context.steps as Record<string, { output: unknown }>;
+        stepContext[step.id] = { output: parsedOutput };
+        if (!(String(i) in stepContext)) {
+          stepContext[String(i)] = { output: parsedOutput };
+        }
+        if (!(String(i + 1) in stepContext)) {
+          stepContext[String(i + 1)] = { output: parsedOutput };
+        }
 
         totalTokens += inputTokens + outputTokens;
         totalCostCents += costCents;

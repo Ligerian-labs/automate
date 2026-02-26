@@ -8,6 +8,7 @@ export function RunDetailPage() {
   const { runId } = useParams({ strict: false }) as { runId: string };
   const navigate = useNavigate();
   const [sseState, setSseState] = useState("disconnected");
+  const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
 
   const runQ = useQuery({
     queryKey: ["run", runId],
@@ -121,7 +122,14 @@ export function RunDetailPage() {
         </div>
 
         {(run?.steps ?? []).map((step) => (
-          <StepCard key={step.id} step={step} />
+          <StepCard
+            key={step.id}
+            step={step}
+            expanded={expandedStepId === step.id}
+            onToggle={() =>
+              setExpandedStepId((prev) => (prev === step.id ? null : step.id))
+            }
+          />
         ))}
         {(run?.steps ?? []).length === 0 ? (
           <div className="rounded-[10px] border border-dashed border-[var(--divider)] p-8 text-center text-sm text-[var(--text-tertiary)]">
@@ -184,10 +192,38 @@ function RunStatusBadge({ status }: { status: string }) {
   );
 }
 
-function StepCard({ step }: { step: StepExecutionRecord }) {
+function StepCard({
+  step,
+  expanded,
+  onToggle,
+}: {
+  step: StepExecutionRecord;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const status = step.status;
   const isSuccess = status === "completed";
   const isFailed = status === "failed";
+  const rawOutput = step.rawOutput || step.raw_output;
+  const parsedOutput = step.parsedOutput ?? step.parsed_output;
+  const promptSent = step.promptSent || step.prompt_sent;
+
+  const prettyParsedOutput = (() => {
+    if (parsedOutput === undefined || parsedOutput === null) return null;
+    if (typeof parsedOutput === "string") {
+      try {
+        return JSON.stringify(JSON.parse(parsedOutput), null, 2);
+      } catch {
+        return parsedOutput;
+      }
+    }
+    try {
+      return JSON.stringify(parsedOutput, null, 2);
+    } catch {
+      return String(parsedOutput);
+    }
+  })();
+
   return (
     <div
       className={`rounded-[10px] border bg-[var(--bg-surface)] p-5 ${
@@ -198,7 +234,12 @@ function StepCard({ step }: { step: StepExecutionRecord }) {
             : "border-[var(--divider)]"
       }`}
     >
-      <div className="flex items-start gap-5">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="flex w-full cursor-pointer items-start gap-5 text-left"
+      >
         {/* Left: 200px */}
         <div className="w-[200px] shrink-0">
           <RunStatusBadge status={status} />
@@ -229,23 +270,63 @@ function StepCard({ step }: { step: StepExecutionRecord }) {
             label="Cost"
             value={`€${((step.costCents || step.cost_cents || 0) / 100).toFixed(2)}`}
           />
-          {step.rawOutput || step.raw_output ? (
+          {rawOutput ? (
             <Metric label="Output" value="✓" />
           ) : null}
         </div>
-      </div>
+        <div className="ml-auto pt-1 text-xs text-[var(--text-muted)]">
+          {expanded ? "▲" : "▼"}
+        </div>
+      </button>
       {step.error ? (
         <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">
           {step.error}
         </p>
       ) : null}
-      {step.rawOutput || step.raw_output ? (
+      {rawOutput ? (
         <pre
           className="mt-3 max-h-[200px] overflow-auto rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] p-3 text-xs leading-relaxed text-[var(--text-tertiary)]"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          {step.rawOutput || step.raw_output}
+          {rawOutput}
         </pre>
+      ) : null}
+      {expanded ? (
+        <div className="mt-3 grid gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <DebugField label="Step ID" value={step.stepId || step.step_id || "-"} />
+            <DebugField
+              label="Step Index"
+              value={String(step.stepIndex ?? step.step_index ?? "-")}
+            />
+            <DebugField
+              label="Input Tokens"
+              value={String(step.inputTokens ?? step.input_tokens ?? 0)}
+            />
+            <DebugField
+              label="Output Tokens"
+              value={String(step.outputTokens ?? step.output_tokens ?? 0)}
+            />
+            <DebugField
+              label="Retry Count"
+              value={String(step.retryCount ?? step.retry_count ?? 0)}
+            />
+            <DebugField
+              label="Started At"
+              value={step.startedAt || step.started_at || "-"}
+            />
+            <DebugField
+              label="Completed At"
+              value={step.completedAt || step.completed_at || "-"}
+            />
+          </div>
+          {promptSent ? (
+            <DebugBlock label="Prompt Sent" value={promptSent} />
+          ) : null}
+          {prettyParsedOutput ? (
+            <DebugBlock label="Parsed Output" value={prettyParsedOutput} />
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -266,6 +347,44 @@ function Metric({ label, value }: { label: string; value: string }) {
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+function DebugField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2">
+      <p
+        className="text-[10px] uppercase text-[var(--text-muted)]"
+        style={{ fontFamily: "var(--font-mono)", letterSpacing: "1px" }}
+      >
+        {label}
+      </p>
+      <p
+        className="mt-1 text-xs text-[var(--text-secondary)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function DebugBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p
+        className="mb-1 text-[10px] uppercase text-[var(--text-muted)]"
+        style={{ fontFamily: "var(--font-mono)", letterSpacing: "1px" }}
+      >
+        {label}
+      </p>
+      <pre
+        className="max-h-[220px] overflow-auto rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] p-3 text-xs leading-relaxed text-[var(--text-tertiary)]"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {value}
+      </pre>
     </div>
   );
 }
