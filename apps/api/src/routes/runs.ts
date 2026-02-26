@@ -6,6 +6,10 @@ import { db } from "../db/index.js";
 import { pipelines, runs, stepExecutions } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import {
+  assertCanTriggerRun,
+  isPlanValidationError,
+} from "../services/plan-validator.js";
 import { enqueueRun } from "../services/queue.js";
 
 export const runRoutes = new Hono<{ Variables: Env }>();
@@ -114,6 +118,18 @@ runRoutes.post("/:id/retry", async (c) => {
     )
     .limit(1);
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  try {
+    await assertCanTriggerRun(userId);
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json(
+        { error: err.message, code: err.code, details: err.details },
+        err.status,
+      );
+    }
+    throw err;
+  }
 
   const [newRun] = await db
     .insert(runs)

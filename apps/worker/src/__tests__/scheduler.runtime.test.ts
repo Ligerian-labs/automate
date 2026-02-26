@@ -15,6 +15,13 @@ const tables = {
   runs: {
     __name: "runs",
     id: "runs.id",
+    userId: "runs.userId",
+    createdAt: "runs.createdAt",
+  },
+  users: {
+    __name: "users",
+    id: "users.id",
+    plan: "users.plan",
   },
   pipelineVersions: { __name: "pipelineVersions", id: "pipelineVersions.id" },
   stepExecutions: { __name: "stepExecutions", id: "stepExecutions.id" },
@@ -36,6 +43,8 @@ type SchedulerState = {
     userId: string;
     version: number;
   }>;
+  users: Array<{ id: string; plan: string }>;
+  existingRunsToday: Array<{ id: string; userId: string; createdAt: Date }>;
   insertedRuns: Array<Record<string, unknown>>;
   updatedSchedules: Array<{ id: string; set: Record<string, unknown> }>;
   queueAdds: Array<{ name: string; data: Record<string, unknown> }>;
@@ -78,6 +87,18 @@ function createDbMock() {
                 return row ? [row] : [];
               },
             };
+          }
+          if (table.__name === "users") {
+            return {
+              limit: async () => {
+                const userId = getEqValue(_cond, tables.users.id);
+                const row = state.users.find((user) => user.id === userId);
+                return row ? [row] : [];
+              },
+            };
+          }
+          if (table.__name === "runs") {
+            return Promise.resolve(state.existingRunsToday);
           }
           return { limit: async () => [] };
         },
@@ -125,6 +146,7 @@ mock.module("drizzle-orm/postgres-js", () => ({
 mock.module("drizzle-orm", () => ({
   and: (...conds: unknown[]) => ({ type: "and", conds }),
   eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
+  gte: (left: unknown, right: unknown) => ({ type: "gte", left, right }),
   lte: (left: unknown, right: unknown) => ({ type: "lte", left, right }),
   inArray: (left: unknown, right: unknown[]) => ({ type: "inArray", left, right }),
 }));
@@ -147,6 +169,8 @@ describe("scheduler runtime behavior", () => {
         },
       ],
       pipelines: [{ id: "pipe-1", userId: "user-1", version: 3 }],
+      users: [{ id: "user-1", plan: "pro" }],
+      existingRunsToday: [],
       insertedRuns: [],
       updatedSchedules: [],
       queueAdds: [],
@@ -193,5 +217,42 @@ describe("scheduler runtime behavior", () => {
     expect(state.insertedRuns).toHaveLength(0);
     expect(state.queueAdds).toHaveLength(0);
     expect(state.updatedSchedules).toHaveLength(0);
+  });
+
+  it("skips run creation when cron is disabled for plan", async () => {
+    state.users = [{ id: "user-1", plan: "free" }];
+
+    const connection = {
+      set: async () => "OK",
+      eval: async () => 1,
+    };
+
+    startScheduler(connection as never);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(state.insertedRuns).toHaveLength(0);
+    expect(state.queueAdds).toHaveLength(0);
+    expect(state.updatedSchedules).toHaveLength(1);
+  });
+
+  it("skips run creation when daily run cap is reached", async () => {
+    state.users = [{ id: "user-1", plan: "free" }];
+    state.existingRunsToday = Array.from({ length: 10 }).map((_, idx) => ({
+      id: `existing-${idx + 1}`,
+      userId: "user-1",
+      createdAt: new Date(),
+    }));
+
+    const connection = {
+      set: async () => "OK",
+      eval: async () => 1,
+    };
+
+    startScheduler(connection as never);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(state.insertedRuns).toHaveLength(0);
+    expect(state.queueAdds).toHaveLength(0);
+    expect(state.updatedSchedules).toHaveLength(1);
   });
 });

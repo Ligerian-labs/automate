@@ -11,6 +11,13 @@ import { db } from "../db/index.js";
 import { pipelineVersions, pipelines, runs, schedules } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import {
+  assertCanCreatePipeline,
+  assertCanTriggerRun,
+  assertCanUseCron,
+  assertPipelineDefinitionWithinPlan,
+  isPlanValidationError,
+} from "../services/plan-validator.js";
 import { enqueueRun } from "../services/queue.js";
 import { createScheduleForPipeline } from "../services/schedule-create.js";
 
@@ -41,6 +48,19 @@ pipelineRoutes.post("/", async (c) => {
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
 
   const { name, description, definition, tags } = parsed.data;
+
+  try {
+    await assertCanCreatePipeline(userId);
+    await assertPipelineDefinitionWithinPlan(userId, definition);
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json(
+        { error: err.message, code: err.code, details: err.details },
+        err.status,
+      );
+    }
+    throw err;
+  }
 
   const [pipeline] = await db
     .insert(pipelines)
@@ -104,6 +124,20 @@ pipelineRoutes.put("/:id", async (c) => {
     .limit(1);
 
   if (!existing) return c.json({ error: "Not found" }, 404);
+
+  if (parsed.data.definition) {
+    try {
+      await assertPipelineDefinitionWithinPlan(userId, parsed.data.definition);
+    } catch (err) {
+      if (isPlanValidationError(err)) {
+        return c.json(
+          { error: err.message, code: err.code, details: err.details },
+          err.status,
+        );
+      }
+      throw err;
+    }
+  }
 
   const newVersion = existing.version + 1;
   const updates: Record<string, unknown> = {
@@ -172,6 +206,18 @@ pipelineRoutes.post("/:id/run", async (c) => {
 
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
 
+  try {
+    await assertCanTriggerRun(userId);
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json(
+        { error: err.message, code: err.code, details: err.details },
+        err.status,
+      );
+    }
+    throw err;
+  }
+
   const [run] = await db
     .insert(runs)
     .values({
@@ -227,6 +273,19 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
   const body = await c.req.json();
   const parsed = createScheduleSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
+
+  try {
+    await assertCanUseCron(userId);
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json(
+        { error: err.message, code: err.code, details: err.details },
+        err.status,
+      );
+    }
+    throw err;
+  }
+
   const result = await createScheduleForPipeline(userId, pipelineId, parsed.data);
   if (result.error) {
     if (result.error === "Pipeline not found") return c.json({ error: result.error }, 404);
