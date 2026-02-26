@@ -63,12 +63,16 @@ export async function executePipeline(runId: string) {
 
   try {
     // Resolve user secrets for {{env.xxx}} interpolation
-    envSecrets = await resolveUserSecrets(run.userId, definition, db);
+    envSecrets = await resolveUserSecrets(
+      run.userId,
+      run.pipelineId,
+      definition,
+      db,
+    );
     context = {
       ...context,
       env: envSecrets.values,
     };
-
     for (let i = 0; i < definition.steps.length; i++) {
       const step = definition.steps[i];
 
@@ -238,6 +242,7 @@ function interpolate(
  */
 async function resolveUserSecrets(
   userId: string,
+  pipelineId: string,
   definition: PipelineDefinition,
   database: typeof db,
 ): Promise<{ values: Record<string, string>; plainValues: string[] }> {
@@ -269,14 +274,18 @@ async function resolveUserSecrets(
   const secrets = await database
     .select({
       name: userSecrets.name,
+      pipelineId: userSecrets.pipelineId,
       encryptedValue: userSecrets.encryptedValue,
     })
     .from(userSecrets)
-    .where(
-      and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)),
-    );
+    .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
 
   if (secrets.length === 0) return { values: {}, plainValues: [] };
+
+  const scopedSecrets = secrets.filter(
+    (secret) => secret.pipelineId === pipelineId || secret.pipelineId == null,
+  );
+  if (scopedSecrets.length === 0) return { values: {}, plainValues: [] };
 
   // Decrypt — lazily init KMS
   let masterKey: Buffer;
@@ -293,7 +302,15 @@ async function resolveUserSecrets(
   const values: Record<string, string> = {};
   const plainValues: string[] = [];
 
-  for (const secret of secrets) {
+  const sortedSecrets = [...scopedSecrets].sort((a, b) => {
+    const aPipeline = (a as { pipelineId?: string | null }).pipelineId;
+    const bPipeline = (b as { pipelineId?: string | null }).pipelineId;
+    if (aPipeline && !bPipeline) return 1;
+    if (!aPipeline && bPipeline) return -1;
+    return 0;
+  });
+
+  for (const secret of sortedSecrets) {
     const blob = Buffer.from(secret.encryptedValue, "base64");
     const plaintext = await decryptSecret(userId, blob, masterKey);
     values[secret.name] = plaintext;

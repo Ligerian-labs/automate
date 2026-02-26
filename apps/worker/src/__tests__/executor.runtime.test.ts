@@ -14,6 +14,7 @@ const tables = {
   userSecrets: {
     __name: "userSecrets",
     userId: "userSecrets.userId",
+    pipelineId: "userSecrets.pipelineId",
     name: "userSecrets.name",
     encryptedValue: "userSecrets.encryptedValue",
   },
@@ -31,7 +32,11 @@ type StepExecRow = {
 type TestState = {
   run: Record<string, unknown> | null;
   definition: Record<string, unknown> | null;
-  userSecrets: Array<{ name: string; encryptedValue: string }>;
+  userSecrets: Array<{
+    name: string;
+    encryptedValue: string;
+    pipelineId?: string | null;
+  }>;
   stepExecutions: StepExecRow[];
   lastModelRequest: Record<string, unknown> | null;
   callModelImpl: (req: Record<string, unknown>) => Promise<{
@@ -134,6 +139,8 @@ mock.module("drizzle-orm", () => ({
   and: (...conds: unknown[]) => ({ type: "and", conds }),
   eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
   inArray: (left: unknown, right: unknown[]) => ({ type: "inArray", left, right }),
+  isNull: (left: unknown) => ({ type: "isNull", left }),
+  or: (...conds: unknown[]) => ({ type: "or", conds }),
 }));
 mock.module("../model-router.js", () => ({
   callModel: (req: Record<string, unknown>) => {
@@ -150,7 +157,12 @@ mock.module("../core-adapter.js", () => ({
       return Buffer.alloc(32, 1);
     },
   }),
-  decryptSecret: async () => "super-secret-value",
+  decryptSecret: async (_userId: string, blob: Buffer) => {
+    const raw = blob.toString("utf8");
+    if (raw === "global-openai") return "global-openai-value";
+    if (raw === "pipeline-openai") return "pipeline-openai-value";
+    return "super-secret-value";
+  },
   redactSecrets: (text: string, secrets: string[]) =>
     secrets.reduce((acc, secret) => acc.split(secret).join("[REDACTED]"), text),
 }));
@@ -286,10 +298,10 @@ describe("executePipeline runtime behavior", () => {
     const apiKeys = (state.lastModelRequest?.api_keys || {}) as Record<
       string,
       string
-    >;
-    expect(apiKeys.openai).toBe("super-secret-value");
-    expect(apiKeys.gemini).toBe("super-secret-value");
-    expect(apiKeys.mistral).toBe("super-secret-value");
+  >;
+  expect(apiKeys.openai).toBe("super-secret-value");
+  expect(apiKeys.gemini).toBe("super-secret-value");
+  expect(apiKeys.mistral).toBe("super-secret-value");
   });
 
   it("fails run with explicit KMS error when secrets cannot be decrypted", async () => {
@@ -321,5 +333,39 @@ describe("executePipeline runtime behavior", () => {
     expect(errorText).toContain("STEPIQ_MASTER_KEY");
     expect(errorText).not.toContain("OpenAI API key is missing");
     expect(state.lastModelRequest).toBeNull();
+  });
+
+  it("prefers pipeline-scoped secrets over global secrets with the same name", async () => {
+    state.definition = {
+      name: "Pipeline overrides global",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-5.2",
+          prompt: "No env refs in prompt",
+        },
+      ],
+    };
+    state.userSecrets = [
+      {
+        name: "OPENAI_API_KEY",
+        encryptedValue: Buffer.from("global-openai").toString("base64"),
+      },
+      {
+        name: "OPENAI_API_KEY",
+        encryptedValue: Buffer.from("pipeline-openai").toString("base64"),
+        pipelineId: "pipe-1",
+      },
+    ];
+
+    await executePipeline("run-1");
+
+    const apiKeys = (state.lastModelRequest?.api_keys || {}) as Record<
+      string,
+      string
+    >;
+    expect(apiKeys.openai).toBe("pipeline-openai-value");
   });
 });

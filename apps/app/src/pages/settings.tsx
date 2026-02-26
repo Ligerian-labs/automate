@@ -362,7 +362,8 @@ export function SettingsPage() {
             <div className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
               <h2 className="mb-2 text-[15px] font-semibold">Secrets</h2>
               <p className="mb-4 text-sm text-[var(--text-tertiary)]">
-                Store provider tokens and secure variables for use in pipelines.
+                Store global secrets shared across pipelines. For pipeline-only
+                secrets, use the pipeline editor.
               </p>
               <div className="mb-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-inset)] px-4 py-3">
                 <p className="text-xs font-medium text-[var(--text-secondary)]">

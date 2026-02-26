@@ -6,7 +6,7 @@ import {
   updateSecretSchema,
   uuidParam,
 } from "@stepiq/core";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { db } from "../db/index.js";
@@ -53,7 +53,7 @@ secretRoutes.get("/", async (c) => {
       updatedAt: userSecrets.updatedAt,
     })
     .from(userSecrets)
-    .where(eq(userSecrets.userId, userId))
+    .where(and(eq(userSecrets.userId, userId), isNull(userSecrets.pipelineId)))
     .orderBy(userSecrets.name);
 
   return c.json(secrets);
@@ -74,7 +74,13 @@ secretRoutes.post("/", async (c) => {
   const [existing] = await db
     .select({ id: userSecrets.id })
     .from(userSecrets)
-    .where(and(eq(userSecrets.userId, userId), eq(userSecrets.name, name)))
+    .where(
+      and(
+        eq(userSecrets.userId, userId),
+        isNull(userSecrets.pipelineId),
+        eq(userSecrets.name, name),
+      ),
+    )
     .limit(1);
   if (existing)
     return c.json(
@@ -98,7 +104,7 @@ secretRoutes.post("/", async (c) => {
 
   const [secret] = await db
     .insert(userSecrets)
-    .values({ userId, name, encryptedValue, keyVersion: 1 })
+    .values({ userId, pipelineId: null, name, encryptedValue, keyVersion: 1 })
     .returning({
       id: userSecrets.id,
       name: userSecrets.name,
@@ -143,6 +149,7 @@ secretRoutes.put("/:name", async (c) => {
     .where(
       and(
         eq(userSecrets.userId, userId),
+        isNull(userSecrets.pipelineId),
         eq(userSecrets.name, nameParsed.data),
       ),
     )
@@ -169,6 +176,7 @@ secretRoutes.delete("/:name", async (c) => {
     .where(
       and(
         eq(userSecrets.userId, userId),
+        isNull(userSecrets.pipelineId),
         eq(userSecrets.name, nameParsed.data),
       ),
     )
