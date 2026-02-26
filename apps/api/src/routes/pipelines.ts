@@ -188,7 +188,7 @@ pipelineRoutes.put("/:id", async (c) => {
   return c.json(updated);
 });
 
-// Delete (archive) pipeline
+// Delete pipeline
 pipelineRoutes.delete("/:id", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
@@ -199,8 +199,7 @@ pipelineRoutes.delete("/:id", async (c) => {
   const id = _idParsed.data;
 
   const [result] = await db
-    .update(pipelines)
-    .set({ status: "archived", updatedAt: new Date() })
+    .delete(pipelines)
     .where(and(eq(pipelines.id, id), eq(pipelines.userId, userId)))
     .returning({ id: pipelines.id });
 
