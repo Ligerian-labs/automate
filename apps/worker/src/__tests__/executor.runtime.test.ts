@@ -43,6 +43,7 @@ type TestState = {
 };
 
 let state: TestState;
+let kmsShouldFail = false;
 
 function getEqValue(
   cond: unknown,
@@ -141,7 +142,14 @@ mock.module("../model-router.js", () => ({
   },
 }));
 mock.module("../core-adapter.js", () => ({
-  createKmsProvider: () => ({ getMasterKey: async () => Buffer.alloc(32, 1) }),
+  createKmsProvider: () => ({
+    getMasterKey: async () => {
+      if (kmsShouldFail) {
+        throw new Error("missing worker master key");
+      }
+      return Buffer.alloc(32, 1);
+    },
+  }),
   decryptSecret: async () => "super-secret-value",
   redactSecrets: (text: string, secrets: string[]) =>
     secrets.reduce((acc, secret) => acc.split(secret).join("[REDACTED]"), text),
@@ -151,6 +159,7 @@ const { executePipeline } = await import("../executor.js");
 
 describe("executePipeline runtime behavior", () => {
   beforeEach(() => {
+    kmsShouldFail = false;
     state = {
       run: {
         id: "run-1",
@@ -281,5 +290,36 @@ describe("executePipeline runtime behavior", () => {
     expect(apiKeys.openai).toBe("super-secret-value");
     expect(apiKeys.gemini).toBe("super-secret-value");
     expect(apiKeys.mistral).toBe("super-secret-value");
+  });
+
+  it("fails run with explicit KMS error when secrets cannot be decrypted", async () => {
+    kmsShouldFail = true;
+    state.definition = {
+      name: "Provider key pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-5.2",
+          prompt: "No env refs in prompt",
+        },
+      ],
+    };
+    state.userSecrets = [
+      {
+        name: "OPENAI_API_KEY",
+        encryptedValue: Buffer.from("encrypted").toString("base64"),
+      },
+    ];
+
+    await executePipeline("run-1");
+
+    expect(state.run?.status).toBe("failed");
+    const errorText = String(state.run?.error || "");
+    expect(errorText).toContain("Worker cannot decrypt secrets");
+    expect(errorText).toContain("STEPIQ_MASTER_KEY");
+    expect(errorText).not.toContain("OpenAI API key is missing");
+    expect(state.lastModelRequest).toBeNull();
   });
 });
