@@ -123,6 +123,8 @@ export interface UsageRecord {
 export interface SecretRecord {
   id: string;
   name: string;
+  pipelineId?: string | null;
+  pipeline_id?: string | null;
   keyVersion?: number;
   key_version?: number;
   createdAt?: string;

@@ -9,6 +9,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -58,6 +59,9 @@ export const userSecrets = pgTable(
     userId: uuid("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
+    pipelineId: uuid("pipeline_id").references(() => pipelines.id, {
+      onDelete: "cascade",
+    }),
     name: text("name").notNull(),
     encryptedValue: text("encrypted_value").notNull(), // base64-encoded AES-256-GCM ciphertext (see ENCRYPTION.md §4.1)
     keyVersion: integer("key_version").default(1).notNull(),
@@ -69,7 +73,12 @@ export const userSecrets = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex("user_secrets_user_name").on(table.userId, table.name),
+    uniqueIndex("user_secrets_user_global_name")
+      .on(table.userId, table.name)
+      .where(sql`${table.pipelineId} is null`),
+    uniqueIndex("user_secrets_user_pipeline_name")
+      .on(table.userId, table.pipelineId, table.name)
+      .where(sql`${table.pipelineId} is not null`),
   ],
 );
 

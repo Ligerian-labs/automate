@@ -1,14 +1,25 @@
 import {
+  createKmsProvider,
   createPipelineSchema,
   createScheduleSchema,
+  createSecretSchema,
+  encryptSecret,
   runPipelineSchema,
+  secretNameParam,
   updatePipelineSchema,
+  updateSecretSchema,
   uuidParam,
 } from "@stepiq/core";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/index.js";
-import { pipelineVersions, pipelines, runs, schedules } from "../db/schema.js";
+import {
+  pipelineVersions,
+  pipelines,
+  runs,
+  schedules,
+  userSecrets,
+} from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
 import {
@@ -22,6 +33,19 @@ import { enqueueRun } from "../services/queue.js";
 import { createScheduleForPipeline } from "../services/schedule-create.js";
 
 export const pipelineRoutes = new Hono<{ Variables: Env }>();
+
+let kmsProvider: ReturnType<typeof createKmsProvider> | null = null;
+function getKms() {
+  if (!kmsProvider) kmsProvider = createKmsProvider();
+  return kmsProvider;
+}
+
+function kmsConfigError() {
+  return {
+    error:
+      "Secrets encryption is not configured. Set STEPIQ_MASTER_KEY (64 hex chars) or VAULT_ADDR + VAULT_TOKEN.",
+  };
+}
 
 pipelineRoutes.use("*", requireAuth);
 
@@ -258,6 +282,202 @@ pipelineRoutes.get("/:id/schedules", async (c) => {
     .where(eq(schedules.pipelineId, pipelineId));
 
   return c.json(result);
+});
+
+// List secrets for a pipeline (pipeline-scoped only)
+pipelineRoutes.get("/:id/secrets", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const idParsed = uuidParam.safeParse(c.req.param("id"));
+  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = idParsed.data;
+
+  const [pipeline] = await db
+    .select({ id: pipelines.id })
+    .from(pipelines)
+    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
+    .limit(1);
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  const result = await db
+    .select({
+      id: userSecrets.id,
+      name: userSecrets.name,
+      keyVersion: userSecrets.keyVersion,
+      createdAt: userSecrets.createdAt,
+      updatedAt: userSecrets.updatedAt,
+    })
+    .from(userSecrets)
+    .where(
+      and(
+        eq(userSecrets.userId, userId),
+        eq(userSecrets.pipelineId, pipelineId),
+      ),
+    )
+    .orderBy(userSecrets.name);
+
+  return c.json(result);
+});
+
+// Create pipeline-scoped secret
+pipelineRoutes.post("/:id/secrets", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const idParsed = uuidParam.safeParse(c.req.param("id"));
+  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = idParsed.data;
+
+  const [pipeline] = await db
+    .select({ id: pipelines.id })
+    .from(pipelines)
+    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
+    .limit(1);
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  const body = await c.req.json();
+  const parsed = createSecretSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
+
+  const { name, value } = parsed.data;
+  const [existing] = await db
+    .select({ id: userSecrets.id })
+    .from(userSecrets)
+    .where(
+      and(
+        eq(userSecrets.userId, userId),
+        eq(userSecrets.pipelineId, pipelineId),
+        eq(userSecrets.name, name),
+      ),
+    )
+    .limit(1);
+  if (existing) {
+    return c.json(
+      { error: `Secret "${name}" already exists for this pipeline. Use PUT to update.` },
+      409,
+    );
+  }
+
+  let masterKey: Buffer;
+  try {
+    masterKey = await getKms().getMasterKey();
+  } catch (error) {
+    console.error(
+      "Pipeline secrets KMS init failure:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return c.json(kmsConfigError(), 503);
+  }
+
+  const encryptedBlob = await encryptSecret(userId, value, masterKey);
+  const encryptedValue = encryptedBlob.toString("base64");
+
+  const [secret] = await db
+    .insert(userSecrets)
+    .values({ userId, pipelineId, name, encryptedValue, keyVersion: 1 })
+    .returning({
+      id: userSecrets.id,
+      name: userSecrets.name,
+      keyVersion: userSecrets.keyVersion,
+      createdAt: userSecrets.createdAt,
+      updatedAt: userSecrets.updatedAt,
+    });
+
+  return c.json(secret, 201);
+});
+
+// Update pipeline-scoped secret
+pipelineRoutes.put("/:id/secrets/:name", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const idParsed = uuidParam.safeParse(c.req.param("id"));
+  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = idParsed.data;
+  const nameParsed = secretNameParam.safeParse(c.req.param("name"));
+  if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
+
+  const [pipeline] = await db
+    .select({ id: pipelines.id })
+    .from(pipelines)
+    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
+    .limit(1);
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  const body = await c.req.json();
+  const parsed = updateSecretSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
+
+  let masterKey: Buffer;
+  try {
+    masterKey = await getKms().getMasterKey();
+  } catch (error) {
+    console.error(
+      "Pipeline secrets KMS init failure:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return c.json(kmsConfigError(), 503);
+  }
+  const encryptedBlob = await encryptSecret(
+    userId,
+    parsed.data.value,
+    masterKey,
+  );
+  const encryptedValue = encryptedBlob.toString("base64");
+
+  const [updated] = await db
+    .update(userSecrets)
+    .set({ encryptedValue, updatedAt: new Date() })
+    .where(
+      and(
+        eq(userSecrets.userId, userId),
+        eq(userSecrets.pipelineId, pipelineId),
+        eq(userSecrets.name, nameParsed.data),
+      ),
+    )
+    .returning({
+      id: userSecrets.id,
+      name: userSecrets.name,
+      keyVersion: userSecrets.keyVersion,
+      updatedAt: userSecrets.updatedAt,
+    });
+
+  if (!updated) return c.json({ error: "Secret not found" }, 404);
+  return c.json(updated);
+});
+
+// Delete pipeline-scoped secret
+pipelineRoutes.delete("/:id/secrets/:name", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+  const idParsed = uuidParam.safeParse(c.req.param("id"));
+  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  const pipelineId = idParsed.data;
+  const nameParsed = secretNameParam.safeParse(c.req.param("name"));
+  if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
+
+  const [pipeline] = await db
+    .select({ id: pipelines.id })
+    .from(pipelines)
+    .where(and(eq(pipelines.id, pipelineId), eq(pipelines.userId, userId)))
+    .limit(1);
+  if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  const [deleted] = await db
+    .delete(userSecrets)
+    .where(
+      and(
+        eq(userSecrets.userId, userId),
+        eq(userSecrets.pipelineId, pipelineId),
+        eq(userSecrets.name, nameParsed.data),
+      ),
+    )
+    .returning({ id: userSecrets.id });
+
+  if (!deleted) return c.json({ error: "Secret not found" }, 404);
+  return c.json({ deleted: true });
 });
 
 // Create schedule

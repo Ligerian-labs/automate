@@ -1,9 +1,15 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import YAML from "yaml";
 import { AppShell } from "../components/app-shell";
-import { type PipelineRecord, type RunRecord, apiFetch } from "../lib/api";
+import {
+  ApiError,
+  type PipelineRecord,
+  type RunRecord,
+  type SecretRecord,
+  apiFetch,
+} from "../lib/api";
 
 interface StepDef {
   id: string;
@@ -37,6 +43,7 @@ function newStep(index: number): StepDef {
 export function PipelineEditorPage() {
   const { pipelineId } = useParams({ strict: false }) as { pipelineId: string };
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const pipelineQ = useQuery({
     queryKey: ["pipeline", pipelineId],
@@ -57,6 +64,19 @@ export function PipelineEditorPage() {
   );
   const [expandedStep, setExpandedStep] = useState<number>(0);
   const [message, setMessage] = useState<string | null>(null);
+  const [pipelineSecretName, setPipelineSecretName] = useState("");
+  const [pipelineSecretValue, setPipelineSecretValue] = useState("");
+  const [pipelineSecretUpdateName, setPipelineSecretUpdateName] = useState<
+    string | null
+  >(null);
+  const [pipelineSecretUpdateValue, setPipelineSecretUpdateValue] =
+    useState("");
+  const [pipelineSecretError, setPipelineSecretError] = useState<string | null>(
+    null,
+  );
+  const [pipelineSecretSuccess, setPipelineSecretSuccess] = useState<
+    string | null
+  >(null);
   const [yamlMode, setYamlMode] = useState(false);
   const [rawYaml, setRawYaml] = useState("");
 
@@ -74,6 +94,12 @@ export function PipelineEditorPage() {
       (item, index) => merged.findIndex((x) => x.id === item.id) === index,
     );
   })();
+
+  const pipelineSecretsQ = useQuery({
+    queryKey: ["pipeline-secrets", pipelineId],
+    queryFn: () => apiFetch<SecretRecord[]>(`/api/pipelines/${pipelineId}/secrets`),
+    enabled: Boolean(pipelineId),
+  });
 
   // Load pipeline data
   useEffect(() => {
@@ -211,6 +237,95 @@ export function PipelineEditorPage() {
       setMessage(err instanceof Error ? err.message : "Run failed"),
   });
 
+  const createPipelineSecretMut = useMutation({
+    mutationFn: (payload: { name: string; value: string }) =>
+      apiFetch<SecretRecord>(`/api/pipelines/${pipelineId}/secrets`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      setPipelineSecretName("");
+      setPipelineSecretValue("");
+      setPipelineSecretError(null);
+      setPipelineSecretSuccess("Pipeline secret saved");
+      queryClient.invalidateQueries({ queryKey: ["pipeline-secrets", pipelineId] });
+    },
+    onError: (err) => {
+      setPipelineSecretSuccess(null);
+      setPipelineSecretError(
+        err instanceof ApiError ? err.message : "Failed to create secret",
+      );
+    },
+  });
+
+  const updatePipelineSecretMut = useMutation({
+    mutationFn: (payload: { name: string; value: string }) =>
+      apiFetch<SecretRecord>(
+        `/api/pipelines/${pipelineId}/secrets/${encodeURIComponent(payload.name)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ value: payload.value }),
+        },
+      ),
+    onSuccess: (_, payload) => {
+      setPipelineSecretUpdateName(null);
+      setPipelineSecretUpdateValue("");
+      setPipelineSecretError(null);
+      setPipelineSecretSuccess(`Secret "${payload.name}" updated`);
+      queryClient.invalidateQueries({ queryKey: ["pipeline-secrets", pipelineId] });
+    },
+    onError: (err) => {
+      setPipelineSecretSuccess(null);
+      setPipelineSecretError(
+        err instanceof ApiError ? err.message : "Failed to update secret",
+      );
+    },
+  });
+
+  const deletePipelineSecretMut = useMutation({
+    mutationFn: (name: string) =>
+      apiFetch<{ deleted: boolean }>(
+        `/api/pipelines/${pipelineId}/secrets/${encodeURIComponent(name)}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: () => {
+      setPipelineSecretError(null);
+      setPipelineSecretSuccess("Secret removed");
+      queryClient.invalidateQueries({ queryKey: ["pipeline-secrets", pipelineId] });
+    },
+    onError: (err) => {
+      setPipelineSecretSuccess(null);
+      setPipelineSecretError(
+        err instanceof ApiError ? err.message : "Failed to delete secret",
+      );
+    },
+  });
+
+  const submitPipelineSecret = () => {
+    setPipelineSecretSuccess(null);
+    const normalizedName = pipelineSecretName.trim().toUpperCase();
+    if (!normalizedName || !pipelineSecretValue.trim()) {
+      setPipelineSecretError("Name and value are required");
+      return;
+    }
+    createPipelineSecretMut.mutate({
+      name: normalizedName,
+      value: pipelineSecretValue,
+    });
+  };
+
+  const submitPipelineSecretUpdate = () => {
+    if (!pipelineSecretUpdateName || !pipelineSecretUpdateValue.trim()) {
+      setPipelineSecretError("New secret value is required");
+      return;
+    }
+    setPipelineSecretSuccess(null);
+    updatePipelineSecretMut.mutate({
+      name: pipelineSecretUpdateName,
+      value: pipelineSecretUpdateValue,
+    });
+  };
+
   const status = pipelineQ.data?.status || "draft";
 
   const actions = (
@@ -331,6 +446,139 @@ export function PipelineEditorPage() {
                 </p>
               ) : null}
             </div>
+          </div>
+
+          {/* Pipeline secrets card */}
+          <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
+            <h2 className="text-[15px] font-semibold">Pipeline Secrets</h2>
+            <p className="text-xs text-[var(--text-muted)]">
+              These secrets apply only to this pipeline and override global
+              secrets with the same name.
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              <input
+                className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs uppercase focus:border-[var(--accent)] focus:outline-none"
+                style={{ fontFamily: "var(--font-mono)" }}
+                value={pipelineSecretName}
+                onChange={(e) => setPipelineSecretName(e.target.value)}
+                placeholder="OPENAI_API_KEY"
+              />
+              <input
+                type="password"
+                className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
+                style={{ fontFamily: "var(--font-mono)" }}
+                value={pipelineSecretValue}
+                onChange={(e) => setPipelineSecretValue(e.target.value)}
+                placeholder="sk-..."
+              />
+              <button
+                type="button"
+                onClick={submitPipelineSecret}
+                disabled={createPipelineSecretMut.isPending}
+                className="cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {createPipelineSecretMut.isPending
+                  ? "Saving..."
+                  : "Save pipeline secret"}
+              </button>
+            </div>
+            {pipelineSecretError ? (
+              <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {pipelineSecretError}
+              </p>
+            ) : null}
+            {pipelineSecretSuccess ? (
+              <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300">
+                {pipelineSecretSuccess}
+              </p>
+            ) : null}
+            <div className="rounded-[8px] border border-[var(--divider)] bg-[var(--bg-inset)]">
+              {pipelineSecretsQ.isLoading ? (
+                <p className="px-3 py-3 text-xs text-[var(--text-muted)]">
+                  Loading pipeline secrets...
+                </p>
+              ) : null}
+              {pipelineSecretsQ.data?.length === 0 ? (
+                <p className="px-3 py-3 text-xs text-[var(--text-muted)]">
+                  No pipeline secrets yet.
+                </p>
+              ) : null}
+              {pipelineSecretsQ.data?.map((secret) => (
+                <div
+                  key={secret.id}
+                  className="flex items-center justify-between border-t border-[var(--divider)] px-3 py-2 first:border-t-0"
+                >
+                  <div>
+                    <p
+                      className="text-xs font-medium"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {secret.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPipelineSecretError(null);
+                        setPipelineSecretSuccess(null);
+                        setPipelineSecretUpdateValue("");
+                        setPipelineSecretUpdateName(secret.name);
+                      }}
+                      className="cursor-pointer rounded border border-[var(--divider)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
+                    >
+                      Rotate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deletePipelineSecretMut.mutate(secret.name)}
+                      disabled={deletePipelineSecretMut.isPending}
+                      className="cursor-pointer rounded border border-red-500/30 px-2 py-1 text-[11px] text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {pipelineSecretUpdateName ? (
+              <div className="rounded-[8px] border border-[var(--divider)] bg-[var(--bg-inset)] p-3">
+                <p
+                  className="mb-2 text-xs text-[var(--text-secondary)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  Rotate {pipelineSecretUpdateName}
+                </p>
+                <input
+                  type="password"
+                  className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-surface)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                  value={pipelineSecretUpdateValue}
+                  onChange={(e) => setPipelineSecretUpdateValue(e.target.value)}
+                  placeholder="New value"
+                />
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={submitPipelineSecretUpdate}
+                    disabled={updatePipelineSecretMut.isPending}
+                    className="cursor-pointer rounded bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {updatePipelineSecretMut.isPending ? "Updating..." : "Update"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPipelineSecretUpdateName(null);
+                      setPipelineSecretUpdateValue("");
+                    }}
+                    className="cursor-pointer rounded border border-[var(--divider)] px-3 py-1.5 text-xs text-[var(--text-secondary)]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* YAML editor */}
