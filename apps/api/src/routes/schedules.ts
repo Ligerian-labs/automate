@@ -5,6 +5,10 @@ import { db } from "../db/index.js";
 import { pipelines, schedules } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import {
+  assertCanUseCron,
+  isPlanValidationError,
+} from "../services/plan-validator.js";
 import { createScheduleForPipeline } from "../services/schedule-create.js";
 
 export const scheduleRoutes = new Hono<{ Variables: Env }>();
@@ -49,6 +53,19 @@ scheduleRoutes.post("/pipelines/:id/schedules", async (c) => {
   const body = await c.req.json();
   const parsed = createScheduleSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
+
+  try {
+    await assertCanUseCron(userId);
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json(
+        { error: err.message, code: err.code, details: err.details },
+        err.status,
+      );
+    }
+    throw err;
+  }
+
   const result = await createScheduleForPipeline(userId, pipelineId, parsed.data);
   if (result.error) {
     if (result.error === "Pipeline not found") return c.json({ error: result.error }, 404);
@@ -75,6 +92,18 @@ scheduleRoutes.post("/:id/enable", async (c) => {
     .limit(1);
 
   if (!ownedSchedule) return c.json({ error: "Not found" }, 404);
+
+  try {
+    await assertCanUseCron(userId);
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json(
+        { error: err.message, code: err.code, details: err.details },
+        err.status,
+      );
+    }
+    throw err;
+  }
 
   const [result] = await db
     .update(schedules)
