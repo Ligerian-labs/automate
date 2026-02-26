@@ -8,6 +8,7 @@ import {
 } from "@stepiq/core";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { db } from "../db/index.js";
 import { userSecrets } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
@@ -22,6 +23,20 @@ let kmsProvider: ReturnType<typeof createKmsProvider> | null = null;
 function getKms() {
   if (!kmsProvider) kmsProvider = createKmsProvider();
   return kmsProvider;
+}
+
+export function __resetKmsProviderForTests() {
+  kmsProvider = null;
+}
+
+function kmsConfigError(c: Context<{ Variables: Env }>) {
+  return c.json(
+    {
+      error:
+        "Secrets encryption is not configured. Set STEPIQ_MASTER_KEY (64 hex chars) or VAULT_ADDR + VAULT_TOKEN.",
+    },
+    503,
+  );
 }
 
 // ── List secrets (names only, NEVER values) ──
@@ -68,7 +83,16 @@ secretRoutes.post("/", async (c) => {
     );
 
   // Encrypt — API server can encrypt, never decrypt
-  const masterKey = await getKms().getMasterKey();
+  let masterKey: Buffer;
+  try {
+    masterKey = await getKms().getMasterKey();
+  } catch (error) {
+    console.error(
+      "Secrets KMS init failure:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return kmsConfigError(c);
+  }
   const encryptedBlob = await encryptSecret(userId, value, masterKey);
   const encryptedValue = encryptedBlob.toString("base64");
 
@@ -96,7 +120,16 @@ secretRoutes.put("/:name", async (c) => {
   const parsed = updateSecretSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
 
-  const masterKey = await getKms().getMasterKey();
+  let masterKey: Buffer;
+  try {
+    masterKey = await getKms().getMasterKey();
+  } catch (error) {
+    console.error(
+      "Secrets KMS init failure:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return kmsConfigError(c);
+  }
   const encryptedBlob = await encryptSecret(
     userId,
     parsed.data.value,
