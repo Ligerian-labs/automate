@@ -73,6 +73,42 @@ export const SUPPORTED_MODELS: ModelInfo[] = [
     max_tokens: 16384,
     supports_json: true,
   },
+  {
+    id: "gemini-2.5-pro",
+    name: "Gemini 2.5 Pro",
+    provider: "google",
+    input_cost_per_million: 1_250, // $1.25
+    output_cost_per_million: 10_000, // $10.00
+    max_tokens: 65536,
+    supports_json: true,
+  },
+  {
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    provider: "google",
+    input_cost_per_million: 300, // $0.30
+    output_cost_per_million: 2_500, // $2.50
+    max_tokens: 65536,
+    supports_json: true,
+  },
+  {
+    id: "mistral-large-latest",
+    name: "Mistral Large Latest",
+    provider: "mistral",
+    input_cost_per_million: 2_000, // $2.00
+    output_cost_per_million: 6_000, // $6.00
+    max_tokens: 32000,
+    supports_json: true,
+  },
+  {
+    id: "mistral-small-latest",
+    name: "Mistral Small Latest",
+    provider: "mistral",
+    input_cost_per_million: 200, // $0.20
+    output_cost_per_million: 600, // $0.60
+    max_tokens: 32000,
+    supports_json: true,
+  },
 ];
 
 export const MARKUP_PERCENTAGE = 25; // 25% markup on model costs

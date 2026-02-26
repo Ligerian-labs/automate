@@ -22,10 +22,12 @@ describe("SUPPORTED_MODELS", () => {
     }
   });
 
-  it("includes anthropic and openai providers", () => {
+  it("includes supported providers", () => {
     const providers = new Set(SUPPORTED_MODELS.map((m) => m.provider));
     expect(providers.has("anthropic")).toBe(true);
     expect(providers.has("openai")).toBe(true);
+    expect(providers.has("google")).toBe(true);
+    expect(providers.has("mistral")).toBe(true);
   });
 
   it("has unique model IDs", () => {
@@ -40,6 +42,12 @@ describe("SUPPORTED_MODELS", () => {
       }
       if (model.provider === "openai") {
         expect(model.id.startsWith("gpt-")).toBe(true);
+      }
+      if (model.provider === "google") {
+        expect(model.id.startsWith("gemini-")).toBe(true);
+      }
+      if (model.provider === "mistral") {
+        expect(model.id.startsWith("mistral-")).toBe(true);
       }
     }
   });

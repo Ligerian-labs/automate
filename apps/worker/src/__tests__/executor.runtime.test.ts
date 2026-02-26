@@ -33,7 +33,8 @@ type TestState = {
   definition: Record<string, unknown> | null;
   userSecrets: Array<{ name: string; encryptedValue: string }>;
   stepExecutions: StepExecRow[];
-  callModelImpl: () => Promise<{
+  lastModelRequest: Record<string, unknown> | null;
+  callModelImpl: (req: Record<string, unknown>) => Promise<{
     output: string;
     input_tokens: number;
     output_tokens: number;
@@ -134,7 +135,10 @@ mock.module("drizzle-orm", () => ({
   inArray: (left: unknown, right: unknown[]) => ({ type: "inArray", left, right }),
 }));
 mock.module("../model-router.js", () => ({
-  callModel: () => state.callModelImpl(),
+  callModel: (req: Record<string, unknown>) => {
+    state.lastModelRequest = req;
+    return state.callModelImpl(req);
+  },
 }));
 mock.module("../core-adapter.js", () => ({
   createKmsProvider: () => ({ getMasterKey: async () => Buffer.alloc(32, 1) }),
@@ -181,6 +185,7 @@ describe("executePipeline runtime behavior", () => {
         },
       ],
       stepExecutions: [],
+      lastModelRequest: null,
       callModelImpl: async () => ({
         output: "model-output",
         input_tokens: 100,
@@ -237,5 +242,44 @@ describe("executePipeline runtime behavior", () => {
     await expect(executePipeline("missing-run")).rejects.toThrow(
       "Run missing-run not found",
     );
+  });
+
+  it("passes provider API keys from saved secrets to model calls", async () => {
+    state.definition = {
+      name: "Provider key pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-5.2",
+          prompt: "No env refs in prompt",
+        },
+      ],
+    };
+    state.userSecrets = [
+      {
+        name: "OPENAI_API_KEY",
+        encryptedValue: Buffer.from("encrypted").toString("base64"),
+      },
+      {
+        name: "GEMINI_API_KEY",
+        encryptedValue: Buffer.from("encrypted-gemini").toString("base64"),
+      },
+      {
+        name: "MISTRAL_API_KEY",
+        encryptedValue: Buffer.from("encrypted-mistral").toString("base64"),
+      },
+    ];
+
+    await executePipeline("run-1");
+
+    const apiKeys = (state.lastModelRequest?.api_keys || {}) as Record<
+      string,
+      string
+    >;
+    expect(apiKeys.openai).toBe("super-secret-value");
+    expect(apiKeys.gemini).toBe("super-secret-value");
+    expect(apiKeys.mistral).toBe("super-secret-value");
   });
 });

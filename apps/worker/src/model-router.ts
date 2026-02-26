@@ -1,11 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
+import { Mistral } from "@mistralai/mistralai";
 import { MARKUP_PERCENTAGE, SUPPORTED_MODELS } from "./core-adapter.js";
 import OpenAI from "openai";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || "",
-});
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 interface ModelRequest {
   model: string;
@@ -14,6 +11,13 @@ interface ModelRequest {
   temperature?: number;
   max_tokens?: number;
   output_format?: "text" | "json" | "markdown";
+  api_keys?: {
+    openai?: string;
+    anthropic?: string;
+    gemini?: string;
+    google?: string;
+    mistral?: string;
+  };
 }
 
 interface ModelResponse {
@@ -23,6 +27,15 @@ interface ModelResponse {
   cost_cents: number;
   model: string;
   latency_ms: number;
+}
+
+function isPlaceholderApiKey(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === "placeholder" ||
+    normalized === "your-api-key" ||
+    normalized === "changeme"
+  );
 }
 
 export async function callModel(req: ModelRequest): Promise<ModelResponse> {
@@ -39,6 +52,12 @@ export async function callModel(req: ModelRequest): Promise<ModelResponse> {
   if (modelInfo.provider === "openai") {
     return callOpenAI(req, modelInfo, start);
   }
+  if (modelInfo.provider === "google") {
+    return callGoogle(req, modelInfo, start);
+  }
+  if (modelInfo.provider === "mistral") {
+    return callMistral(req, modelInfo, start);
+  }
 
   throw new Error(`Unsupported provider: ${modelInfo.provider}`);
 }
@@ -48,6 +67,14 @@ async function callAnthropic(
   modelInfo: (typeof SUPPORTED_MODELS)[number],
   start: number,
 ): Promise<ModelResponse> {
+  const apiKey = req.api_keys?.anthropic || process.env.ANTHROPIC_API_KEY || "";
+  if (!apiKey || isPlaceholderApiKey(apiKey)) {
+    throw new Error(
+      "Anthropic API key is missing. Save ANTHROPIC_API_KEY in Settings → Secrets.",
+    );
+  }
+  const anthropic = new Anthropic({ apiKey });
+
   const response = await anthropic.messages.create({
     model: req.model,
     max_tokens: req.max_tokens || 4096,
@@ -78,6 +105,14 @@ async function callOpenAI(
   modelInfo: (typeof SUPPORTED_MODELS)[number],
   start: number,
 ): Promise<ModelResponse> {
+  const apiKey = req.api_keys?.openai || process.env.OPENAI_API_KEY || "";
+  if (!apiKey || isPlaceholderApiKey(apiKey)) {
+    throw new Error(
+      "OpenAI API key is missing. Save OPENAI_API_KEY in Settings → Secrets.",
+    );
+  }
+  const openai = new OpenAI({ apiKey });
+
   const response = await openai.chat.completions.create({
     model: req.model,
     max_tokens: req.max_tokens || 4096,
@@ -104,6 +139,114 @@ async function callOpenAI(
     model: req.model,
     latency_ms: Date.now() - start,
   };
+}
+
+async function callGoogle(
+  req: ModelRequest,
+  modelInfo: (typeof SUPPORTED_MODELS)[number],
+  start: number,
+): Promise<ModelResponse> {
+  const apiKey =
+    req.api_keys?.gemini ||
+    req.api_keys?.google ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    "";
+  if (!apiKey || isPlaceholderApiKey(apiKey)) {
+    throw new Error(
+      "Gemini API key is missing. Save GEMINI_API_KEY in Settings → Secrets.",
+    );
+  }
+  const google = new GoogleGenAI({ apiKey });
+
+  const response = await google.models.generateContent({
+    model: req.model,
+    contents: req.prompt,
+    config: {
+      ...(req.system ? { systemInstruction: req.system } : {}),
+      ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
+      ...(req.max_tokens ? { maxOutputTokens: req.max_tokens } : {}),
+      ...(req.output_format === "json"
+        ? { responseMimeType: "application/json" }
+        : {}),
+    },
+  });
+
+  const output = response.text || "";
+  const inputTokens = response.usageMetadata?.promptTokenCount || 0;
+  const outputTokens = response.usageMetadata?.candidatesTokenCount || 0;
+  const costCents = calculateCost(inputTokens, outputTokens, modelInfo);
+
+  return {
+    output,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cost_cents: costCents,
+    model: req.model,
+    latency_ms: Date.now() - start,
+  };
+}
+
+async function callMistral(
+  req: ModelRequest,
+  modelInfo: (typeof SUPPORTED_MODELS)[number],
+  start: number,
+): Promise<ModelResponse> {
+  const apiKey = req.api_keys?.mistral || process.env.MISTRAL_API_KEY || "";
+  if (!apiKey || isPlaceholderApiKey(apiKey)) {
+    throw new Error(
+      "Mistral API key is missing. Save MISTRAL_API_KEY in Settings → Secrets.",
+    );
+  }
+  const mistral = new Mistral({ apiKey });
+
+  const response = await mistral.chat.complete({
+    model: req.model,
+    maxTokens: req.max_tokens || 4096,
+    temperature: req.temperature,
+    messages: [
+      ...(req.system ? [{ role: "system" as const, content: req.system }] : []),
+      { role: "user" as const, content: req.prompt },
+    ],
+    ...(req.output_format === "json"
+      ? { responseFormat: { type: "json_object" as const } }
+      : {}),
+  });
+
+  const output = extractMistralText(response.choices[0]?.message?.content);
+  const inputTokens = response.usage?.promptTokens || 0;
+  const outputTokens = response.usage?.completionTokens || 0;
+  const costCents = calculateCost(inputTokens, outputTokens, modelInfo);
+
+  return {
+    output,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cost_cents: costCents,
+    model: req.model,
+    latency_ms: Date.now() - start,
+  };
+}
+
+function extractMistralText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((chunk) => {
+      if (
+        chunk &&
+        typeof chunk === "object" &&
+        "type" in chunk &&
+        "text" in chunk &&
+        (chunk as { type?: string }).type === "text" &&
+        typeof (chunk as { text?: unknown }).text === "string"
+      ) {
+        return (chunk as { text: string }).text;
+      }
+      return "";
+    })
+    .filter(Boolean)
+    .join("");
 }
 
 function calculateCost(
