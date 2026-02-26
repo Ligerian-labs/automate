@@ -1,8 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
 import {
+  PLAN_BILLING_PRICES,
+  YEARLY_DISCOUNT_PERCENT,
+} from "../lib/billing";
+import {
   ApiError,
+  type BillingCheckoutResponse,
+  type BillingPortalResponse,
   type SecretRecord,
   type UsageRecord,
   type UserMe,
@@ -20,6 +26,14 @@ export function SettingsPage() {
   const [secretUpdateValue, setSecretUpdateValue] = useState("");
   const [secretError, setSecretError] = useState<string | null>(null);
   const [secretSuccess, setSecretSuccess] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">(
+    "month",
+  );
+  const [billingTargetPlan, setBillingTargetPlan] = useState<
+    "starter" | "pro" | null
+  >(null);
+  const [billingMessage, setBillingMessage] = useState<string | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
   const meQ = useQuery({
     queryKey: ["me"],
     queryFn: () => apiFetch<UserMe>("/api/user/me"),
@@ -98,6 +112,62 @@ export function SettingsPage() {
     },
   });
 
+  const checkoutMut = useMutation({
+    mutationFn: (payload: { plan: "starter" | "pro"; interval: "month" | "year" }) =>
+      apiFetch<BillingCheckoutResponse>("/api/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (res) => {
+      window.location.href = res.url;
+    },
+    onError: (err) => {
+      setBillingMessage(null);
+      setBillingError(
+        err instanceof ApiError ? err.message : "Failed to start checkout",
+      );
+    },
+  });
+
+  const portalMut = useMutation({
+    mutationFn: () =>
+      apiFetch<BillingPortalResponse>("/api/billing/portal", {
+        method: "POST",
+      }),
+    onSuccess: (res) => {
+      window.location.href = res.url;
+    },
+    onError: (err) => {
+      setBillingMessage(null);
+      setBillingError(
+        err instanceof ApiError
+          ? err.message
+          : "Failed to open billing portal",
+      );
+    },
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    const intervalParam = params.get("interval");
+    const planParam = params.get("plan");
+    const checkoutParam = params.get("checkout");
+
+    if (tabParam === "Billing") setTab("Billing");
+    if (intervalParam === "month" || intervalParam === "year") {
+      setBillingInterval(intervalParam);
+    }
+    if (planParam === "starter" || planParam === "pro") {
+      setBillingTargetPlan(planParam);
+    }
+    if (checkoutParam === "success") {
+      setBillingMessage("Checkout completed. Your subscription is updating.");
+    } else if (checkoutParam === "cancel") {
+      setBillingMessage("Checkout canceled.");
+    }
+  }, []);
+
   function submitSecret() {
     setSecretSuccess(null);
     const normalizedName = secretName.trim().toUpperCase();
@@ -121,6 +191,10 @@ export function SettingsPage() {
       name: secretUpdateName,
       value: secretUpdateValue,
     });
+  }
+
+  function formatCents(cents: number): string {
+    return `€${(cents / 100).toFixed(0)}`;
   }
 
   return (
@@ -488,6 +562,113 @@ export function SettingsPage() {
               <p className="mb-4 text-sm text-[var(--text-tertiary)]">
                 View usage and manage your subscription.
               </p>
+              <div className="mb-4 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval("month")}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                    billingInterval === "month"
+                      ? "bg-[var(--accent)] text-[var(--bg-primary)]"
+                      : "border border-[var(--divider)] text-[var(--text-secondary)]"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval("year")}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                    billingInterval === "year"
+                      ? "bg-[var(--accent)] text-[var(--bg-primary)]"
+                      : "border border-[var(--divider)] text-[var(--text-secondary)]"
+                  }`}
+                >
+                  Yearly (save {YEARLY_DISCOUNT_PERCENT}%)
+                </button>
+              </div>
+
+              <div className="mb-5 grid grid-cols-2 gap-4">
+                {(["starter", "pro"] as const).map((plan) => {
+                  const currentPlan = (meQ.data?.plan || "free").toLowerCase();
+                  const isCurrent = currentPlan === plan;
+                  const monthly = PLAN_BILLING_PRICES[plan].monthly_cents;
+                  const yearly = PLAN_BILLING_PRICES[plan].yearly_cents;
+                  const selectedPrice =
+                    billingInterval === "month" ? monthly : yearly;
+                  return (
+                    <div
+                      key={plan}
+                      className={`rounded-[10px] border p-4 ${
+                        billingTargetPlan === plan
+                          ? "border-[var(--accent)]"
+                          : "border-[var(--divider)]"
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold capitalize">{plan}</h3>
+                        {isCurrent ? (
+                          <span className="rounded-full bg-[var(--accent)]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent)]">
+                            Current
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="text-2xl font-bold">
+                        {formatCents(selectedPrice)}
+                        <span className="ml-1 text-xs font-medium text-[var(--text-tertiary)]">
+                          /{billingInterval === "month" ? "month" : "year"}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                        {billingInterval === "year"
+                          ? `${formatCents(monthly * 12 - yearly)} saved yearly`
+                          : `${formatCents(yearly)}/year with yearly billing`}
+                      </p>
+                      <button
+                        type="button"
+                        disabled={isCurrent || checkoutMut.isPending}
+                        onClick={() => {
+                          setBillingError(null);
+                          setBillingMessage(null);
+                          checkoutMut.mutate({ plan, interval: billingInterval });
+                        }}
+                        className="mt-3 w-full cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {checkoutMut.isPending
+                          ? "Redirecting..."
+                          : isCurrent
+                            ? "Current plan"
+                            : `Choose ${plan}`}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBillingError(null);
+                    setBillingMessage(null);
+                    portalMut.mutate();
+                  }}
+                  disabled={portalMut.isPending}
+                  className="cursor-pointer rounded-lg border border-[var(--divider)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {portalMut.isPending ? "Opening..." : "Manage billing"}
+                </button>
+              </div>
+
+              {billingMessage ? (
+                <p className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+                  {billingMessage}
+                </p>
+              ) : null}
+              {billingError ? (
+                <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {billingError}
+                </p>
+              ) : null}
               <div className="grid grid-cols-4 gap-4">
                 <Tile
                   label="Credits used"

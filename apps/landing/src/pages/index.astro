@@ -83,8 +83,10 @@ const secondaryFeatures = [
 const pricing = [
   {
     name: "Free",
-    price: "0€",
-    period: "/month",
+    monthly: "0€",
+    yearly: "0€",
+    periodMonthly: "/month",
+    periodYearly: "/year",
     caption: "100 credits included",
     items: [
       "3 pipelines",
@@ -95,11 +97,33 @@ const pricing = [
     ],
     cta: "Get started",
     featured: false,
+    paid: false,
+  },
+  {
+    name: "Starter",
+    monthly: "19€",
+    yearly: "205€",
+    periodMonthly: "/month",
+    periodYearly: "/year",
+    caption: "2,000 credits included",
+    items: [
+      "10 pipelines",
+      "10 steps per pipeline",
+      "100 runs/day",
+      "All core models",
+      "Cron scheduling",
+      "API access",
+    ],
+    cta: "Start starter",
+    featured: false,
+    paid: true,
   },
   {
     name: "Pro",
-    price: "49€",
-    period: "/month",
+    monthly: "49€",
+    yearly: "529€",
+    periodMonthly: "/month",
+    periodYearly: "/year",
     caption: "8,000 credits included",
     items: [
       "Unlimited pipelines",
@@ -112,11 +136,14 @@ const pricing = [
     ],
     cta: "Start free trial",
     featured: true,
+    paid: true,
   },
   {
     name: "Enterprise",
-    price: "Custom",
-    period: "",
+    monthly: "Custom",
+    yearly: "Custom",
+    periodMonthly: "",
+    periodYearly: "",
     caption: "Custom credit allocation",
     items: [
       "Everything in Pro",
@@ -128,6 +155,7 @@ const pricing = [
     ],
     cta: "Contact sales",
     featured: false,
+    paid: false,
   },
 ];
 
@@ -325,14 +353,32 @@ steps:
         <h2>Start free, scale as you grow</h2>
         <p class="section-sub">100 free credits to start. No credit card required.</p>
       </div>
+      <div class="pricing-toggle" style="display:flex;justify-content:center;gap:8px;margin:0 0 18px 0;">
+        <button type="button" data-billing-toggle="month" class="outline-link" style="padding:8px 14px;">Monthly</button>
+        <button type="button" data-billing-toggle="year" class="outline-link" style="padding:8px 14px;">Yearly (save 10%)</button>
+      </div>
       <div class="card-grid three">
         {pricing.map((plan) => (
           <article class={`card pricing-card ${plan.featured ? "featured" : ""}`}>
             {plan.featured && <div class="popular-badge">MOST POPULAR</div>}
             <h3>{plan.name}</h3>
             <div class="price-row">
-              <span class="price">{plan.price}</span>
-              {plan.period && <span class="price-period">{plan.period}</span>}
+              <span
+                class="price"
+                data-monthly={plan.monthly}
+                data-yearly={plan.yearly}
+              >
+                {plan.monthly}
+              </span>
+              {plan.periodMonthly && (
+                <span
+                  class="price-period"
+                  data-monthly={plan.periodMonthly}
+                  data-yearly={plan.periodYearly}
+                >
+                  {plan.periodMonthly}
+                </span>
+              )}
             </div>
             <p class="price-caption">{plan.caption}</p>
             <div class="price-sep"></div>
@@ -341,7 +387,14 @@ steps:
                 <li>{item}</li>
               ))}
             </ul>
-            <a href={plan.name === "Enterprise" ? "/contact" : `${APP_URL}/register`} class={plan.featured ? "solid-link" : "outline-link"}>{plan.cta}</a>
+            <a
+              href={plan.name === "Enterprise" ? "/contact" : `${APP_URL}/register${plan.paid ? `?plan=${plan.name.toLowerCase()}&interval=month` : ""}`}
+              data-href-base={plan.name === "Enterprise" ? "/contact" : `${APP_URL}/register`}
+              data-plan={plan.paid ? plan.name.toLowerCase() : ""}
+              class={plan.featured ? "solid-link" : "outline-link"}
+            >
+              {plan.cta}
+            </a>
           </article>
         ))}
       </div>
@@ -400,3 +453,55 @@ steps:
     </footer>
   </main>
 </Layout>
+
+<script>
+  const toggleButtons =
+    document.querySelectorAll<HTMLButtonElement>("[data-billing-toggle]");
+  const prices =
+    document.querySelectorAll<HTMLElement>("[data-monthly][data-yearly]");
+  const ctaLinks =
+    document.querySelectorAll<HTMLAnchorElement>("[data-href-base][data-plan]");
+
+  function applyInterval(interval: "month" | "year") {
+    for (const el of prices) {
+      const value =
+        interval === "year"
+          ? el.getAttribute("data-yearly")
+          : el.getAttribute("data-monthly");
+      if (value) el.textContent = value;
+    }
+
+    for (const link of ctaLinks) {
+      const base = link.getAttribute("data-href-base");
+      const plan = link.getAttribute("data-plan");
+      if (!base) continue;
+      if (!plan) {
+        link.setAttribute("href", base);
+        continue;
+      }
+      link.setAttribute("href", `${base}?plan=${plan}&interval=${interval}`);
+    }
+
+    for (const button of toggleButtons) {
+      const active = button.getAttribute("data-billing-toggle") === interval;
+      if (active) {
+        button.style.background = "var(--accent)";
+        button.style.color = "var(--bg-primary)";
+      } else {
+        button.style.background = "transparent";
+        button.style.color = "var(--text-secondary)";
+      }
+    }
+  }
+
+  for (const button of toggleButtons) {
+    button.addEventListener("click", () => {
+      const interval = button.getAttribute("data-billing-toggle");
+      if (interval === "month" || interval === "year") {
+        applyInterval(interval);
+      }
+    });
+  }
+
+  applyInterval("month");
+</script>

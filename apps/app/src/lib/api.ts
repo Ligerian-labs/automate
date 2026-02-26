@@ -130,3 +130,16 @@ export interface SecretRecord {
   updatedAt?: string;
   updated_at?: string;
 }
+
+export interface BillingCheckoutRequest {
+  plan: "starter" | "pro";
+  interval: "month" | "year";
+}
+
+export interface BillingCheckoutResponse {
+  url: string;
+}
+
+export interface BillingPortalResponse {
+  url: string;
+}

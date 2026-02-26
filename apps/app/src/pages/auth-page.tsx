@@ -25,6 +25,16 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
         false,
       );
       setToken(response.token);
+      const params = new URLSearchParams(window.location.search);
+      const plan = params.get("plan");
+      const interval = params.get("interval");
+      if (
+        (plan === "starter" || plan === "pro") &&
+        (interval === "month" || interval === "year")
+      ) {
+        window.location.href = `/settings?tab=Billing&plan=${plan}&interval=${interval}`;
+        return;
+      }
       navigate({ to: "/dashboard" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");

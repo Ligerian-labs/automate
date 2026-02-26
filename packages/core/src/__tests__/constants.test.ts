@@ -1,9 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import {
+  getYearlyPriceCents,
   MARKUP_PERCENTAGE,
+  PLAN_BILLING_PRICES,
   PLAN_LIMITS,
   SUPPORTED_MODELS,
   TOKENS_PER_CREDIT,
+  YEARLY_DISCOUNT_PERCENT,
 } from "../constants.js";
 
 describe("SUPPORTED_MODELS", () => {
@@ -87,5 +90,16 @@ describe("constants", () => {
 
   it("TOKENS_PER_CREDIT is 1000", () => {
     expect(TOKENS_PER_CREDIT).toBe(1000);
+  });
+
+  it("YEARLY_DISCOUNT_PERCENT is 10%", () => {
+    expect(YEARLY_DISCOUNT_PERCENT).toBe(10);
+  });
+
+  it("computes yearly plan prices with discount and whole-euro rounding", () => {
+    expect(getYearlyPriceCents(1900)).toBe(20500);
+    expect(getYearlyPriceCents(4900)).toBe(52900);
+    expect(PLAN_BILLING_PRICES.starter.yearly_cents).toBe(20500);
+    expect(PLAN_BILLING_PRICES.pro.yearly_cents).toBe(52900);
   });
 });
