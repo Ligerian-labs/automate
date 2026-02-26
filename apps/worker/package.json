@@ -11,16 +11,18 @@
     "test": "bun test src/__tests__"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@google/genai": "^1.43.0",
+    "@mistralai/mistralai": "^1.14.1",
     "@stepiq/api": "*",
     "@stepiq/core": "*",
     "bullmq": "^5.30.0",
-    "ioredis": "^5.4.0",
+    "cron-parser": "^5.0.0",
     "drizzle-orm": "^0.38.0",
-    "postgres": "^3.4.0",
-    "@anthropic-ai/sdk": "^0.39.0",
-    "openai": "^4.80.0",
     "handlebars": "^4.7.0",
-    "cron-parser": "^5.0.0"
+    "ioredis": "^5.4.0",
+    "openai": "^4.80.0",
+    "postgres": "^3.4.0"
   },
   "devDependencies": {
     "tsx": "^4.19.0"

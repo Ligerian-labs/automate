@@ -99,6 +99,22 @@ export async function executePipeline(runId: string) {
             temperature: step.temperature,
             max_tokens: step.max_tokens,
             output_format: step.output_format,
+            api_keys: {
+              openai:
+                envSecrets.values.OPENAI_API_KEY ||
+                envSecrets.values.openai_api_key,
+              anthropic:
+                envSecrets.values.ANTHROPIC_API_KEY ||
+                envSecrets.values.anthropic_api_key,
+              gemini:
+                envSecrets.values.GEMINI_API_KEY ||
+                envSecrets.values.GOOGLE_API_KEY ||
+                envSecrets.values.gemini_api_key ||
+                envSecrets.values.google_api_key,
+              mistral:
+                envSecrets.values.MISTRAL_API_KEY ||
+                envSecrets.values.mistral_api_key,
+            },
           });
 
           rawOutput = result.output;
@@ -217,18 +233,28 @@ async function resolveUserSecrets(
   definition: PipelineDefinition,
   database: typeof db,
 ): Promise<{ values: Record<string, string>; plainValues: string[] }> {
+  const providerSecretNames = [
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEY",
+    "MISTRAL_API_KEY",
+    "openai_api_key",
+    "anthropic_api_key",
+    "gemini_api_key",
+    "google_api_key",
+    "mistral_api_key",
+  ];
+
   // Find all {{env.xxx}} references across all step prompts
   const allText = definition.steps
     .map((s) => `${s.prompt || ""} ${s.system_prompt || ""}`)
     .join(" ");
   const refs = allText.match(/\{\{env\.(\w+)\}\}/g);
-  if (!refs) return { values: {}, plainValues: [] };
-
-  const names = [
-    ...new Set(
-      refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean),
-    ),
-  ] as string[];
+  const referencedNames = refs
+    ? refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean)
+    : [];
+  const names = [...new Set([...providerSecretNames, ...referencedNames])] as string[];
   if (names.length === 0) return { values: {}, plainValues: [] };
 
   // Fetch encrypted secrets from DB

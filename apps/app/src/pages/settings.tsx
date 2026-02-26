@@ -290,6 +290,31 @@ export function SettingsPage() {
               <p className="mb-4 text-sm text-[var(--text-tertiary)]">
                 Store provider tokens and secure variables for use in pipelines.
               </p>
+              <div className="mb-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-inset)] px-4 py-3">
+                <p className="text-xs font-medium text-[var(--text-secondary)]">
+                  Supported provider secret names
+                </p>
+                <div
+                  className="mt-2 flex flex-wrap gap-2 text-[11px] text-[var(--text-tertiary)]"
+                  style={{ fontFamily: "var(--font-mono)" }}
+                >
+                  <span className="rounded border border-[var(--divider)] px-2 py-1">
+                    OPENAI_API_KEY
+                  </span>
+                  <span className="rounded border border-[var(--divider)] px-2 py-1">
+                    ANTHROPIC_API_KEY
+                  </span>
+                  <span className="rounded border border-[var(--divider)] px-2 py-1">
+                    GEMINI_API_KEY
+                  </span>
+                  <span className="rounded border border-[var(--divider)] px-2 py-1">
+                    GOOGLE_API_KEY
+                  </span>
+                  <span className="rounded border border-[var(--divider)] px-2 py-1">
+                    MISTRAL_API_KEY
+                  </span>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-secondary)]">
