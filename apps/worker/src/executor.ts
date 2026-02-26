@@ -47,13 +47,14 @@ export async function executePipeline(runId: string) {
     .set({ status: "running", startedAt: new Date() })
     .where(eq(runs.id, runId));
 
-  // Resolve user secrets for {{env.xxx}} interpolation
-  const envSecrets = await resolveUserSecrets(run.userId, definition, db);
-
-  const context: Record<string, unknown> = {
+  let envSecrets: { values: Record<string, string>; plainValues: string[] } = {
+    values: {},
+    plainValues: [],
+  };
+  let context: Record<string, unknown> = {
     input: run.inputData,
     vars: definition.variables || {},
-    env: envSecrets.values,
+    env: {},
     steps: {} as Record<string, { output: unknown }>,
   };
 
@@ -61,6 +62,13 @@ export async function executePipeline(runId: string) {
   let totalCostCents = 0;
 
   try {
+    // Resolve user secrets for {{env.xxx}} interpolation
+    envSecrets = await resolveUserSecrets(run.userId, definition, db);
+    context = {
+      ...context,
+      env: envSecrets.values,
+    };
+
     for (let i = 0; i < definition.steps.length; i++) {
       const step = definition.steps[i];
 
@@ -274,9 +282,12 @@ async function resolveUserSecrets(
   let masterKey: Buffer;
   try {
     masterKey = await createKmsProvider().getMasterKey();
-  } catch {
-    console.error("⚠️ KMS not configured — cannot decrypt secrets");
-    return { values: {}, plainValues: [] };
+  } catch (error) {
+    const reason =
+      error instanceof Error && error.message ? ` (${error.message})` : "";
+    throw new Error(
+      `Worker cannot decrypt secrets: configure STEPIQ_MASTER_KEY or Vault KMS${reason}`,
+    );
   }
 
   const values: Record<string, string> = {};
