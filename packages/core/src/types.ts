@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type {
+  createApiKeySchema,
   createPipelineSchema,
   createScheduleSchema,
   pipelineDefinitionSchema,
@@ -58,6 +59,7 @@ export interface DeliveryTarget {
   type: "webhook" | "email" | "file";
   url?: string;
   method?: string;
+  signing_secret_name?: string;
   to?: string;
   subject?: string;
   path?: string;
@@ -176,6 +178,26 @@ export interface CostEstimate {
   }[];
 }
 
+export interface ApiKeyRecord {
+  id: string;
+  name: string | null;
+  key_prefix: string;
+  scopes: string[] | null;
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface CreatedApiKeyResponse {
+  id: string;
+  name: string | null;
+  key_prefix: string;
+  scopes: string[] | null;
+  expires_at: string | null;
+  created_at: string;
+  key: string;
+}
+
 // ── API Payloads ──
 
 export type CreatePipelinePayload = z.infer<typeof createPipelineSchema>;
@@ -183,3 +205,5 @@ export type CreatePipelinePayload = z.infer<typeof createPipelineSchema>;
 export type RunPipelinePayload = z.infer<typeof runPipelineSchema>;
 
 export type CreateSchedulePayload = z.infer<typeof createScheduleSchema>;
+
+export type CreateApiKeyPayload = z.infer<typeof createApiKeySchema>;

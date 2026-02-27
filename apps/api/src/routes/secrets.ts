@@ -4,8 +4,9 @@ import {
   encryptSecret,
   secretNameParam,
   updateSecretSchema,
+  uuidParam,
 } from "@stepiq/core";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { db } from "../db/index.js";
@@ -39,22 +40,9 @@ function kmsConfigError(c: Context<{ Variables: Env }>) {
 }
 
 function isMissingPipelineIdColumnError(error: unknown): boolean {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : JSON.stringify(error);
-  if (message.includes("pipeline_id") && message.includes("does not exist")) {
-    return true;
-  }
-  if (!error || typeof error !== "object") return false;
-  const err = error as { code?: string; message?: string };
-  return (
-    (err.code === "42703" || message.includes("42703")) &&
-    ((err.message?.includes("pipeline_id") ?? false) ||
-      (err.message?.includes("user_secrets.pipeline_id") ?? false) ||
-      message.includes("pipeline_id"))
+  if (!(error instanceof Error)) return false;
+  return /(?:no such column|column .* does not exist).*pipeline_id/i.test(
+    error.message,
   );
 }
 
@@ -73,25 +61,25 @@ secretRoutes.get("/", async (c) => {
   try {
     secrets = await db
       .select({
-        id: userSecrets.id,
-        name: userSecrets.name,
-        keyVersion: userSecrets.keyVersion,
-        createdAt: userSecrets.createdAt,
-        updatedAt: userSecrets.updatedAt,
-      })
-      .from(userSecrets)
-      .where(and(eq(userSecrets.userId, userId), isNull(userSecrets.pipelineId)))
-      .orderBy(userSecrets.name);
-  } catch (error) {
-    if (!isMissingPipelineIdColumnError(error)) throw error;
-    secrets = await db
-      .select({
-        id: userSecrets.id,
-        name: userSecrets.name,
-        keyVersion: userSecrets.keyVersion,
-        createdAt: userSecrets.createdAt,
-        updatedAt: userSecrets.updatedAt,
-      })
+         id: userSecrets.id,
+         name: userSecrets.name,
+         keyVersion: userSecrets.keyVersion,
+         createdAt: userSecrets.createdAt,
+         updatedAt: userSecrets.updatedAt,
+       })
+       .from(userSecrets)
+       .where(and(eq(userSecrets.userId, userId), isNull(userSecrets.pipelineId)))
+       .orderBy(userSecrets.name);
+   } catch (error) {
+     if (!isMissingPipelineIdColumnError(error)) throw error;
+     secrets = await db
+       .select({
+         id: userSecrets.id,
+         name: userSecrets.name,
+         keyVersion: userSecrets.keyVersion,
+         createdAt: userSecrets.createdAt,
+         updatedAt: userSecrets.updatedAt,
+       })
       .from(userSecrets)
       .where(eq(userSecrets.userId, userId))
       .orderBy(userSecrets.name);
@@ -116,20 +104,20 @@ secretRoutes.post("/", async (c) => {
   try {
     [existing] = await db
       .select({ id: userSecrets.id })
-      .from(userSecrets)
-      .where(
-        and(
-          eq(userSecrets.userId, userId),
-          isNull(userSecrets.pipelineId),
-          eq(userSecrets.name, name),
-        ),
-      )
-      .limit(1);
-  } catch (error) {
-    if (!isMissingPipelineIdColumnError(error)) throw error;
-    [existing] = await db
-      .select({ id: userSecrets.id })
-      .from(userSecrets)
+       .from(userSecrets)
+       .where(
+         and(
+           eq(userSecrets.userId, userId),
+           isNull(userSecrets.pipelineId),
+           eq(userSecrets.name, name),
+         ),
+       )
+       .limit(1);
+   } catch (error) {
+     if (!isMissingPipelineIdColumnError(error)) throw error;
+     [existing] = await db
+       .select({ id: userSecrets.id })
+       .from(userSecrets)
       .where(and(eq(userSecrets.userId, userId), eq(userSecrets.name, name)))
       .limit(1);
   }
@@ -153,16 +141,14 @@ secretRoutes.post("/", async (c) => {
   const encryptedBlob = await encryptSecret(userId, value, masterKey);
   const encryptedValue = encryptedBlob.toString("base64");
 
-  const inserted = await db.execute<{
-    id: string;
-    name: string;
-    createdAt: Date;
-  }>(
-    sql`insert into user_secrets (user_id, name, encrypted_value, key_version)
-        values (${userId}, ${name}, ${encryptedValue}, 1)
-        returning id, name, created_at as "createdAt"`,
-  );
-  const secret = inserted[0];
+  const [secret] = await db
+    .insert(userSecrets)
+    .values({ userId, pipelineId: null, name, encryptedValue, keyVersion: 1 })
+    .returning({
+      id: userSecrets.id,
+      name: userSecrets.name,
+      createdAt: userSecrets.createdAt,
+    });
 
   return c.json(secret, 201);
 });
@@ -206,27 +192,27 @@ secretRoutes.put("/:name", async (c) => {
   try {
     [updated] = await db
       .update(userSecrets)
-      .set({ encryptedValue, updatedAt: new Date() })
-      .where(
-        and(
-          eq(userSecrets.userId, userId),
-          isNull(userSecrets.pipelineId),
-          eq(userSecrets.name, nameParsed.data),
-        ),
-      )
-      .returning({
-        id: userSecrets.id,
-        name: userSecrets.name,
-        updatedAt: userSecrets.updatedAt,
-      });
-  } catch (error) {
-    if (!isMissingPipelineIdColumnError(error)) throw error;
-    [updated] = await db
-      .update(userSecrets)
-      .set({ encryptedValue, updatedAt: new Date() })
-      .where(
-        and(eq(userSecrets.userId, userId), eq(userSecrets.name, nameParsed.data)),
-      )
+       .set({ encryptedValue, updatedAt: new Date() })
+       .where(
+         and(
+           eq(userSecrets.userId, userId),
+           isNull(userSecrets.pipelineId),
+           eq(userSecrets.name, nameParsed.data),
+         ),
+       )
+       .returning({
+         id: userSecrets.id,
+         name: userSecrets.name,
+         updatedAt: userSecrets.updatedAt,
+       });
+   } catch (error) {
+     if (!isMissingPipelineIdColumnError(error)) throw error;
+     [updated] = await db
+       .update(userSecrets)
+       .set({ encryptedValue, updatedAt: new Date() })
+       .where(
+         and(eq(userSecrets.userId, userId), eq(userSecrets.name, nameParsed.data)),
+       )
       .returning({
         id: userSecrets.id,
         name: userSecrets.name,
@@ -250,18 +236,18 @@ secretRoutes.delete("/:name", async (c) => {
   try {
     [deleted] = await db
       .delete(userSecrets)
-      .where(
-        and(
-          eq(userSecrets.userId, userId),
-          isNull(userSecrets.pipelineId),
-          eq(userSecrets.name, nameParsed.data),
-        ),
-      )
-      .returning({ id: userSecrets.id });
-  } catch (error) {
-    if (!isMissingPipelineIdColumnError(error)) throw error;
-    [deleted] = await db
-      .delete(userSecrets)
+       .where(
+         and(
+           eq(userSecrets.userId, userId),
+           isNull(userSecrets.pipelineId),
+           eq(userSecrets.name, nameParsed.data),
+         ),
+       )
+       .returning({ id: userSecrets.id });
+   } catch (error) {
+     if (!isMissingPipelineIdColumnError(error)) throw error;
+     [deleted] = await db
+       .delete(userSecrets)
       .where(
         and(eq(userSecrets.userId, userId), eq(userSecrets.name, nameParsed.data)),
       )

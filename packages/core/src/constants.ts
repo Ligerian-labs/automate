@@ -145,7 +145,7 @@ export const PLAN_LIMITS: Record<
     max_pipelines: 10,
     max_steps_per_pipeline: 10,
     cron_enabled: true,
-    webhooks_enabled: false,
+    webhooks_enabled: true,
     api_enabled: true,
     price_cents: 1_900, // €19
     overage_per_credit_cents: 1, // €0.01/credit

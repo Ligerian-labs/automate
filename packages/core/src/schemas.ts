@@ -52,6 +52,7 @@ export const deliveryTargetSchema = z.object({
   type: z.enum(["webhook", "email", "file"]),
   url: z.string().url().optional(),
   method: z.enum(["GET", "POST", "PUT"]).optional(),
+  signing_secret_name: z.string().min(1).max(100).optional(),
   to: z.string().email().optional(),
   subject: z.string().optional(),
   path: z.string().optional(),
@@ -196,3 +197,17 @@ export const webhookTriggerSchema = z
     input_data: z.record(z.unknown()).optional(),
   })
   .passthrough();
+
+// ── API Key Schemas ──
+
+export const apiKeyScopeSchema = z.enum([
+  "pipelines:read",
+  "pipelines:execute",
+  "webhooks:trigger",
+]);
+
+export const createApiKeySchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  scopes: z.array(apiKeyScopeSchema).min(1).max(10).optional(),
+  expires_at: z.string().datetime().optional(),
+});

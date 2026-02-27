@@ -6,7 +6,9 @@ import {
   YEARLY_DISCOUNT_PERCENT,
 } from "../lib/billing";
 import {
+  type ApiKeyRecord,
   ApiError,
+  type CreatedApiKeyRecord,
   type BillingCheckoutResponse,
   type BillingPortalResponse,
   type SecretRecord,
@@ -26,6 +28,10 @@ export function SettingsPage() {
   const [secretUpdateValue, setSecretUpdateValue] = useState("");
   const [secretError, setSecretError] = useState<string | null>(null);
   const [secretSuccess, setSecretSuccess] = useState<string | null>(null);
+  const [apiKeyName, setApiKeyName] = useState("");
+  const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [apiKeySuccess, setApiKeySuccess] = useState<string | null>(null);
+  const [newApiKeyValue, setNewApiKeyValue] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<"month" | "year">(
     "month",
   );
@@ -45,6 +51,10 @@ export function SettingsPage() {
   const secretsQ = useQuery({
     queryKey: ["user-secrets"],
     queryFn: () => apiFetch<SecretRecord[]>("/api/user/secrets"),
+  });
+  const apiKeysQ = useQuery({
+    queryKey: ["user-api-keys"],
+    queryFn: () => apiFetch<ApiKeyRecord[]>("/api/user/api-keys"),
   });
   const usage = useMemo(() => usageQ.data, [usageQ.data]);
 
@@ -147,6 +157,46 @@ export function SettingsPage() {
     },
   });
 
+  const createApiKeyMut = useMutation({
+    mutationFn: (payload: { name?: string; scopes: string[] }) =>
+      apiFetch<CreatedApiKeyRecord>("/api/user/api-keys", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (created) => {
+      setApiKeyName("");
+      setApiKeyError(null);
+      setApiKeySuccess("API key created. Copy it now, it won't be shown again.");
+      setNewApiKeyValue(created.key);
+      queryClient.invalidateQueries({ queryKey: ["user-api-keys"] });
+    },
+    onError: (err) => {
+      setApiKeySuccess(null);
+      setNewApiKeyValue(null);
+      setApiKeyError(
+        err instanceof ApiError ? err.message : "Failed to create API key",
+      );
+    },
+  });
+
+  const revokeApiKeyMut = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ deleted: boolean }>(`/api/user/api-keys/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      setApiKeyError(null);
+      setApiKeySuccess("API key revoked");
+      queryClient.invalidateQueries({ queryKey: ["user-api-keys"] });
+    },
+    onError: (err) => {
+      setApiKeySuccess(null);
+      setApiKeyError(
+        err instanceof ApiError ? err.message : "Failed to revoke API key",
+      );
+    },
+  });
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
@@ -191,6 +241,25 @@ export function SettingsPage() {
       name: secretUpdateName,
       value: secretUpdateValue,
     });
+  }
+
+  function createApiKey() {
+    setApiKeySuccess(null);
+    setApiKeyError(null);
+    createApiKeyMut.mutate({
+      name: apiKeyName.trim() || undefined,
+      scopes: ["pipelines:read", "pipelines:execute", "webhooks:trigger"],
+    });
+  }
+
+  async function copyApiKey() {
+    if (!newApiKeyValue) return;
+    try {
+      await navigator.clipboard.writeText(newApiKeyValue);
+      setApiKeySuccess("API key copied to clipboard");
+    } catch {
+      setApiKeyError("Failed to copy API key");
+    }
   }
 
   function formatCents(cents: number): string {
@@ -365,14 +434,119 @@ export function SettingsPage() {
             <div className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
               <h2 className="mb-2 text-[15px] font-semibold">API Keys</h2>
               <p className="mb-4 text-sm text-[var(--text-tertiary)]">
-                Manage your API credentials for programmatic access.
+                Manage credentials for webhook triggers and API integrations.
               </p>
-              <button
-                type="button"
-                className="rounded-lg border border-[var(--divider)] px-4 py-2 text-sm text-[var(--text-secondary)]"
-              >
-                Generate key (coming soon)
-              </button>
+
+              <div className="mb-4 grid grid-cols-[1fr_auto] gap-3">
+                <input
+                  value={apiKeyName}
+                  onChange={(e) => setApiKeyName(e.target.value)}
+                  placeholder="Key name (optional)"
+                  className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={createApiKey}
+                  disabled={createApiKeyMut.isPending}
+                  className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {createApiKeyMut.isPending ? "Creating..." : "Create key"}
+                </button>
+              </div>
+
+              {newApiKeyValue ? (
+                <div className="mb-4 rounded-[10px] border border-amber-500/30 bg-amber-500/10 p-4">
+                  <p className="text-xs font-semibold uppercase text-amber-200">
+                    New key (shown once)
+                  </p>
+                  <code className="mt-2 block break-all rounded border border-amber-500/30 bg-[var(--bg-primary)] p-2 font-[var(--font-mono)] text-xs text-amber-100">
+                    {newApiKeyValue}
+                  </code>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={copyApiKey}
+                      className="cursor-pointer rounded-lg border border-amber-500/40 px-3 py-1.5 text-xs text-amber-100"
+                    >
+                      Copy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewApiKeyValue(null)}
+                      className="cursor-pointer rounded-lg border border-amber-500/40 px-3 py-1.5 text-xs text-amber-100"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {apiKeyError ? (
+                <p className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {apiKeyError}
+                </p>
+              ) : null}
+              {apiKeySuccess ? (
+                <p className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+                  {apiKeySuccess}
+                </p>
+              ) : null}
+
+              <div className="rounded-[10px] border border-[var(--divider)] bg-[var(--bg-inset)]">
+                <div className="flex items-center justify-between border-b border-[var(--divider)] px-4 py-3">
+                  <h3 className="text-sm font-semibold">Active keys</h3>
+                  <span
+                    className="text-xs text-[var(--text-tertiary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    only prefixes are stored
+                  </span>
+                </div>
+                {apiKeysQ.isLoading ? (
+                  <p className="px-4 py-4 text-sm text-[var(--text-tertiary)]">
+                    Loading keys...
+                  </p>
+                ) : null}
+                {apiKeysQ.isError ? (
+                  <p className="px-4 py-4 text-sm text-red-300">
+                    Failed to load API keys
+                  </p>
+                ) : null}
+                {apiKeysQ.data && apiKeysQ.data.length === 0 ? (
+                  <p className="px-4 py-4 text-sm text-[var(--text-tertiary)]">
+                    No API keys yet
+                  </p>
+                ) : null}
+                {apiKeysQ.data?.map((key) => (
+                  <div
+                    key={key.id}
+                    className="flex items-center justify-between border-t border-[var(--divider)] px-4 py-3 first:border-t-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {key.name || "Unnamed key"}
+                      </p>
+                      <p
+                        className="text-xs text-[var(--text-tertiary)]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {(key.keyPrefix ?? key.key_prefix) || "sk_live_..."} •{" "}
+                        {new Date(
+                          key.createdAt ?? key.created_at ?? Date.now(),
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => revokeApiKeyMut.mutate(key.id)}
+                      disabled={revokeApiKeyMut.isPending}
+                      className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : null}
 

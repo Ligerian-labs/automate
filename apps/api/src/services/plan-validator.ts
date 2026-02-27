@@ -9,7 +9,8 @@ type PlanLimitCode =
   | "PLAN_MAX_STEPS"
   | "PLAN_MAX_RUNS_PER_DAY"
   | "PLAN_CRON_DISABLED"
-  | "PLAN_WEBHOOKS_DISABLED";
+  | "PLAN_WEBHOOKS_DISABLED"
+  | "PLAN_API_DISABLED";
 
 export class PlanValidationError extends Error {
   status: 403 | 404;
@@ -155,6 +156,17 @@ export async function assertCanUseCron(userId: string): Promise<void> {
   throw new PlanValidationError(
     "PLAN_CRON_DISABLED",
     "Cron scheduling is not enabled for current plan",
+    { plan },
+  );
+}
+
+export async function assertCanUseApi(userId: string): Promise<void> {
+  const { plan, limits } = await getUserPlanState(userId);
+  if (limits.api_enabled) return;
+
+  throw new PlanValidationError(
+    "PLAN_API_DISABLED",
+    "API access is not enabled for current plan",
     { plan },
   );
 }

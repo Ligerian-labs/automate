@@ -39,6 +39,24 @@ interface DefinitionStep {
   };
 }
 
+interface DefinitionOutput {
+  from?: string;
+  deliver?: Array<{
+    type?: string;
+    url?: string;
+    method?: string;
+    signing_secret_name?: string;
+  }>;
+}
+
+interface OutboundWebhookConfig {
+  enabled: boolean;
+  from: string;
+  url: string;
+  method: "POST" | "PUT" | "GET";
+  signingSecretName: string;
+}
+
 interface ModelOption {
   id: string;
   name: string;
@@ -82,6 +100,44 @@ function newStep(index: number): StepDef {
   };
 }
 
+function normalizeOutboundWebhook(
+  definition: unknown,
+): OutboundWebhookConfig | null {
+  if (!definition || typeof definition !== "object") return null;
+  const output = (definition as { output?: DefinitionOutput }).output;
+  if (!output || typeof output !== "object") return null;
+
+  const delivery = (output.deliver || []).find((d) => d.type === "webhook");
+  if (!delivery) return null;
+
+  const method =
+    delivery.method === "PUT" || delivery.method === "GET"
+      ? delivery.method
+      : "POST";
+
+  return {
+    enabled: true,
+    from: output.from || "",
+    url: delivery.url || "",
+    method,
+    signingSecretName: delivery.signing_secret_name || "",
+  };
+}
+
+function areOutboundWebhookConfigsEqual(
+  current: OutboundWebhookConfig,
+  persisted: OutboundWebhookConfig | null,
+): boolean {
+  if (!persisted) return !current.enabled;
+  if (!current.enabled) return false;
+  return (
+    current.from === persisted.from &&
+    current.url.trim() === persisted.url.trim() &&
+    current.method === persisted.method &&
+    current.signingSecretName.trim() === persisted.signingSecretName.trim()
+  );
+}
+
 export function PipelineEditorPage() {
   const { pipelineId } = useParams({ strict: false }) as { pipelineId: string };
   const navigate = useNavigate();
@@ -101,6 +157,14 @@ export function PipelineEditorPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<StepDef[]>([]);
+  const [outputFromStepId, setOutputFromStepId] = useState("");
+  const [outputWebhookEnabled, setOutputWebhookEnabled] = useState(false);
+  const [outputWebhookUrl, setOutputWebhookUrl] = useState("");
+  const [outputWebhookMethod, setOutputWebhookMethod] = useState<
+    "POST" | "PUT" | "GET"
+  >("POST");
+  const [outputWebhookSigningSecret, setOutputWebhookSigningSecret] =
+    useState("");
   const [variables, setVariables] = useState<{ key: string; value: string }[]>(
     [],
   );
@@ -157,6 +221,7 @@ export function PipelineEditorPage() {
     const def = (p.definition ?? {}) as {
       steps?: DefinitionStep[];
       variables?: Record<string, string>;
+      output?: DefinitionOutput;
     };
     setSteps(
       (def.steps ?? []).map((s, i) => ({
@@ -177,6 +242,21 @@ export function PipelineEditorPage() {
         value: String(value),
       })),
     );
+    const fallbackFrom =
+      (def.steps ?? []).at((def.steps ?? []).length - 1)?.id || "";
+    const from = def.output?.from || fallbackFrom;
+    const outboundWebhook = (def.output?.deliver || []).find(
+      (d) => d.type === "webhook",
+    );
+    setOutputFromStepId(from);
+    setOutputWebhookEnabled(Boolean(outboundWebhook));
+    setOutputWebhookUrl(outboundWebhook?.url || "");
+    setOutputWebhookMethod(
+      outboundWebhook?.method === "PUT" || outboundWebhook?.method === "GET"
+        ? outboundWebhook.method
+        : "POST",
+    );
+    setOutputWebhookSigningSecret(outboundWebhook?.signing_secret_name || "");
     setRawYaml(YAML.stringify(p.definition ?? {}));
   }, [pipelineQ.data]);
 
@@ -210,8 +290,36 @@ export function PipelineEditorPage() {
         },
       })),
       variables: Object.keys(vars).length > 0 ? vars : undefined,
+      output: {
+        from:
+          outputFromStepId ||
+          steps[steps.length - 1]?.id ||
+          "",
+        deliver: outputWebhookEnabled
+          ? [
+              {
+                type: "webhook",
+                url: outputWebhookUrl,
+                method: outputWebhookMethod,
+                signing_secret_name: outputWebhookSigningSecret || undefined,
+              },
+            ]
+          : undefined,
+      },
     };
-  }, [yamlMode, rawYaml, name, steps, variables, pipelineQ.data]);
+  }, [
+    yamlMode,
+    rawYaml,
+    name,
+    steps,
+    variables,
+    outputFromStepId,
+    outputWebhookEnabled,
+    outputWebhookUrl,
+    outputWebhookMethod,
+    outputWebhookSigningSecret,
+    pipelineQ.data,
+  ]);
 
   // Sync rawYaml when switching to YAML mode
   useEffect(() => {
@@ -290,7 +398,30 @@ export function PipelineEditorPage() {
         body: JSON.stringify({ name, description, definition }),
       });
     },
-    onSuccess: () => setMessage("Pipeline saved ✓"),
+    onSuccess: async () => {
+      const local = {
+        enabled: outputWebhookEnabled,
+        from: outputFromStepId || steps[steps.length - 1]?.id || "",
+        url: outputWebhookUrl,
+        method: outputWebhookMethod,
+        signingSecretName: outputWebhookSigningSecret,
+      } satisfies OutboundWebhookConfig;
+
+      const persisted = await queryClient.fetchQuery({
+        queryKey: ["pipeline", pipelineId],
+        queryFn: () => apiFetch<PipelineRecord>(`/api/pipelines/${pipelineId}`),
+      });
+
+      const persistedWebhook = normalizeOutboundWebhook(persisted.definition);
+      const matches = areOutboundWebhookConfigsEqual(local, persistedWebhook);
+      if (matches) {
+        setMessage("Pipeline saved ✓");
+      } else {
+        setMessage(
+          "Pipeline saved, but outbound webhook config was not persisted exactly as entered. Please review and save again.",
+        );
+      }
+    },
     onError: (err) =>
       setMessage(err instanceof Error ? err.message : "Save failed"),
   });
@@ -1026,6 +1157,87 @@ export function PipelineEditorPage() {
               </button>
             </div>
           ) : null}
+
+          {/* Output webhook card */}
+          <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold">Output Webhook</h2>
+              <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                <input
+                  type="checkbox"
+                  checked={outputWebhookEnabled}
+                  onChange={(e) => setOutputWebhookEnabled(e.target.checked)}
+                />
+                Enabled
+              </label>
+            </div>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-[var(--text-secondary)]">
+                Output From Step
+              </span>
+              <select
+                className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
+                style={{ fontFamily: "var(--font-mono)" }}
+                value={outputFromStepId}
+                onChange={(e) => setOutputFromStepId(e.target.value)}
+              >
+                {steps.map((step) => (
+                  <option key={`out-from-${step.id}`} value={step.id}>
+                    {step.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {outputWebhookEnabled ? (
+              <>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-[var(--text-secondary)]">
+                    Webhook URL
+                  </span>
+                  <input
+                    className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
+                    value={outputWebhookUrl}
+                    onChange={(e) => setOutputWebhookUrl(e.target.value)}
+                    placeholder="https://example.com/hooks/stepiq"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-[var(--text-secondary)]">
+                      Method
+                    </span>
+                    <select
+                      className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 text-[13px] focus:border-[var(--accent)] focus:outline-none"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                      value={outputWebhookMethod}
+                      onChange={(e) =>
+                        setOutputWebhookMethod(
+                          (e.target.value as "POST" | "PUT" | "GET") || "POST",
+                        )
+                      }
+                    >
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="GET">GET</option>
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-[var(--text-secondary)]">
+                      Signing Secret Name
+                    </span>
+                    <input
+                      className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3.5 py-2.5 font-[var(--font-mono)] text-[13px] uppercase focus:border-[var(--accent)] focus:outline-none"
+                      value={outputWebhookSigningSecret}
+                      onChange={(e) =>
+                        setOutputWebhookSigningSecret(e.target.value)
+                      }
+                      placeholder="WEBHOOK_SIGNING_SECRET"
+                    />
+                  </label>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
     </AppShell>

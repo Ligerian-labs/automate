@@ -15,6 +15,7 @@ import {
   userSecrets,
 } from "./db-executor.js";
 import { callModel } from "./model-router.js";
+import { deliverWebhookWithRetry } from "./webhook-delivery.js";
 
 const dbUrl =
   process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
@@ -42,11 +43,9 @@ function isMissingPipelineIdColumnError(error: unknown): boolean {
 }
 
 export async function executePipeline(runId: string) {
-  // Load run
   const [run] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
   if (!run) throw new Error(`Run ${runId} not found`);
 
-  // Load pipeline definition
   const [version] = await db
     .select()
     .from(pipelineVersions)
@@ -57,14 +56,13 @@ export async function executePipeline(runId: string) {
       ),
     )
     .limit(1);
-
   const definition = version?.definition as unknown as PipelineDefinition;
   if (!definition) throw new Error("Pipeline definition not found");
 
-  // Mark as running
+  const runStartedAt = new Date();
   await db
     .update(runs)
-    .set({ status: "running", startedAt: new Date() })
+    .set({ status: "running", startedAt: runStartedAt })
     .where(eq(runs.id, runId));
 
   let envSecrets: { values: Record<string, string>; plainValues: string[] } = {
@@ -82,21 +80,21 @@ export async function executePipeline(runId: string) {
   let totalCostCents = 0;
 
   try {
-    // Resolve user secrets for {{env.xxx}} interpolation
     envSecrets = await resolveUserSecrets(
       run.userId,
       run.pipelineId,
       definition,
       db,
+      getOutputSigningSecretNames(definition),
     );
     context = {
       ...context,
       env: envSecrets.values,
     };
+
     for (let i = 0; i < definition.steps.length; i++) {
       const step = definition.steps[i];
 
-      // Create step execution record
       const [stepExec] = await db
         .insert(stepExecutions)
         .values({
@@ -110,7 +108,6 @@ export async function executePipeline(runId: string) {
         .returning();
 
       try {
-        // Interpolate prompt
         const prompt = step.prompt ? interpolate(step.prompt, context) : "";
         const stepType = step.type || "llm";
         const startTime = Date.now();
@@ -170,14 +167,9 @@ export async function executePipeline(runId: string) {
         }
 
         const durationMs = Date.now() - startTime;
-
-        // Store step result in context.
-        // Canonical key is step.id, plus numeric aliases for easier template authoring.
         const stepContext = context.steps as Record<string, { output: unknown }>;
         stepContext[step.id] = { output: parsedOutput };
-        if (!(String(i) in stepContext)) {
-          stepContext[String(i)] = { output: parsedOutput };
-        }
+        if (!(String(i) in stepContext)) stepContext[String(i)] = { output: parsedOutput };
         if (!(String(i + 1) in stepContext)) {
           stepContext[String(i + 1)] = { output: parsedOutput };
         }
@@ -185,7 +177,6 @@ export async function executePipeline(runId: string) {
         totalTokens += inputTokens + outputTokens;
         totalCostCents += costCents;
 
-        // Update step execution (redact secrets from stored prompt)
         await db
           .update(stepExecutions)
           .set({
@@ -200,8 +191,6 @@ export async function executePipeline(runId: string) {
             completedAt: new Date(),
           })
           .where(eq(stepExecutions.id, stepExec.id));
-
-        // TODO: Handle on_condition branching
       } catch (stepErr) {
         const rawError =
           stepErr instanceof Error ? stepErr.message : String(stepErr);
@@ -216,15 +205,14 @@ export async function executePipeline(runId: string) {
       }
     }
 
-    // Get final output
     const outputStepId =
       definition.output?.from ||
       definition.steps[definition.steps.length - 1].id;
     const outputData = (context.steps as Record<string, { output: unknown }>)[
       outputStepId
     ]?.output;
+    const completedAt = new Date();
 
-    // Mark run as completed
     await db
       .update(runs)
       .set({
@@ -232,11 +220,20 @@ export async function executePipeline(runId: string) {
         outputData: outputData === undefined ? null : outputData,
         totalTokens,
         totalCostCents,
-        completedAt: new Date(),
+        completedAt,
       })
       .where(eq(runs.id, runId));
 
-    // TODO: Deliver output (webhook, email, etc.)
+    await deliverOutputWebhooks({
+      definition,
+      run,
+      runId,
+      runStartedAt,
+      completedAt,
+      inputData: (run.inputData || {}) as Record<string, unknown>,
+      outputData,
+      envValues: envSecrets.values,
+    });
     // TODO: Deduct credits from user
   } catch (err) {
     const rawError = err instanceof Error ? err.message : String(err);
@@ -263,15 +260,12 @@ function interpolate(
   return compiled(context);
 }
 
-/**
- * Resolve user secrets referenced via {{env.xxx}} in prompts.
- * Decryption ONLY happens in the worker per ENCRYPTION.md §8.
- */
 async function resolveUserSecrets(
   userId: string,
   pipelineId: string,
   definition: PipelineDefinition,
   database: typeof db,
+  additionalNames: string[] = [],
 ): Promise<{ values: Record<string, string>; plainValues: string[] }> {
   const providerSecretNames = [
     "OPENAI_API_KEY",
@@ -286,7 +280,6 @@ async function resolveUserSecrets(
     "mistral_api_key",
   ];
 
-  // Find all {{env.xxx}} references across all step prompts
   const allText = definition.steps
     .map((s) => `${s.prompt || ""} ${s.system_prompt || ""}`)
     .join(" ");
@@ -294,10 +287,11 @@ async function resolveUserSecrets(
   const referencedNames = refs
     ? refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean)
     : [];
-  const names = [...new Set([...providerSecretNames, ...referencedNames])] as string[];
+  const names = [
+    ...new Set([...providerSecretNames, ...referencedNames, ...additionalNames]),
+  ] as string[];
   if (names.length === 0) return { values: {}, plainValues: [] };
 
-  // Fetch encrypted secrets from DB
   let secrets: Array<{
     name: string;
     pipelineId: string | null;
@@ -334,7 +328,6 @@ async function resolveUserSecrets(
   );
   if (scopedSecrets.length === 0) return { values: {}, plainValues: [] };
 
-  // Decrypt — lazily init KMS
   let masterKey: Buffer;
   try {
     masterKey = await createKmsProvider().getMasterKey();
@@ -365,4 +358,78 @@ async function resolveUserSecrets(
   }
 
   return { values, plainValues };
+}
+
+function getOutputSigningSecretNames(definition: PipelineDefinition): string[] {
+  return (definition.output?.deliver || [])
+    .filter((delivery) => delivery.type === "webhook")
+    .map((delivery) => {
+      const raw = (delivery as Record<string, unknown>).signing_secret_name;
+      return typeof raw === "string" ? raw : undefined;
+    })
+    .filter((name): name is string => Boolean(name));
+}
+
+async function deliverOutputWebhooks(params: {
+  definition: PipelineDefinition;
+  run: {
+    pipelineId: string;
+    pipelineVersion: number;
+    triggerType: string;
+  };
+  runId: string;
+  runStartedAt: Date;
+  completedAt: Date;
+  inputData: Record<string, unknown>;
+  outputData: unknown;
+  envValues: Record<string, string>;
+}) {
+  const targets = (params.definition.output?.deliver || []).filter(
+    (delivery) => delivery.type === "webhook" && delivery.url,
+  );
+  for (const target of targets) {
+    const rawSecretName = (target as Record<string, unknown>).signing_secret_name;
+    const secretName = typeof rawSecretName === "string" ? rawSecretName : undefined;
+    const signingSecret = secretName ? params.envValues[secretName] : undefined;
+    if (secretName && !signingSecret) {
+      console.warn(
+        `⚠️ Run ${params.runId}: webhook ${target.url} signing secret "${secretName}" not found; sending unsigned`,
+      );
+    }
+
+    const attempts = await deliverWebhookWithRetry({
+      url: target.url as string,
+      method: target.method,
+      signingSecret,
+      envelope: {
+        event: "pipeline.run.completed",
+        pipeline: {
+          id: params.run.pipelineId,
+          version: params.run.pipelineVersion,
+          name: params.definition.name,
+        },
+        run: {
+          id: params.runId,
+          status: "completed",
+          trigger_type: params.run.triggerType,
+          started_at: params.runStartedAt.toISOString(),
+          completed_at: params.completedAt.toISOString(),
+        },
+        input: params.inputData,
+        output: params.outputData,
+      },
+    });
+
+    const lastAttempt = attempts[attempts.length - 1];
+    if (lastAttempt?.ok) {
+      console.log(
+        `✅ Run ${params.runId}: delivered webhook ${target.url} in ${attempts.length} attempt(s)`,
+      );
+    } else {
+      console.error(
+        `❌ Run ${params.runId}: failed webhook delivery to ${target.url}`,
+        attempts,
+      );
+    }
+  }
 }

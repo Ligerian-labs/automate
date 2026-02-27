@@ -148,6 +148,63 @@ See [full spec](https://github.com/Ligerian-labs/brainstorm/blob/main/products/a
 - `GET /api/runs/:id/stream` - SSE real-time updates
 - `POST /api/pipelines/:id/schedules` - Create cron schedule
 - `GET /api/models` - List available models + pricing
+- `POST /api/webhooks/:pipelineId` - Trigger pipeline from external webhook (`X-API-Key`)
+- `GET /api/user/api-keys` - List API keys
+- `POST /api/user/api-keys` - Create API key
+- `DELETE /api/user/api-keys/:id` - Revoke API key
+
+### Inbound webhook trigger example
+
+```bash
+curl -X POST "http://localhost:3001/api/webhooks/<pipeline-id>" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk_live_xxxxxxxx" \
+  -d '{"input_data":{"topic":"AI agents","language":"en"}}'
+```
+
+Response (`202`):
+
+```json
+{
+  "accepted": true,
+  "run_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "status": "pending",
+  "pipeline_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}
+```
+
+### Outbound webhook delivery
+
+When a pipeline has an output delivery target of type `webhook`, the worker sends a signed JSON payload with retry (up to 4 attempts with exponential backoff).
+
+Headers:
+- `X-StepIQ-Event: pipeline.run.completed`
+- `X-StepIQ-Timestamp: <unix-seconds>`
+- `X-StepIQ-Signature: v1=<hex-hmac-sha256>`
+
+Signature payload format:
+- `HMAC_SHA256(signing_secret, "<timestamp>.<raw_json_body>")`
+
+### Local debug sink for outbound webhooks
+
+Use these API endpoints in development to inspect outbound webhook payloads end-to-end:
+These endpoints are disabled in production (`NODE_ENV=production`).
+
+- `POST /api/webhooks/dev/outbound` — receives and stores an event
+- `GET /api/webhooks/dev/outbound/events` — lists captured events (latest first)
+- `DELETE /api/webhooks/dev/outbound/events` — clears captured events
+
+Example pipeline delivery target for local debug:
+
+```yaml
+output:
+  from: summarize
+  deliver:
+    - type: webhook
+      url: http://localhost:3001/api/webhooks/dev/outbound
+      method: POST
+      signing_secret_name: WEBHOOK_SIGNING_SECRET
+```
 
 ### Stripe webhook (local)
 
