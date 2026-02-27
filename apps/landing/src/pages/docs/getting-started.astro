@@ -61,6 +61,17 @@ const codeExample = `<span class="hl-key">name:</span> "summarize-article"
     </tbody>
   </table>
 
+  <h3 id="webhook-trigger-quickstart">Inbound webhook quickstart</h3>
+  <p>Create an API key in <strong>Settings → API Keys</strong>, then trigger your pipeline from any external HTTP client:</p>
+  <p><strong>Plan note:</strong> webhooks are available on <code>starter</code>, <code>pro</code>, and <code>enterprise</code> plans, and not available on <code>free</code>.</p>
+  <div class="code-card">
+    <pre class="code-body"><code>curl -X POST "https://api.stepiq.sh/v1/api/webhooks/&lt;pipeline-id&gt;" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk_live_xxxxxxxx" \
+  -d '&#123;"input_data":&#123;"article_url":"https://example.com/blog-post"&#125;&#125;'</code></pre>
+  </div>
+  <p>The API returns <code>202 Accepted</code> with a <code>run_id</code> you can track via <code>GET /api/runs/:id</code>.</p>
+
   <p class="docs-step-kicker">Step 4</p>
   <h2 id="results">View results</h2>
   <p>Each run shows a detailed step-by-step execution log. For every step you can see:</p>

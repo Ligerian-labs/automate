@@ -73,6 +73,12 @@ describe("PLAN_LIMITS", () => {
     expect(free.price_cents).toBe(0);
   });
 
+  it("webhook availability matches plan tiers", () => {
+    expect(PLAN_LIMITS.free.webhooks_enabled).toBe(false);
+    expect(PLAN_LIMITS.starter.webhooks_enabled).toBe(true);
+    expect(PLAN_LIMITS.pro.webhooks_enabled).toBe(true);
+  });
+
   it("pro plan costs €49", () => {
     expect(PLAN_LIMITS.pro.price_cents).toBe(4900);
     expect(PLAN_LIMITS.pro.credits).toBe(8000);

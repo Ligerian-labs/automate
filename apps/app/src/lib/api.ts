@@ -144,6 +144,24 @@ export interface SecretRecord {
   updated_at?: string;
 }
 
+export interface ApiKeyRecord {
+  id: string;
+  name: string | null;
+  keyPrefix?: string;
+  key_prefix?: string;
+  scopes: string[] | null;
+  lastUsedAt?: string | null;
+  last_used_at?: string | null;
+  expiresAt?: string | null;
+  expires_at?: string | null;
+  createdAt?: string;
+  created_at?: string;
+}
+
+export interface CreatedApiKeyRecord extends ApiKeyRecord {
+  key: string;
+}
+
 export interface BillingCheckoutRequest {
   plan: "starter" | "pro";
   interval: "month" | "year";

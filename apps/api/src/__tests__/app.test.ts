@@ -120,12 +120,71 @@ describe("Models route", () => {
 });
 
 describe("Webhook route", () => {
-  it("POST /api/webhooks/:id/:token returns 501 (not implemented)", async () => {
-    const res = await app.request("/api/webhooks/pipe123/tok456", {
+  it("POST /api/webhooks/dev/outbound captures payload in dev mode", async () => {
+    const res = await app.request("/api/webhooks/dev/outbound", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-StepIQ-Event": "pipeline.run.completed",
+      },
+      body: JSON.stringify({ run_id: "run-123", status: "completed" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.event.body.run_id).toBe("run-123");
+  });
+
+  it("GET /api/webhooks/dev/outbound/events returns captured events", async () => {
+    const res = await app.request("/api/webhooks/dev/outbound/events");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.events)).toBe(true);
+    expect(body.count).toBeGreaterThanOrEqual(0);
+  });
+
+  it("DELETE /api/webhooks/dev/outbound/events clears captured events", async () => {
+    const res = await app.request("/api/webhooks/dev/outbound/events", {
+      method: "DELETE",
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.cleared).toBe(true);
+  });
+
+  it("POST /api/webhooks/:id requires API key", async () => {
+    const res = await app.request("/api/webhooks/550e8400-e29b-41d4-a716-446655440000", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    expect(res.status).toBe(501);
+    expect(res.status).toBe(401);
+  });
+
+  it("dev outbound endpoints are disabled in production", async () => {
+    const previous = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      const postRes = await app.request("/api/webhooks/dev/outbound", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ run_id: "run-prod" }),
+      });
+      expect(postRes.status).toBe(404);
+
+      const getRes = await app.request("/api/webhooks/dev/outbound/events");
+      expect(getRes.status).toBe(404);
+
+      const deleteRes = await app.request("/api/webhooks/dev/outbound/events", {
+        method: "DELETE",
+      });
+      expect(deleteRes.status).toBe(404);
+    } finally {
+      if (previous === undefined) {
+        process.env.NODE_ENV = undefined;
+      } else {
+        process.env.NODE_ENV = previous;
+      }
+    }
   });
 });

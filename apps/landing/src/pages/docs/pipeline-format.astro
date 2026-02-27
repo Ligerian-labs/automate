@@ -76,11 +76,23 @@ const varsTable = [
 
   <h2 id="output-delivery">Output delivery</h2>
   <p>Configure where the final pipeline output gets delivered. Multiple delivery targets can be specified.</p>
+  <p>If <code>input.schema</code> is defined, inbound webhook payloads are validated and invalid payloads are rejected with <code>422</code>.</p>
+  <p>For outbound webhooks, add <code>signing_secret_name</code> so receivers can verify signatures.</p>
+
+  <div class="code-card">
+    <pre class="code-body"><code>{`output:
+  from: summarize
+  deliver:
+    - type: webhook
+      url: https://example.com/stepiq/webhook
+      method: POST
+      signing_secret_name: WEBHOOK_SIGNING_SECRET`}</code></pre>
+  </div>
 
   <div class="docs-card-grid">
     <div class="docs-card">
       <h3>Webhook</h3>
-      <p>POST to any URL with the pipeline output as JSON body.</p>
+      <p>POST to any URL with a signed JSON envelope. Set <code>signing_secret_name</code> on the delivery target and store the secret in user or pipeline secrets.</p>
     </div>
     <div class="docs-card">
       <h3>Email</h3>

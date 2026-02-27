@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  createApiKeySchema,
   createPipelineSchema,
   createScheduleSchema,
   createSecretSchema,
@@ -172,10 +173,39 @@ describe("pipelineDefinitionSchema", () => {
       steps: [{ id: "s1", name: "S1" }],
       output: {
         from: "s1",
-        deliver: [{ type: "webhook", url: "https://hook.example.com" }],
+        deliver: [
+          {
+            type: "webhook",
+            url: "https://hook.example.com",
+            signing_secret_name: "WEBHOOK_SIGNING_SECRET",
+          },
+        ],
       },
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("createApiKeySchema", () => {
+  it("accepts empty payload", () => {
+    const result = createApiKeySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts valid payload", () => {
+    const result = createApiKeySchema.safeParse({
+      name: "Zapier trigger",
+      scopes: ["webhooks:trigger"],
+      expires_at: "2030-01-01T00:00:00.000Z",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid scope", () => {
+    const result = createApiKeySchema.safeParse({
+      scopes: ["admin:all"],
+    });
+    expect(result.success).toBe(false);
   });
 });
 
