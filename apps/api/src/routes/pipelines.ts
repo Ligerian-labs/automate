@@ -326,7 +326,13 @@ pipelineRoutes.get("/:id/secrets", async (c) => {
     .limit(1);
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
 
-  let result;
+  let result: {
+    id: string;
+    name: string;
+    keyVersion: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
   try {
     result = await db
       .select({
@@ -373,7 +379,7 @@ pipelineRoutes.post("/:id/secrets", async (c) => {
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
 
   const { name, value } = parsed.data;
-  let existing;
+  let existing: { id: string } | undefined;
   try {
     [existing] = await db
       .select({ id: userSecrets.id })
@@ -411,7 +417,15 @@ pipelineRoutes.post("/:id/secrets", async (c) => {
   const encryptedBlob = await encryptSecret(userId, value, masterKey);
   const encryptedValue = encryptedBlob.toString("base64");
 
-  let secret;
+  let secret:
+    | {
+        id: string;
+        name: string;
+        keyVersion: number;
+        createdAt: Date;
+        updatedAt: Date;
+      }
+    | undefined;
   try {
     [secret] = await db
       .insert(userSecrets)
@@ -470,7 +484,14 @@ pipelineRoutes.put("/:id/secrets/:name", async (c) => {
   );
   const encryptedValue = encryptedBlob.toString("base64");
 
-  let updated;
+  let updated:
+    | {
+        id: string;
+        name: string;
+        keyVersion: number;
+        updatedAt: Date;
+      }
+    | undefined;
   try {
     [updated] = await db
       .update(userSecrets)
@@ -515,7 +536,7 @@ pipelineRoutes.delete("/:id/secrets/:name", async (c) => {
     .limit(1);
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
 
-  let deleted;
+  let deleted: { id: string } | undefined;
   try {
     [deleted] = await db
       .delete(userSecrets)

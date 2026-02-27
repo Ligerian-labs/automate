@@ -63,7 +63,13 @@ secretRoutes.get("/", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  let secrets;
+  let secrets: {
+    id: string;
+    name: string;
+    keyVersion: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
   try {
     secrets = await db
       .select({
@@ -106,7 +112,7 @@ secretRoutes.post("/", async (c) => {
   const { name, value } = parsed.data;
 
   // Check for duplicate
-  let existing;
+  let existing: { id: string } | undefined;
   try {
     [existing] = await db
       .select({ id: userSecrets.id })
@@ -190,7 +196,13 @@ secretRoutes.put("/:name", async (c) => {
   );
   const encryptedValue = encryptedBlob.toString("base64");
 
-  let updated;
+  let updated:
+    | {
+        id: string;
+        name: string;
+        updatedAt: Date;
+      }
+    | undefined;
   try {
     [updated] = await db
       .update(userSecrets)
@@ -234,7 +246,7 @@ secretRoutes.delete("/:name", async (c) => {
   const nameParsed = secretNameParam.safeParse(c.req.param("name"));
   if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
 
-  let deleted;
+  let deleted: { id: string } | undefined;
   try {
     [deleted] = await db
       .delete(userSecrets)
