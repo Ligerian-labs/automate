@@ -354,6 +354,28 @@ pipelineRoutes.get("/:id/secrets", async (c) => {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     return c.json([]);
   }
+  let result;
+  try {
+    result = await db
+      .select({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        createdAt: userSecrets.createdAt,
+        updatedAt: userSecrets.updatedAt,
+      })
+      .from(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+        ),
+      )
+      .orderBy(userSecrets.name);
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    return c.json([]);
+  }
 
   return c.json(result);
 });
@@ -380,6 +402,23 @@ pipelineRoutes.post("/:id/secrets", async (c) => {
 
   const { name, value } = parsed.data;
   let existing: { id: string } | undefined;
+  try {
+    [existing] = await db
+      .select({ id: userSecrets.id })
+      .from(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+          eq(userSecrets.name, name),
+        ),
+      )
+      .limit(1);
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    return c.json(pipelineSecretsMigrationError(), 409);
+  }
+  let existing;
   try {
     [existing] = await db
       .select({ id: userSecrets.id })
@@ -426,6 +465,22 @@ pipelineRoutes.post("/:id/secrets", async (c) => {
         updatedAt: Date;
       }
     | undefined;
+  try {
+    [secret] = await db
+      .insert(userSecrets)
+      .values({ userId, pipelineId, name, encryptedValue, keyVersion: 1 })
+      .returning({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        createdAt: userSecrets.createdAt,
+        updatedAt: userSecrets.updatedAt,
+      });
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    return c.json(pipelineSecretsMigrationError(), 409);
+  }
+  let secret;
   try {
     [secret] = await db
       .insert(userSecrets)
@@ -513,6 +568,28 @@ pipelineRoutes.put("/:id/secrets/:name", async (c) => {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     return c.json(pipelineSecretsMigrationError(), 409);
   }
+  let updated;
+  try {
+    [updated] = await db
+      .update(userSecrets)
+      .set({ encryptedValue, updatedAt: new Date() })
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+          eq(userSecrets.name, nameParsed.data),
+        ),
+      )
+      .returning({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        updatedAt: userSecrets.updatedAt,
+      });
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    return c.json(pipelineSecretsMigrationError(), 409);
+  }
 
   if (!updated) return c.json({ error: "Secret not found" }, 404);
   return c.json(updated);
@@ -537,6 +614,22 @@ pipelineRoutes.delete("/:id/secrets/:name", async (c) => {
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
 
   let deleted: { id: string } | undefined;
+  try {
+    [deleted] = await db
+      .delete(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+          eq(userSecrets.name, nameParsed.data),
+        ),
+      )
+      .returning({ id: userSecrets.id });
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    return c.json(pipelineSecretsMigrationError(), 409);
+  }
+  let deleted;
   try {
     [deleted] = await db
       .delete(userSecrets)
