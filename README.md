@@ -268,4 +268,4 @@ bun run apps/api/dist/scripts/rotate-master-key.js
 
 ## License
 
-Proprietary - Ligerian Labs © 2026
+GNU Affero General Public License v3.0 (AGPL-3.0-only)
