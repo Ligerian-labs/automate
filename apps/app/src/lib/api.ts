@@ -68,6 +68,7 @@ export interface RunRecord {
   pipelineId?: string;
   pipeline_id?: string;
   status: string;
+  error?: string | null;
   triggerType?: string;
   trigger_type?: string;
   totalTokens?: number;

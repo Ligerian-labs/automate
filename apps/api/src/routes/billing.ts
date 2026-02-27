@@ -154,11 +154,7 @@ billingRoutes.post("/stripe/webhook", async (c) => {
   }
 
   try {
-    if (
-      event.type === "customer.subscription.created" ||
-      event.type === "customer.subscription.updated" ||
-      event.type === "customer.subscription.deleted"
-    ) {
+    if (event.type.startsWith("customer.subscription.")) {
       await syncSubscription(event.data.object as Stripe.Subscription);
     }
 

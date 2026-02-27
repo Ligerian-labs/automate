@@ -29,6 +29,13 @@
       "when": 1772115000000,
       "tag": "0003_mellow_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772186862852,
+      "tag": "0004_pipeline_scoped_secrets",
+      "breakpoints": true
     }
   ]
 }

@@ -223,4 +223,35 @@ describe("billing routes", () => {
     const body = await duplicate.json();
     expect(body.duplicate).toBe(true);
   });
+
+  it("handles any customer.subscription.* event (paused -> free plan)", async () => {
+    const event = {
+      id: "evt_2",
+      type: "customer.subscription.paused",
+      data: {
+        object: {
+          id: "sub_test_3",
+          customer: "cus_test_1",
+          status: "paused",
+          current_period_end: Math.floor(Date.now() / 1000) + 3600,
+          items: {
+            data: [{ price: { id: "price_pro_month" } }],
+          },
+        },
+      },
+    };
+
+    const res = await app.request("/api/billing/stripe/webhook", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "stripe-signature": "valid-signature",
+      },
+      body: JSON.stringify(event),
+    });
+
+    expect(res.status).toBe(200);
+    expect(state.user.plan).toBe("free");
+    expect(state.user.stripeSubscriptionStatus).toBe("paused");
+  });
 });

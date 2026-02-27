@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  OUTPUT_FORMATS,
+  PIPELINE_STATUSES,
+  RUN_STATUSES,
+  STEP_TYPES,
+} from "./domain";
 
 // ── Step Schema ──
 
@@ -21,23 +27,13 @@ export const pipelineStepSchema = z.object({
       "Step ID must be lowercase alphanumeric with underscores",
     ),
   name: z.string().min(1).max(100),
-  type: z
-    .enum([
-      "llm",
-      "transform",
-      "condition",
-      "parallel",
-      "webhook",
-      "human_review",
-      "code",
-    ])
-    .default("llm"),
+  type: z.enum(STEP_TYPES).default("llm"),
   model: z.string().optional(),
   prompt: z.string().optional(),
   system_prompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().min(1).optional(),
-  output_format: z.enum(["text", "json", "markdown"]).default("text"),
+  output_format: z.enum(OUTPUT_FORMATS).default("text"),
   timeout_seconds: z.number().int().min(1).max(300).default(60),
   retry: stepRetrySchema.optional(),
   on_condition: z.array(stepConditionSchema).optional(),
@@ -184,14 +180,12 @@ export const uuidParam = z.string().uuid("Invalid ID format");
 
 export const listRunsQuery = z.object({
   pipeline_id: z.string().uuid().optional(),
-  status: z
-    .enum(["pending", "running", "completed", "failed", "cancelled"])
-    .optional(),
+  status: z.enum(RUN_STATUSES).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
 export const listPipelinesQuery = z.object({
-  status: z.enum(["active", "archived", "draft"]).optional(),
+  status: z.enum(PIPELINE_STATUSES).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 

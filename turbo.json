@@ -1,5 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "REDIS_URL",
+    "JWT_SECRET",
+    "STEPIQ_MASTER_KEY",
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEY",
+    "MISTRAL_API_KEY",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "STRIPE_PUBLISHABLE_KEY",
+    "STRIPE_PRICE_STARTER_MONTHLY_EUR",
+    "STRIPE_PRICE_STARTER_YEARLY_EUR",
+    "STRIPE_PRICE_PRO_MONTHLY_EUR",
+    "STRIPE_PRICE_PRO_YEARLY_EUR",
+    "APP_URL",
+    "CORS_ORIGIN",
+    "PUBLIC_*",
+    "VITE_*",
+    "PORT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

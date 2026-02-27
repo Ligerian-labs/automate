@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
+import { getToken } from "../lib/auth";
 import { type RunRecord, type StepExecutionRecord, apiFetch } from "../lib/api";
 
 export function RunDetailPage() {
@@ -39,8 +40,13 @@ export function RunDetailPage() {
 
   useEffect(() => {
     if (!runId) return;
+    const token = getToken();
+    if (!token) {
+      setSseState("fallback polling");
+      return;
+    }
     const es = new EventSource(
-      `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/runs/${runId}/stream`,
+      `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/runs/${runId}/stream?token=${encodeURIComponent(token)}`,
     );
     es.onopen = () => setSseState("connected");
     es.onerror = () => {
@@ -60,9 +66,9 @@ export function RunDetailPage() {
               new Date(run.startedAt).getTime()) /
               1000,
           )
-        : null;
+        : undefined;
     return {
-      duration: dur ? `${dur}s` : "running",
+      duration: dur === undefined ? "running" : `${dur}s`,
       tokens: String(run.totalTokens ?? run.total_tokens ?? 0),
       cost: `€${((run.totalCostCents ?? run.total_cost_cents ?? 0) / 100).toFixed(2)}`,
       steps: String((run.steps ?? []).length),
@@ -96,6 +102,11 @@ export function RunDetailPage() {
       ) : null}
       {runQ.isError ? (
         <p className="text-sm text-red-300">Failed to load run</p>
+      ) : null}
+      {run?.error ? (
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          {run.error}
+        </p>
       ) : null}
 
       {/* Stats — cornerRadius 10, padding 20 */}
@@ -133,7 +144,9 @@ export function RunDetailPage() {
         ))}
         {(run?.steps ?? []).length === 0 ? (
           <div className="rounded-[10px] border border-dashed border-[var(--divider)] p-8 text-center text-sm text-[var(--text-tertiary)]">
-            No steps executed yet
+            {run?.status === "failed"
+              ? "Run failed before any step executed."
+              : "No steps executed yet"}
           </div>
         ) : null}
       </section>

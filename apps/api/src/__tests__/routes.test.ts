@@ -71,7 +71,15 @@ function chainable(resolveValue: unknown): Chainable {
     chain[method] = () => chain;
   }
   chain.limit = () => Promise.resolve(asList(resolveValue));
-  chain.orderBy = () => Promise.resolve(asList(resolveValue));
+  chain.orderBy = () => {
+    const ordered = Promise.resolve(asList(resolveValue)) as Promise<
+      unknown[]
+    > & {
+      limit: () => Promise<unknown[]>;
+    };
+    ordered.limit = () => Promise.resolve(asList(resolveValue));
+    return ordered;
+  };
   chain.returning = () => Promise.resolve(asList(resolveValue));
   return chain;
 }

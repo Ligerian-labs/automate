@@ -4,7 +4,7 @@
   "packageManager": "bun@1.3.4",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "turbo run dev --parallel --filter=@stepiq/api --filter=@stepiq/landing --filter=@stepiq/app --filter=@stepiq/worker",
+    "dev": "dotenv -- turbo run dev --env-mode=loose --parallel --filter=@stepiq/api --filter=@stepiq/landing --filter=@stepiq/app --filter=@stepiq/worker",
     "dev:api": "turbo run dev --filter=@stepiq/api",
     "dev:landing": "turbo run dev --filter=@stepiq/landing",
     "dev:app": "turbo run dev --filter=@stepiq/app",
@@ -16,7 +16,9 @@
     "lint:fix": "biome check --fix .",
     "format": "biome format --write .",
     "typecheck": "turbo run typecheck",
-    "test": "bun test"
+    "test": "bun test",
+    "migrate": "dotenv -- bun run --filter=@stepiq/api migrate",
+    "migration:generate": "dotenv -- bun run --filter=@stepiq/api migration:generate"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
@@ -25,5 +27,8 @@
     "turbo": "^2.8.10",
     "typescript": "^5.7.0",
     "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "dotenv-cli": "^11.0.0"
   }
 }

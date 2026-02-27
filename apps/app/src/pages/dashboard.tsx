@@ -80,6 +80,8 @@ export function DashboardPage() {
           type: "llm",
           model: "gpt-4o-mini",
           prompt: "Hello from stepIQ",
+          output_format: "text",
+          timeout_seconds: 60,
         },
       ],
     };

@@ -1,5 +1,5 @@
 import { listRunsQuery, uuidParam } from "@stepiq/core";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { db } from "../db/index.js";
@@ -37,7 +37,12 @@ runRoutes.get("/", async (c) => {
 
   const where =
     whereClauses.length === 1 ? whereClauses[0] : and(...whereClauses);
-  const result = await db.select().from(runs).where(where).limit(limit);
+  const result = await db
+    .select()
+    .from(runs)
+    .where(where)
+    .orderBy(desc(runs.createdAt))
+    .limit(limit);
   return c.json(result);
 });
 
