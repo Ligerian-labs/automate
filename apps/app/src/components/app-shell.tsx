@@ -1,7 +1,9 @@
 import { cn } from "@stepiq/ui";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { clearToken } from "../lib/auth";
+import { type UserMe, apiFetch } from "../lib/api";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
@@ -136,6 +138,14 @@ export function AppShell({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const meQ = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<UserMe>("/api/user/me"),
+  });
+
+  const displayName = meQ.data?.name?.trim() || meQ.data?.email || "User";
+  const planName = `${(meQ.data?.plan || "free").toString()} plan`;
+  const initials = getInitials(displayName);
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
@@ -270,15 +280,15 @@ export function AppShell({
             className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--bg-surface)] text-[11px] font-semibold text-[var(--text-secondary)]"
             style={{ fontFamily: "var(--font-mono)" }}
           >
-            VD
+            {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-medium">Valentin D.</p>
+            <p className="truncate text-[13px] font-medium">{displayName}</p>
             <p
               className="truncate text-[11px] text-[var(--text-tertiary)]"
               style={{ fontFamily: "var(--font-mono)" }}
             >
-              Pro plan
+              {planName}
             </p>
           </div>
           <button
@@ -333,4 +343,14 @@ export function AppShell({
       </main>
     </div>
   );
+}
+
+function getInitials(value: string): string {
+  const parts = value
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
 }

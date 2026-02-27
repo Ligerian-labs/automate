@@ -8,11 +8,15 @@ const secret = new TextEncoder().encode(config.jwtSecret);
 export const requireAuth = createMiddleware<{ Variables: Env }>(
   async (c, next) => {
     const header = c.req.header("Authorization");
-    if (!header?.startsWith("Bearer ")) {
+    const headerToken = header?.startsWith("Bearer ")
+      ? header.slice(7)
+      : null;
+    const queryToken = c.req.query("token");
+    const token = headerToken || queryToken;
+    if (!token) {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const token = header.slice(7);
     try {
       const { payload } = await jwtVerify(token, secret);
       c.set("userId", payload.sub as string);

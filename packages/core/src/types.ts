@@ -1,35 +1,36 @@
+import type { z } from "zod";
+import type {
+  createPipelineSchema,
+  createScheduleSchema,
+  pipelineDefinitionSchema,
+  pipelineStepSchema,
+  runPipelineSchema,
+} from "./schemas";
+import type {
+  OUTPUT_FORMATS,
+  PIPELINE_STATUSES,
+  PLANS,
+  RUN_STATUSES,
+  STEP_STATUSES,
+  STEP_TYPES,
+  TRIGGER_TYPES,
+} from "./domain";
+
 // ── Pipeline Types ──
 
-export type StepType =
-  | "llm"
-  | "transform"
-  | "condition"
-  | "parallel"
-  | "webhook"
-  | "human_review"
-  | "code";
+export type StepType = (typeof STEP_TYPES)[number];
 
-export type OutputFormat = "text" | "json" | "markdown";
+export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 
-export type TriggerType = "manual" | "api" | "cron" | "webhook";
+export type TriggerType = (typeof TRIGGER_TYPES)[number];
 
-export type RunStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type RunStatus = (typeof RUN_STATUSES)[number];
 
-export type StepStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "skipped";
+export type StepStatus = (typeof STEP_STATUSES)[number];
 
-export type PipelineStatus = "draft" | "active" | "archived";
+export type PipelineStatus = (typeof PIPELINE_STATUSES)[number];
 
-export type Plan = "free" | "starter" | "pro" | "enterprise";
+export type Plan = (typeof PLANS)[number];
 
 // ── Pipeline Definition ──
 
@@ -51,20 +52,7 @@ export interface StepCondition {
   max_loops?: number;
 }
 
-export interface PipelineStep {
-  id: string;
-  name: string;
-  type?: StepType;
-  model?: string;
-  prompt?: string;
-  system_prompt?: string;
-  temperature?: number;
-  max_tokens?: number;
-  output_format?: OutputFormat;
-  timeout_seconds?: number;
-  retry?: StepRetry;
-  on_condition?: StepCondition[];
-}
+export type PipelineStep = z.infer<typeof pipelineStepSchema>;
 
 export interface DeliveryTarget {
   type: "webhook" | "email" | "file";
@@ -88,25 +76,7 @@ export interface PipelineNotification {
   subject?: string;
 }
 
-export interface PipelineDefinition {
-  name: string;
-  description?: string;
-  version: number;
-  variables?: Record<string, string | number | boolean>;
-  input?: {
-    schema: Record<string, PipelineVariable>;
-  };
-  steps: PipelineStep[];
-  output?: {
-    from: string;
-    deliver?: DeliveryTarget[];
-  };
-  schedule?: PipelineSchedule;
-  notifications?: {
-    on_success?: PipelineNotification[];
-    on_failure?: PipelineNotification[];
-  };
-}
+export type PipelineDefinition = z.infer<typeof pipelineDefinitionSchema>;
 
 // ── API Response Types ──
 
@@ -208,22 +178,8 @@ export interface CostEstimate {
 
 // ── API Payloads ──
 
-export interface CreatePipelinePayload {
-  name: string;
-  description?: string;
-  definition: PipelineDefinition;
-  tags?: string[];
-}
+export type CreatePipelinePayload = z.infer<typeof createPipelineSchema>;
 
-export interface RunPipelinePayload {
-  input_data?: Record<string, unknown>;
-}
+export type RunPipelinePayload = z.infer<typeof runPipelineSchema>;
 
-export interface CreateSchedulePayload {
-  name: string;
-  description?: string;
-  cron_expression: string;
-  timezone?: string;
-  input_data?: Record<string, unknown>;
-  enabled?: boolean;
-}
+export type CreateSchedulePayload = z.infer<typeof createScheduleSchema>;

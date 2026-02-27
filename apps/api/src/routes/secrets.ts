@@ -4,9 +4,8 @@ import {
   encryptSecret,
   secretNameParam,
   updateSecretSchema,
-  uuidParam,
 } from "@stepiq/core";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { db } from "../db/index.js";
@@ -39,22 +38,58 @@ function kmsConfigError(c: Context<{ Variables: Env }>) {
   );
 }
 
+function isMissingPipelineIdColumnError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : JSON.stringify(error);
+  if (message.includes("pipeline_id") && message.includes("does not exist")) {
+    return true;
+  }
+  if (!error || typeof error !== "object") return false;
+  const err = error as { code?: string; message?: string };
+  return (
+    (err.code === "42703" || message.includes("42703")) &&
+    ((err.message?.includes("pipeline_id") ?? false) ||
+      (err.message?.includes("user_secrets.pipeline_id") ?? false) ||
+      message.includes("pipeline_id"))
+  );
+}
+
 // ── List secrets (names only, NEVER values) ──
 secretRoutes.get("/", async (c) => {
   const userId = c.get("userId");
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-  const secrets = await db
-    .select({
-      id: userSecrets.id,
-      name: userSecrets.name,
-      keyVersion: userSecrets.keyVersion,
-      createdAt: userSecrets.createdAt,
-      updatedAt: userSecrets.updatedAt,
-    })
-    .from(userSecrets)
-    .where(and(eq(userSecrets.userId, userId), isNull(userSecrets.pipelineId)))
-    .orderBy(userSecrets.name);
+  let secrets;
+  try {
+    secrets = await db
+      .select({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        createdAt: userSecrets.createdAt,
+        updatedAt: userSecrets.updatedAt,
+      })
+      .from(userSecrets)
+      .where(and(eq(userSecrets.userId, userId), isNull(userSecrets.pipelineId)))
+      .orderBy(userSecrets.name);
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    secrets = await db
+      .select({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        createdAt: userSecrets.createdAt,
+        updatedAt: userSecrets.updatedAt,
+      })
+      .from(userSecrets)
+      .where(eq(userSecrets.userId, userId))
+      .orderBy(userSecrets.name);
+  }
 
   return c.json(secrets);
 });
@@ -71,17 +106,27 @@ secretRoutes.post("/", async (c) => {
   const { name, value } = parsed.data;
 
   // Check for duplicate
-  const [existing] = await db
-    .select({ id: userSecrets.id })
-    .from(userSecrets)
-    .where(
-      and(
-        eq(userSecrets.userId, userId),
-        isNull(userSecrets.pipelineId),
-        eq(userSecrets.name, name),
-      ),
-    )
-    .limit(1);
+  let existing;
+  try {
+    [existing] = await db
+      .select({ id: userSecrets.id })
+      .from(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          isNull(userSecrets.pipelineId),
+          eq(userSecrets.name, name),
+        ),
+      )
+      .limit(1);
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    [existing] = await db
+      .select({ id: userSecrets.id })
+      .from(userSecrets)
+      .where(and(eq(userSecrets.userId, userId), eq(userSecrets.name, name)))
+      .limit(1);
+  }
   if (existing)
     return c.json(
       { error: `Secret "${name}" already exists. Use PUT to update.` },
@@ -102,14 +147,16 @@ secretRoutes.post("/", async (c) => {
   const encryptedBlob = await encryptSecret(userId, value, masterKey);
   const encryptedValue = encryptedBlob.toString("base64");
 
-  const [secret] = await db
-    .insert(userSecrets)
-    .values({ userId, pipelineId: null, name, encryptedValue, keyVersion: 1 })
-    .returning({
-      id: userSecrets.id,
-      name: userSecrets.name,
-      createdAt: userSecrets.createdAt,
-    });
+  const inserted = await db.execute<{
+    id: string;
+    name: string;
+    createdAt: Date;
+  }>(
+    sql`insert into user_secrets (user_id, name, encrypted_value, key_version)
+        values (${userId}, ${name}, ${encryptedValue}, 1)
+        returning id, name, created_at as "createdAt"`,
+  );
+  const secret = inserted[0];
 
   return c.json(secret, 201);
 });
@@ -143,21 +190,37 @@ secretRoutes.put("/:name", async (c) => {
   );
   const encryptedValue = encryptedBlob.toString("base64");
 
-  const [updated] = await db
-    .update(userSecrets)
-    .set({ encryptedValue, updatedAt: new Date() })
-    .where(
-      and(
-        eq(userSecrets.userId, userId),
-        isNull(userSecrets.pipelineId),
-        eq(userSecrets.name, nameParsed.data),
-      ),
-    )
-    .returning({
-      id: userSecrets.id,
-      name: userSecrets.name,
-      updatedAt: userSecrets.updatedAt,
-    });
+  let updated;
+  try {
+    [updated] = await db
+      .update(userSecrets)
+      .set({ encryptedValue, updatedAt: new Date() })
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          isNull(userSecrets.pipelineId),
+          eq(userSecrets.name, nameParsed.data),
+        ),
+      )
+      .returning({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        updatedAt: userSecrets.updatedAt,
+      });
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    [updated] = await db
+      .update(userSecrets)
+      .set({ encryptedValue, updatedAt: new Date() })
+      .where(
+        and(eq(userSecrets.userId, userId), eq(userSecrets.name, nameParsed.data)),
+      )
+      .returning({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        updatedAt: userSecrets.updatedAt,
+      });
+  }
 
   if (!updated) return c.json({ error: "Secret not found" }, 404);
   return c.json(updated);
@@ -171,16 +234,27 @@ secretRoutes.delete("/:name", async (c) => {
   const nameParsed = secretNameParam.safeParse(c.req.param("name"));
   if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
 
-  const [deleted] = await db
-    .delete(userSecrets)
-    .where(
-      and(
-        eq(userSecrets.userId, userId),
-        isNull(userSecrets.pipelineId),
-        eq(userSecrets.name, nameParsed.data),
-      ),
-    )
-    .returning({ id: userSecrets.id });
+  let deleted;
+  try {
+    [deleted] = await db
+      .delete(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          isNull(userSecrets.pipelineId),
+          eq(userSecrets.name, nameParsed.data),
+        ),
+      )
+      .returning({ id: userSecrets.id });
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    [deleted] = await db
+      .delete(userSecrets)
+      .where(
+        and(eq(userSecrets.userId, userId), eq(userSecrets.name, nameParsed.data)),
+      )
+      .returning({ id: userSecrets.id });
+  }
 
   if (!deleted) return c.json({ error: "Secret not found" }, 404);
   return c.json({ deleted: true });

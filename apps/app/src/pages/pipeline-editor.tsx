@@ -44,14 +44,19 @@ interface ModelOption {
   name: string;
 }
 
-function getPromptTemplateWarning(prompt: string, stepIds: string[]): string | null {
+function getPromptTemplateWarning(
+  prompt: string,
+  stepIds: string[],
+): string | null {
   const openCount = (prompt.match(/\{\{/g) || []).length;
   const closeCount = (prompt.match(/\}\}/g) || []).length;
   if (openCount !== closeCount) {
     return "Unbalanced Handlebars braces. Check {{ and }}.";
   }
 
-  const refs = [...prompt.matchAll(/\{\{\s*steps\.([a-zA-Z0-9_]+)\.output\s*\}\}/g)];
+  const refs = [
+    ...prompt.matchAll(/\{\{\s*steps\.([a-zA-Z0-9_]+)\.output\s*\}\}/g),
+  ];
   for (const ref of refs) {
     const key = ref[1] || "";
     if (!key) continue;
@@ -138,7 +143,8 @@ export function PipelineEditorPage() {
 
   const pipelineSecretsQ = useQuery({
     queryKey: ["pipeline-secrets", pipelineId],
-    queryFn: () => apiFetch<SecretRecord[]>(`/api/pipelines/${pipelineId}/secrets`),
+    queryFn: () =>
+      apiFetch<SecretRecord[]>(`/api/pipelines/${pipelineId}/secrets`),
     enabled: Boolean(pipelineId),
   });
 
@@ -252,8 +258,7 @@ export function PipelineEditorPage() {
     }
     const start = target.selectionStart ?? target.value.length;
     const end = target.selectionEnd ?? target.value.length;
-    const next =
-      target.value.slice(0, start) + token + target.value.slice(end);
+    const next = target.value.slice(0, start) + token + target.value.slice(end);
     updateStep(idx, { prompt: next });
 
     requestAnimationFrame(() => {
@@ -314,7 +319,9 @@ export function PipelineEditorPage() {
       setPipelineSecretValue("");
       setPipelineSecretError(null);
       setPipelineSecretSuccess("Pipeline secret saved");
-      queryClient.invalidateQueries({ queryKey: ["pipeline-secrets", pipelineId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pipeline-secrets", pipelineId],
+      });
     },
     onError: (err) => {
       setPipelineSecretSuccess(null);
@@ -338,7 +345,9 @@ export function PipelineEditorPage() {
       setPipelineSecretUpdateValue("");
       setPipelineSecretError(null);
       setPipelineSecretSuccess(`Secret "${payload.name}" updated`);
-      queryClient.invalidateQueries({ queryKey: ["pipeline-secrets", pipelineId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pipeline-secrets", pipelineId],
+      });
     },
     onError: (err) => {
       setPipelineSecretSuccess(null);
@@ -357,7 +366,9 @@ export function PipelineEditorPage() {
     onSuccess: () => {
       setPipelineSecretError(null);
       setPipelineSecretSuccess("Secret removed");
-      queryClient.invalidateQueries({ queryKey: ["pipeline-secrets", pipelineId] });
+      queryClient.invalidateQueries({
+        queryKey: ["pipeline-secrets", pipelineId],
+      });
     },
     onError: (err) => {
       setPipelineSecretSuccess(null);
@@ -516,36 +527,44 @@ export function PipelineEditorPage() {
 
           {/* Pipeline secrets card */}
           <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
-            <h2 className="text-[15px] font-semibold">Pipeline Secrets</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold">Pipeline Secrets</h2>
+              <button
+                type="button"
+                onClick={submitPipelineSecret}
+                disabled={createPipelineSecretMut.isPending}
+                className="text-xs font-medium text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {createPipelineSecretMut.isPending ? "Saving..." : "+ Add"}
+              </button>
+            </div>
             <p className="text-xs text-[var(--text-muted)]">
-              These secrets apply only to this pipeline and override global
-              secrets with the same name.
+              Secrets apply only to this pipeline and override global secrets
+              with the same name.
             </p>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="flex items-center gap-2">
               <input
-                className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs uppercase focus:border-[var(--accent)] focus:outline-none"
+                className="flex-1 rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs uppercase focus:border-[var(--accent)] focus:outline-none"
                 style={{ fontFamily: "var(--font-mono)" }}
                 value={pipelineSecretName}
                 onChange={(e) => setPipelineSecretName(e.target.value)}
-                placeholder="OPENAI_API_KEY"
+                placeholder="name"
               />
               <input
                 type="password"
-                className="w-full rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
+                className="flex-1 rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs focus:border-[var(--accent)] focus:outline-none"
                 style={{ fontFamily: "var(--font-mono)" }}
                 value={pipelineSecretValue}
                 onChange={(e) => setPipelineSecretValue(e.target.value)}
-                placeholder="sk-..."
+                placeholder="value"
               />
               <button
                 type="button"
                 onClick={submitPipelineSecret}
                 disabled={createPipelineSecretMut.isPending}
-                className="cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="shrink-0 rounded-md px-2 py-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-inset)] hover:text-[var(--text-secondary)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {createPipelineSecretMut.isPending
-                  ? "Saving..."
-                  : "Save pipeline secret"}
+                {createPipelineSecretMut.isPending ? "..." : "+"}
               </button>
             </div>
             {pipelineSecretError ? (
@@ -558,25 +577,25 @@ export function PipelineEditorPage() {
                 {pipelineSecretSuccess}
               </p>
             ) : null}
-            <div className="rounded-[8px] border border-[var(--divider)] bg-[var(--bg-inset)]">
+            <div className="flex flex-col gap-2">
               {pipelineSecretsQ.isLoading ? (
-                <p className="px-3 py-3 text-xs text-[var(--text-muted)]">
+                <p className="text-xs text-[var(--text-muted)]">
                   Loading pipeline secrets...
                 </p>
               ) : null}
               {pipelineSecretsQ.data?.length === 0 ? (
-                <p className="px-3 py-3 text-xs text-[var(--text-muted)]">
+                <p className="text-xs text-[var(--text-muted)]">
                   No pipeline secrets yet.
                 </p>
               ) : null}
               {pipelineSecretsQ.data?.map((secret) => (
                 <div
                   key={secret.id}
-                  className="flex items-center justify-between border-t border-[var(--divider)] px-3 py-2 first:border-t-0"
+                  className="flex items-center justify-between rounded-[6px] border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2"
                 >
                   <div>
                     <p
-                      className="text-xs font-medium"
+                      className="text-xs font-medium uppercase"
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
                       {secret.name}
@@ -597,7 +616,9 @@ export function PipelineEditorPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => deletePipelineSecretMut.mutate(secret.name)}
+                      onClick={() =>
+                        deletePipelineSecretMut.mutate(secret.name)
+                      }
                       disabled={deletePipelineSecretMut.isPending}
                       className="cursor-pointer rounded border border-red-500/30 px-2 py-1 text-[11px] text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -630,7 +651,9 @@ export function PipelineEditorPage() {
                     disabled={updatePipelineSecretMut.isPending}
                     className="cursor-pointer rounded bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {updatePipelineSecretMut.isPending ? "Updating..." : "Update"}
+                    {updatePipelineSecretMut.isPending
+                      ? "Updating..."
+                      : "Update"}
                   </button>
                   <button
                     type="button"
@@ -798,14 +821,18 @@ export function PipelineEditorPage() {
                         <div className="flex flex-wrap items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => insertPromptToken(idx, "{{input.topic}}")}
+                            onClick={() =>
+                              insertPromptToken(idx, "{{input.topic}}")
+                            }
                             className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
                           >
                             + input.topic
                           </button>
                           <button
                             type="button"
-                            onClick={() => insertPromptToken(idx, "{{vars.language}}")}
+                            onClick={() =>
+                              insertPromptToken(idx, "{{vars.language}}")
+                            }
                             className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)]"
                           >
                             + vars.language
@@ -865,7 +892,10 @@ export function PipelineEditorPage() {
                                 disabled={!selectedPrevStepToken[idx]}
                                 onClick={() =>
                                   selectedPrevStepToken[idx] &&
-                                  insertPromptToken(idx, selectedPrevStepToken[idx])
+                                  insertPromptToken(
+                                    idx,
+                                    selectedPrevStepToken[idx],
+                                  )
                                 }
                                 className="rounded border border-[var(--divider)] bg-[var(--bg-inset)] px-2 py-1 text-[11px] text-[var(--text-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
                               >

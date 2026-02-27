@@ -197,6 +197,23 @@ export function SettingsPage() {
     return `€${(cents / 100).toFixed(0)}`;
   }
 
+  function openPlanSwitcher() {
+    const currentPlan = (meQ.data?.plan || "free").toLowerCase();
+    setBillingError(null);
+    setBillingMessage(null);
+    setTab("Billing");
+
+    if (currentPlan === "free") {
+      setBillingTargetPlan("starter");
+      return;
+    }
+    if (currentPlan === "starter") {
+      setBillingTargetPlan("pro");
+      return;
+    }
+    setBillingTargetPlan(null);
+  }
+
   return (
     <AppShell
       title="Settings"
@@ -290,6 +307,7 @@ export function SettingsPage() {
                   </div>
                   <button
                     type="button"
+                    onClick={openPlanSwitcher}
                     className="rounded-lg border border-[var(--text-muted)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)]"
                   >
                     Upgrade Plan

@@ -1,4 +1,4 @@
-import type { ModelInfo, Plan } from "./types.js";
+import type { ModelInfo, Plan } from "./types";
 
 export const SUPPORTED_MODELS: ModelInfo[] = [
   {
@@ -175,7 +175,8 @@ export const PLAN_LIMITS: Record<
 };
 
 export function getYearlyPriceCents(monthlyPriceCents: number): number {
-  const discounted = monthlyPriceCents * 12 * (1 - YEARLY_DISCOUNT_PERCENT / 100);
+  const discounted =
+    monthlyPriceCents * 12 * (1 - YEARLY_DISCOUNT_PERCENT / 100);
   // Round to whole-euro cents (e.g. 20520 -> 20500)
   return Math.round(discounted / 100) * 100;
 }

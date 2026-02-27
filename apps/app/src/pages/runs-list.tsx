@@ -9,6 +9,11 @@ export function RunsListPage() {
     queryKey: ["runs"],
     queryFn: () => apiFetch<RunRecord[]>("/api/runs?limit=50"),
   });
+  const runs = [...(runsQ.data ?? [])].sort((a, b) => {
+    const aTime = new Date(a.createdAt || a.created_at || 0).getTime();
+    const bTime = new Date(b.createdAt || b.created_at || 0).getTime();
+    return bTime - aTime;
+  });
 
   return (
     <AppShell title="Runs" subtitle="View all pipeline execution history">
@@ -55,7 +60,7 @@ export function RunsListPage() {
         ) : null}
 
         <div className="divide-y divide-[var(--divider)]">
-          {(runsQ.data ?? []).map((run) => {
+          {runs.map((run) => {
             const status = run.status || "pending";
             return (
               <button
@@ -116,7 +121,7 @@ export function RunsListPage() {
               </button>
             );
           })}
-          {(runsQ.data ?? []).length === 0 && !runsQ.isLoading ? (
+          {runs.length === 0 && !runsQ.isLoading ? (
             <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
               No runs yet — execute a pipeline to see results here.
             </p>

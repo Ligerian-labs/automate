@@ -21,6 +21,26 @@ const dbUrl =
 const client = postgres(dbUrl);
 const db = drizzle(client);
 
+function isMissingPipelineIdColumnError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : JSON.stringify(error);
+  if (message.includes("pipeline_id") && message.includes("does not exist")) {
+    return true;
+  }
+  if (!error || typeof error !== "object") return false;
+  const err = error as { code?: string; message?: string };
+  return (
+    (err.code === "42703" || message.includes("42703")) &&
+    ((err.message?.includes("pipeline_id") ?? false) ||
+      (err.message?.includes("user_secrets.pipeline_id") ?? false) ||
+      message.includes("pipeline_id"))
+  );
+}
+
 export async function executePipeline(runId: string) {
   // Load run
   const [run] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
@@ -221,6 +241,7 @@ export async function executePipeline(runId: string) {
   } catch (err) {
     const rawError = err instanceof Error ? err.message : String(err);
     const error = redactSecrets(rawError, envSecrets.plainValues);
+    console.error(`❌ Run ${runId} failed before completion: ${error}`);
     await db
       .update(runs)
       .set({
@@ -277,14 +298,34 @@ async function resolveUserSecrets(
   if (names.length === 0) return { values: {}, plainValues: [] };
 
   // Fetch encrypted secrets from DB
-  const secrets = await database
-    .select({
-      name: userSecrets.name,
-      pipelineId: userSecrets.pipelineId,
-      encryptedValue: userSecrets.encryptedValue,
-    })
-    .from(userSecrets)
-    .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
+  let secrets: Array<{
+    name: string;
+    pipelineId: string | null;
+    encryptedValue: string;
+  }> = [];
+  try {
+    secrets = await database
+      .select({
+        name: userSecrets.name,
+        pipelineId: userSecrets.pipelineId,
+        encryptedValue: userSecrets.encryptedValue,
+      })
+      .from(userSecrets)
+      .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    const legacySecrets = await database
+      .select({
+        name: userSecrets.name,
+        encryptedValue: userSecrets.encryptedValue,
+      })
+      .from(userSecrets)
+      .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
+    secrets = legacySecrets.map((secret) => ({
+      ...secret,
+      pipelineId: null,
+    }));
+  }
 
   if (secrets.length === 0) return { values: {}, plainValues: [] };
 

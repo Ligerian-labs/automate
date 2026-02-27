@@ -6,7 +6,7 @@
  * - Environment variable (dev/self-hosted)
  */
 
-import { KEY_LENGTH } from "./crypto.js";
+import { KEY_LENGTH } from "./crypto";
 
 export interface KmsProvider {
   getMasterKey(version?: number): Promise<Buffer>;
