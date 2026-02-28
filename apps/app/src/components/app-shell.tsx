@@ -1,3 +1,4 @@
+import { useClerk } from "@clerk/clerk-react";
 import { cn } from "@stepiq/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -139,6 +140,7 @@ export function AppShell({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const clerk = useClerk();
   const meQ = useQuery({
     queryKey: ["me"],
     queryFn: () => apiFetch<UserMe>("/api/user/me"),
@@ -299,6 +301,7 @@ export function AppShell({
             onClick={() => {
               trackLogout();
               clearToken();
+              void clerk.signOut();
               navigate({ to: "/login" });
             }}
           >

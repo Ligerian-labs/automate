@@ -78,6 +78,34 @@ describe("Auth routes", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("GET /api/auth/github/start returns 503 when GitHub OAuth is not configured", async () => {
+    const res = await app.request("/api/auth/github/start");
+    expect(res.status).toBe(503);
+  });
+
+  it("GET /api/auth/github/callback returns 503 when GitHub OAuth is not configured", async () => {
+    const res = await app.request("/api/auth/github/callback?code=abc&state=def");
+    expect(res.status).toBe(503);
+  });
+
+  it("GET /api/auth/google/start returns 503 when Google OAuth is not configured", async () => {
+    const res = await app.request("/api/auth/google/start");
+    expect(res.status).toBe(503);
+  });
+
+  it("GET /api/auth/google/callback returns 503 when Google OAuth is not configured", async () => {
+    const res = await app.request("/api/auth/google/callback?code=abc&state=def");
+    expect(res.status).toBe(503);
+  });
+
+  it("POST /api/auth/clerk/exchange returns 503 when Clerk is not configured", async () => {
+    const res = await app.request("/api/auth/clerk/exchange", {
+      method: "POST",
+      headers: { Authorization: "Bearer whatever" },
+    });
+    expect(res.status).toBe(503);
+  });
 });
 
 describe("Protected routes require auth", () => {
