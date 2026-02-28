@@ -63,11 +63,13 @@ export function PipelinesListPage() {
         onClick={() => createMut.mutate()}
         className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-[18px] py-2.5 text-sm font-semibold text-[var(--bg-primary)]"
       >
-        <span className="text-base leading-none">+</span> New pipeline
+        <span className="text-base leading-none">+</span>
+        <span className="hidden sm:inline">New pipeline</span>
+        <span className="sm:hidden">New</span>
       </button>
       <button
         type="button"
-        className="flex items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)]"
+        className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
       >
         Import YAML
       </button>
@@ -95,35 +97,7 @@ export function PipelinesListPage() {
         </p>
       ) : null}
 
-      <section className="overflow-x-auto rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
-        <div
-          className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
-          style={{
-            gridTemplateColumns:
-              "minmax(280px,1fr) 120px 160px 80px 100px 120px",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Pipeline
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Status
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Last Run
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Steps
-          </span>
-          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Cost
-          </span>
-          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Actions
-          </span>
-        </div>
-
+      <section className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
         {pipelinesQ.isLoading ? (
           <p className="p-5 text-sm text-[var(--text-tertiary)]">
             Loading pipelines...
@@ -137,32 +111,112 @@ export function PipelinesListPage() {
           </p>
         ) : null}
 
-        <div className="divide-y divide-[var(--divider)]">
+        {/* Desktop table */}
+        <div className="hidden md:block">
+          <div
+            className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
+            style={{
+              gridTemplateColumns:
+                "minmax(280px,1fr) 120px 160px 80px 100px 120px",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Pipeline
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Status
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Last Run
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Steps
+            </span>
+            <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Cost
+            </span>
+            <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Actions
+            </span>
+          </div>
+          <div className="divide-y divide-[var(--divider)]">
+            {(pipelinesQ.data ?? []).map((pipeline) => {
+              const updated = pipeline.updatedAt || pipeline.updated_at;
+              const status = pipeline.status || "active";
+              const stepCount = getStepCount(pipeline);
+              return (
+                <div
+                  key={pipeline.id}
+                  className="grid items-center px-5 py-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
+                  style={{
+                    gridTemplateColumns:
+                      "minmax(280px,1fr) 120px 160px 80px 100px 120px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="flex flex-col gap-0.5 text-left"
+                    onClick={() =>
+                      navigate({
+                        to: "/pipelines/$pipelineId/edit",
+                        params: { pipelineId: pipeline.id },
+                      })
+                    }
+                  >
+                    <p className="text-sm font-medium">{pipeline.name}</p>
+                    <p
+                      className="text-[11px] text-[var(--text-tertiary)]"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {pipeline.description || "No description"}
+                    </p>
+                  </button>
+                  <div>
+                    <StatusBadge status={status} />
+                  </div>
+                  <div className="text-[13px] text-[var(--text-secondary)]">
+                    {updated ? timeAgo(new Date(updated)) : "-"}
+                  </div>
+                  <div
+                    className="text-[13px] text-[var(--text-secondary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {stepCount}
+                  </div>
+                  <div
+                    className="text-right text-[13px] text-[var(--text-secondary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    —
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => deleteMut.mutate(pipeline.id)}
+                      disabled={deleteMut.isPending}
+                      className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="divide-y divide-[var(--divider)] md:hidden">
           {(pipelinesQ.data ?? []).map((pipeline) => {
             const updated = pipeline.updatedAt || pipeline.updated_at;
             const status = pipeline.status || "active";
-            const stepCount = (() => {
-              try {
-                return (
-                  (pipeline.definition as { steps?: unknown[] })?.steps
-                    ?.length ?? 0
-                );
-              } catch {
-                return 0;
-              }
-            })();
+            const stepCount = getStepCount(pipeline);
             return (
-              <div
-                key={pipeline.id}
-                className="grid items-center px-5 py-4 transition-colors hover:bg-[var(--bg-surface-hover)]"
-                style={{
-                  gridTemplateColumns:
-                    "minmax(280px,1fr) 120px 160px 80px 100px 120px",
-                }}
-              >
+              <div key={pipeline.id} className="px-4 py-4">
                 <button
                   type="button"
-                  className="flex flex-col gap-0.5 text-left"
+                  className="flex w-full flex-col gap-2.5 text-left"
                   onClick={() =>
                     navigate({
                       to: "/pipelines/$pipelineId/edit",
@@ -170,33 +224,30 @@ export function PipelinesListPage() {
                     })
                   }
                 >
-                  <p className="text-sm font-medium">{pipeline.name}</p>
-                  <p
-                    className="text-[11px] text-[var(--text-tertiary)]"
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {pipeline.name}
+                      </p>
+                      <p
+                        className="mt-0.5 truncate text-[11px] text-[var(--text-tertiary)]"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {pipeline.description || "No description"}
+                      </p>
+                    </div>
+                    <StatusBadge status={status} />
+                  </div>
+                  <div
+                    className="flex items-center gap-3 text-[12px] text-[var(--text-secondary)]"
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
-                    {pipeline.description || "No description"}
-                  </p>
+                    <span>{stepCount} steps</span>
+                    <span className="text-[var(--text-muted)]">·</span>
+                    <span>{updated ? timeAgo(new Date(updated)) : "-"}</span>
+                  </div>
                 </button>
-                <div>
-                  <StatusBadge status={status} />
-                </div>
-                <div className="text-[13px] text-[var(--text-secondary)]">
-                  {updated ? timeAgo(new Date(updated)) : "-"}
-                </div>
-                <div
-                  className="text-[13px] text-[var(--text-secondary)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {stepCount}
-                </div>
-                <div
-                  className="text-right text-[13px] text-[var(--text-secondary)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  —
-                </div>
-                <div className="flex justify-end">
+                <div className="mt-2 flex justify-end">
                   <button
                     type="button"
                     onClick={() => deleteMut.mutate(pipeline.id)}
@@ -209,15 +260,24 @@ export function PipelinesListPage() {
               </div>
             );
           })}
-          {(pipelinesQ.data ?? []).length === 0 && !pipelinesQ.isLoading ? (
-            <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
-              No pipelines yet — create one to get started.
-            </p>
-          ) : null}
         </div>
+
+        {(pipelinesQ.data ?? []).length === 0 && !pipelinesQ.isLoading ? (
+          <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
+            No pipelines yet — create one to get started.
+          </p>
+        ) : null}
       </section>
     </AppShell>
   );
+}
+
+function getStepCount(pipeline: PipelineRecord): number {
+  try {
+    return (pipeline.definition as { steps?: unknown[] })?.steps?.length ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 function StatusBadge({ status }: { status: string }) {
