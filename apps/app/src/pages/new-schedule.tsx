@@ -121,7 +121,7 @@ export function NewSchedulePage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-[minmax(0,1fr)_340px] gap-7">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-7">
         <div className="flex flex-col gap-5">
           <Card title="Schedule Details">
             <Field label="Name" htmlFor="schedule-name">
@@ -217,7 +217,7 @@ export function NewSchedulePage() {
               {humanFrequency}
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <Field label="Day of week" htmlFor="schedule-day">
                 <select
                   id="schedule-day"

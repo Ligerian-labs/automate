@@ -212,7 +212,7 @@ export function DashboardPage() {
       ) : null}
 
       {/* Stats row — gap 16, cards cornerRadius 10, padding 20, gap 8 */}
-      <section className="grid grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <StatCard
           label="ACTIVE PIPELINES"
           value={String(stats.active)}

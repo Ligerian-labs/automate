@@ -120,7 +120,7 @@ export function RunDetailPage() {
       ) : null}
 
       {/* Stats — cornerRadius 10, padding 20 */}
-      <section className="grid grid-cols-4 gap-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4 md:gap-4">
         <StatCard label="Duration" value={stats.duration} />
         <StatCard label="Tokens" value={stats.tokens} />
         <StatCard label="Cost" value={stats.cost} />
@@ -261,10 +261,10 @@ function StepCard({
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex w-full cursor-pointer items-start gap-5 text-left"
+        className="flex w-full cursor-pointer flex-col items-start gap-3 text-left sm:flex-row sm:gap-5"
       >
         {/* Left: 200px */}
-        <div className="w-[200px] shrink-0">
+        <div className="w-full shrink-0 sm:w-[200px]">
           <RunStatusBadge status={status} />
           <p className="mt-2 text-sm font-medium">
             {step.stepId || step.step_id || "step"}
@@ -314,7 +314,7 @@ function StepCard({
       ) : null}
       {expanded ? (
         <div className="mt-3 grid gap-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <DebugField
               label="Step ID"
               value={step.stepId || step.step_id || "-"}
