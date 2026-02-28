@@ -33,6 +33,10 @@ Then update `.env` to:
 DATABASE_URL=postgres://stepiq:stepiq@localhost:5433/stepiq
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=local-dev-jwt-secret-change-me-please
+API_URL=http://localhost:3001
+CLERK_SECRET_KEY=
+CLERK_JWKS_URL=
+CLERK_API_URL=https://api.clerk.com
 # 64 hex chars (32 bytes), required for user secrets encryption
 STEPIQ_MASTER_KEY=
 ANTHROPIC_API_KEY=
@@ -47,6 +51,7 @@ APP_URL=http://localhost:5173
 CORS_ORIGIN=http://localhost:5173
 PUBLIC_API_URL=http://localhost:3001
 VITE_API_URL=http://localhost:3001
+VITE_CLERK_PUBLISHABLE_KEY=
 ```
 
 ### 2. Start local infra
@@ -141,6 +146,7 @@ See [full spec](https://github.com/Ligerian-labs/brainstorm/blob/main/products/a
 ### Core routes:
 - `POST /api/auth/register` - Sign up
 - `POST /api/auth/login` - Sign in
+- `POST /api/auth/clerk/exchange` - Exchange Clerk session token for API JWT
 - `GET /api/pipelines` - List pipelines
 - `POST /api/pipelines` - Create pipeline
 - `POST /api/pipelines/:id/run` - Execute pipeline
