@@ -20,7 +20,8 @@ function parseHexKey(name: string): Buffer {
 
 async function main() {
   const databaseUrl =
-    process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
+    process.env.DATABASE_URL ||
+    "postgres://stepiq:stepiq@localhost:5432/stepiq";
   const oldMasterKey = parseHexKey("ROTATE_OLD_MASTER_KEY");
   const newMasterKey = parseHexKey("ROTATE_NEW_MASTER_KEY");
   const newKeyVersionRaw = requireEnv("ROTATE_NEW_KEY_VERSION");

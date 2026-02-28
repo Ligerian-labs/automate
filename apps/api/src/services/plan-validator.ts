@@ -32,7 +32,9 @@ export class PlanValidationError extends Error {
   }
 }
 
-export function isPlanValidationError(err: unknown): err is PlanValidationError {
+export function isPlanValidationError(
+  err: unknown,
+): err is PlanValidationError {
   return err instanceof PlanValidationError;
 }
 
@@ -59,7 +61,11 @@ async function getUserPlanState(userId: string): Promise<{
   }
 
   const plan = (user.plan in PLAN_LIMITS ? user.plan : "free") as Plan;
-  return { plan, limits: PLAN_LIMITS[plan], creditsRemaining: user.creditsRemaining };
+  return {
+    plan,
+    limits: PLAN_LIMITS[plan],
+    creditsRemaining: user.creditsRemaining,
+  };
 }
 
 function utcDayWindow(date = new Date()): { start: Date; end: Date } {

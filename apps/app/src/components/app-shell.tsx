@@ -2,8 +2,9 @@ import { cn } from "@stepiq/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { clearToken } from "../lib/auth";
+import { trackLogout } from "../lib/analytics";
 import { type UserMe, apiFetch } from "../lib/api";
+import { clearToken } from "../lib/auth";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: "dashboard" },
@@ -296,6 +297,7 @@ export function AppShell({
             title="Log out"
             className="rounded-md p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-secondary)]"
             onClick={() => {
+              trackLogout();
               clearToken();
               navigate({ to: "/login" });
             }}
@@ -331,7 +333,9 @@ export function AppShell({
             <div className="flex flex-col gap-1">
               {title ? <h1 className="text-2xl font-bold">{title}</h1> : null}
               {subtitle ? (
-                <p className="text-sm text-[var(--text-tertiary)]">{subtitle}</p>
+                <p className="text-sm text-[var(--text-tertiary)]">
+                  {subtitle}
+                </p>
               ) : null}
             </div>
             {actions ? (

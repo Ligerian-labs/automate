@@ -93,7 +93,11 @@ mock.module("drizzle-orm", () => ({
   eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
   gte: (left: unknown, right: unknown) => ({ type: "gte", left, right }),
   lte: (left: unknown, right: unknown) => ({ type: "lte", left, right }),
-  inArray: (left: unknown, right: unknown[]) => ({ type: "inArray", left, right }),
+  inArray: (left: unknown, right: unknown[]) => ({
+    type: "inArray",
+    left,
+    right,
+  }),
 }));
 
 mock.module("../db/index.js", () => ({
@@ -108,15 +112,19 @@ mock.module("../db/index.js", () => ({
             const byId = getEqValue(cond, tables.pipelines.id);
             if (byId) return queryResult([state.pipeline]);
 
-            const rows = Array.from({ length: state.activePipelineCount }).map((_, idx) => ({
-              id: `pipeline-${idx + 1}`,
-            }));
+            const rows = Array.from({ length: state.activePipelineCount }).map(
+              (_, idx) => ({
+                id: `pipeline-${idx + 1}`,
+              }),
+            );
             return queryResult(rows);
           }
           if (table.__name === "runs") {
-            const rows = Array.from({ length: state.runsTodayCount }).map((_, idx) => ({
-              id: `run-${idx + 1}`,
-            }));
+            const rows = Array.from({ length: state.runsTodayCount }).map(
+              (_, idx) => ({
+                id: `run-${idx + 1}`,
+              }),
+            );
             return queryResult(rows);
           }
           if (table.__name === "schedules") {
@@ -242,14 +250,14 @@ describe("plan limit enforcement", () => {
     const res = await app.request(
       "/api/pipelines/a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4/schedules",
       {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        name: "free cron",
-        cron_expression: "0 9 * * MON",
-        timezone: "UTC",
-      }),
-    },
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: "free cron",
+          cron_expression: "0 9 * * MON",
+          timezone: "UTC",
+        }),
+      },
     );
 
     expect(res.status).toBe(403);
@@ -270,10 +278,10 @@ describe("plan limit enforcement", () => {
     const res = await app.request(
       "/api/pipelines/a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4/run",
       {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ input_data: {} }),
-    },
+        method: "POST",
+        headers,
+        body: JSON.stringify({ input_data: {} }),
+      },
     );
 
     expect(res.status).toBe(403);

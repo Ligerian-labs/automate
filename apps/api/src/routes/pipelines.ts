@@ -303,7 +303,8 @@ pipelineRoutes.get("/:id/secrets", async (c) => {
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
   const idParsed = uuidParam.safeParse(c.req.param("id"));
-  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!idParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = idParsed.data;
 
   const [pipeline] = await db
@@ -323,20 +324,20 @@ pipelineRoutes.get("/:id/secrets", async (c) => {
   try {
     result = await db
       .select({
-         id: userSecrets.id,
-         name: userSecrets.name,
-         keyVersion: userSecrets.keyVersion,
-         createdAt: userSecrets.createdAt,
-         updatedAt: userSecrets.updatedAt,
-       })
-       .from(userSecrets)
-       .where(
-         and(
-           eq(userSecrets.userId, userId),
-           eq(userSecrets.pipelineId, pipelineId),
-         ),
-       )
-       .orderBy(userSecrets.name);
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        createdAt: userSecrets.createdAt,
+        updatedAt: userSecrets.updatedAt,
+      })
+      .from(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+        ),
+      )
+      .orderBy(userSecrets.name);
   } catch (error) {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     return c.json([]);
@@ -351,7 +352,8 @@ pipelineRoutes.post("/:id/secrets", async (c) => {
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
   const idParsed = uuidParam.safeParse(c.req.param("id"));
-  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!idParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = idParsed.data;
 
   const [pipeline] = await db
@@ -370,22 +372,24 @@ pipelineRoutes.post("/:id/secrets", async (c) => {
   try {
     [existing] = await db
       .select({ id: userSecrets.id })
-       .from(userSecrets)
-       .where(
-         and(
-           eq(userSecrets.userId, userId),
-           eq(userSecrets.pipelineId, pipelineId),
-           eq(userSecrets.name, name),
-         ),
-       )
-       .limit(1);
+      .from(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+          eq(userSecrets.name, name),
+        ),
+      )
+      .limit(1);
   } catch (error) {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     return c.json(pipelineSecretsMigrationError(), 409);
   }
   if (existing) {
     return c.json(
-      { error: `Secret "${name}" already exists for this pipeline. Use PUT to update.` },
+      {
+        error: `Secret "${name}" already exists for this pipeline. Use PUT to update.`,
+      },
       409,
     );
   }
@@ -416,14 +420,14 @@ pipelineRoutes.post("/:id/secrets", async (c) => {
   try {
     [secret] = await db
       .insert(userSecrets)
-       .values({ userId, pipelineId, name, encryptedValue, keyVersion: 1 })
-       .returning({
-         id: userSecrets.id,
-         name: userSecrets.name,
-         keyVersion: userSecrets.keyVersion,
-         createdAt: userSecrets.createdAt,
-         updatedAt: userSecrets.updatedAt,
-       });
+      .values({ userId, pipelineId, name, encryptedValue, keyVersion: 1 })
+      .returning({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        createdAt: userSecrets.createdAt,
+        updatedAt: userSecrets.updatedAt,
+      });
   } catch (error) {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     return c.json(pipelineSecretsMigrationError(), 409);
@@ -438,7 +442,8 @@ pipelineRoutes.put("/:id/secrets/:name", async (c) => {
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
   const idParsed = uuidParam.safeParse(c.req.param("id"));
-  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!idParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = idParsed.data;
   const nameParsed = secretNameParam.safeParse(c.req.param("name"));
   if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
@@ -482,20 +487,20 @@ pipelineRoutes.put("/:id/secrets/:name", async (c) => {
   try {
     [updated] = await db
       .update(userSecrets)
-       .set({ encryptedValue, updatedAt: new Date() })
-       .where(
-         and(
-           eq(userSecrets.userId, userId),
-           eq(userSecrets.pipelineId, pipelineId),
-           eq(userSecrets.name, nameParsed.data),
-         ),
-       )
-       .returning({
-         id: userSecrets.id,
-         name: userSecrets.name,
-         keyVersion: userSecrets.keyVersion,
-         updatedAt: userSecrets.updatedAt,
-       });
+      .set({ encryptedValue, updatedAt: new Date() })
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+          eq(userSecrets.name, nameParsed.data),
+        ),
+      )
+      .returning({
+        id: userSecrets.id,
+        name: userSecrets.name,
+        keyVersion: userSecrets.keyVersion,
+        updatedAt: userSecrets.updatedAt,
+      });
   } catch (error) {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     return c.json(pipelineSecretsMigrationError(), 409);
@@ -511,7 +516,8 @@ pipelineRoutes.delete("/:id/secrets/:name", async (c) => {
   if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
   const idParsed = uuidParam.safeParse(c.req.param("id"));
-  if (!idParsed.success) return c.json({ error: "Invalid pipeline ID format" }, 400);
+  if (!idParsed.success)
+    return c.json({ error: "Invalid pipeline ID format" }, 400);
   const pipelineId = idParsed.data;
   const nameParsed = secretNameParam.safeParse(c.req.param("name"));
   if (!nameParsed.success) return c.json({ error: "Invalid secret name" }, 400);
@@ -527,14 +533,14 @@ pipelineRoutes.delete("/:id/secrets/:name", async (c) => {
   try {
     [deleted] = await db
       .delete(userSecrets)
-       .where(
-         and(
-           eq(userSecrets.userId, userId),
-           eq(userSecrets.pipelineId, pipelineId),
-           eq(userSecrets.name, nameParsed.data),
-         ),
-       )
-       .returning({ id: userSecrets.id });
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          eq(userSecrets.pipelineId, pipelineId),
+          eq(userSecrets.name, nameParsed.data),
+        ),
+      )
+      .returning({ id: userSecrets.id });
   } catch (error) {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     return c.json(pipelineSecretsMigrationError(), 409);
@@ -570,9 +576,14 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
     throw err;
   }
 
-  const result = await createScheduleForPipeline(userId, pipelineId, parsed.data);
+  const result = await createScheduleForPipeline(
+    userId,
+    pipelineId,
+    parsed.data,
+  );
   if (result.error) {
-    if (result.error === "Pipeline not found") return c.json({ error: result.error }, 404);
+    if (result.error === "Pipeline not found")
+      return c.json({ error: result.error }, 404);
     return c.json({ error: result.error }, 400);
   }
 

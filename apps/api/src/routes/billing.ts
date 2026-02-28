@@ -1,10 +1,10 @@
-import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import type Stripe from "stripe";
+import { z } from "zod";
 import { db } from "../db/index.js";
 import { stripeEvents, users } from "../db/schema.js";
-import { config, type Env } from "../lib/env.js";
+import { type Env, config } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
 import {
   billingConfigError,

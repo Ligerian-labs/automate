@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { type ReactNode, useEffect, useState } from "react";
 import { AppShell } from "../components/app-shell";
+import { trackScheduleCreated } from "../lib/analytics";
 import { ApiError, type PipelineRecord, apiFetch } from "../lib/api";
 
 type FrequencyPreset = "hourly" | "daily" | "weekly" | "monthly" | "custom";
@@ -80,6 +81,7 @@ export function NewSchedulePage() {
       );
     },
     onSuccess: async () => {
+      trackScheduleCreated(selectedPipeline?.id ?? "", cronExpression);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["schedules"] }),
         queryClient.invalidateQueries({ queryKey: ["pipelines"] }),
@@ -171,11 +173,31 @@ export function NewSchedulePage() {
 
           <Card title="Schedule Frequency">
             <div className="flex flex-wrap gap-2">
-              <PresetButton active={preset === "hourly"} onClick={() => setPreset("hourly")} label="Every hour" />
-              <PresetButton active={preset === "daily"} onClick={() => setPreset("daily")} label="Daily" />
-              <PresetButton active={preset === "weekly"} onClick={() => setPreset("weekly")} label="Weekly" />
-              <PresetButton active={preset === "monthly"} onClick={() => setPreset("monthly")} label="Monthly" />
-              <PresetButton active={preset === "custom"} onClick={() => setPreset("custom")} label="Custom" />
+              <PresetButton
+                active={preset === "hourly"}
+                onClick={() => setPreset("hourly")}
+                label="Every hour"
+              />
+              <PresetButton
+                active={preset === "daily"}
+                onClick={() => setPreset("daily")}
+                label="Daily"
+              />
+              <PresetButton
+                active={preset === "weekly"}
+                onClick={() => setPreset("weekly")}
+                label="Weekly"
+              />
+              <PresetButton
+                active={preset === "monthly"}
+                onClick={() => setPreset("monthly")}
+                label="Monthly"
+              />
+              <PresetButton
+                active={preset === "custom"}
+                onClick={() => setPreset("custom")}
+                label="Custom"
+              />
             </div>
 
             <Field label="Cron expression" htmlFor="schedule-cron">
@@ -226,7 +248,11 @@ export function NewSchedulePage() {
 
         <aside className="flex min-h-full flex-col gap-6">
           <Card title="Summary" padded>
-            <SummaryRow label="Pipeline" value={selectedPipeline?.name || "—"} mono />
+            <SummaryRow
+              label="Pipeline"
+              value={selectedPipeline?.name || "—"}
+              mono
+            />
             <SummaryRow
               label="Frequency"
               value={preset === "custom" ? "Custom" : capitalize(preset)}
@@ -303,7 +329,9 @@ function Card({
         padded ? "p-6" : "p-5"
       }`}
     >
-      <h2 className="text-[17px] font-semibold text-[var(--text-primary)]">{title}</h2>
+      <h2 className="text-[17px] font-semibold text-[var(--text-primary)]">
+        {title}
+      </h2>
       <div className="mt-4 flex flex-col gap-4">{children}</div>
     </section>
   );
@@ -320,7 +348,9 @@ function Field({
 }) {
   return (
     <label htmlFor={htmlFor} className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-[var(--text-secondary)]">{label}</span>
+      <span className="text-xs font-medium text-[var(--text-secondary)]">
+        {label}
+      </span>
       {children}
     </label>
   );
@@ -342,7 +372,9 @@ function SummaryRow({
       <span className="text-[13px] text-[var(--text-tertiary)]">{label}</span>
       <span
         className={`text-[13px] ${mono ? "font-[var(--font-mono)] text-xs" : "font-medium"} ${
-          accent ? "font-semibold text-[var(--accent)]" : "text-[var(--text-primary)]"
+          accent
+            ? "font-semibold text-[var(--accent)]"
+            : "text-[var(--text-primary)]"
         }`}
       >
         {value}
@@ -405,8 +437,10 @@ function toHumanFrequency({
 }) {
   if (preset === "hourly") return "Runs every hour at minute 00 UTC";
   if (preset === "daily") return `Runs every day at ${timeUtc} UTC`;
-  if (preset === "weekly") return `Runs every ${toDayLabel(dayOfWeek)} at ${timeUtc} UTC`;
-  if (preset === "monthly") return `Runs on day 1 of each month at ${timeUtc} UTC`;
+  if (preset === "weekly")
+    return `Runs every ${toDayLabel(dayOfWeek)} at ${timeUtc} UTC`;
+  if (preset === "monthly")
+    return `Runs on day 1 of each month at ${timeUtc} UTC`;
   return "Runs based on custom cron expression (UTC)";
 }
 
@@ -520,13 +554,25 @@ function relativeUntil(next?: string | null): string {
   const chunks: string[] = [];
   if (days > 0) chunks.push(`${days} day${days > 1 ? "s" : ""}`);
   if (hours > 0) chunks.push(`${hours} hour${hours > 1 ? "s" : ""}`);
-  if (days === 0 && minutes > 0) chunks.push(`${minutes} minute${minutes > 1 ? "s" : ""}`);
+  if (days === 0 && minutes > 0)
+    chunks.push(`${minutes} minute${minutes > 1 ? "s" : ""}`);
   return `in ${chunks.join(", ")}`;
 }
 
 function ArrowLeftIcon() {
   return (
-    <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="m12 19-7-7 7-7" />
       <path d="M19 12H5" />
     </svg>
@@ -535,7 +581,19 @@ function ArrowLeftIcon() {
 
 function ClockIcon() {
   return (
-    <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-muted)]">
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-[var(--text-muted)]"
+    >
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v5l3 2" />
     </svg>
@@ -544,7 +602,19 @@ function ClockIcon() {
 
 function CalendarIcon() {
   return (
-    <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--accent)]">
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="text-[var(--accent)]"
+    >
       <path d="M8 2v4M16 2v4" />
       <rect width="18" height="18" x="3" y="4" rx="2" />
       <path d="M3 10h18" />
@@ -554,7 +624,18 @@ function CalendarIcon() {
 
 function CheckIcon() {
   return (
-    <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="m20 6-11 11-5-5" />
     </svg>
   );

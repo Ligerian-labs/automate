@@ -153,11 +153,14 @@ describe("Webhook route", () => {
   });
 
   it("POST /api/webhooks/:id requires API key", async () => {
-    const res = await app.request("/api/webhooks/550e8400-e29b-41d4-a716-446655440000", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
+    const res = await app.request(
+      "/api/webhooks/550e8400-e29b-41d4-a716-446655440000",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
     expect(res.status).toBe(401);
   });
 

@@ -5,11 +5,11 @@ import { db } from "../db/index.js";
 import { apiKeys } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import { generateApiKey } from "../services/api-keys.js";
 import {
   assertCanUseApi,
   isPlanValidationError,
 } from "../services/plan-validator.js";
-import { generateApiKey } from "../services/api-keys.js";
 
 export const apiKeyRoutes = new Hono<{ Variables: Env }>();
 

@@ -2,8 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
-import { getToken } from "../lib/auth";
+import { trackRunCancelled, trackRunViewed } from "../lib/analytics";
 import { type RunRecord, type StepExecutionRecord, apiFetch } from "../lib/api";
+import { getToken } from "../lib/auth";
 
 export function RunDetailPage() {
   const { runId } = useParams({ strict: false }) as { runId: string };
@@ -24,7 +25,10 @@ export function RunDetailPage() {
         method: "POST",
         body: "{}",
       }),
-    onSuccess: () => runQ.refetch(),
+    onSuccess: () => {
+      trackRunCancelled(runId);
+      runQ.refetch();
+    },
   });
 
   const retryMut = useMutation({
@@ -37,6 +41,12 @@ export function RunDetailPage() {
       navigate({ to: "/runs/$runId", params: { runId: newRun.id } });
     },
   });
+
+  // Track run viewed once data loads
+  const runStatus = runQ.data?.status;
+  useEffect(() => {
+    if (runStatus) trackRunViewed(runId, runStatus);
+  }, [runId, runStatus]);
 
   useEffect(() => {
     if (!runId) return;
@@ -283,9 +293,7 @@ function StepCard({
             label="Cost"
             value={`€${((step.costCents || step.cost_cents || 0) / 100).toFixed(2)}`}
           />
-          {rawOutput ? (
-            <Metric label="Output" value="✓" />
-          ) : null}
+          {rawOutput ? <Metric label="Output" value="✓" /> : null}
         </div>
         <div className="ml-auto pt-1 text-xs text-[var(--text-muted)]">
           {expanded ? "▲" : "▼"}
@@ -307,7 +315,10 @@ function StepCard({
       {expanded ? (
         <div className="mt-3 grid gap-3">
           <div className="grid grid-cols-2 gap-3">
-            <DebugField label="Step ID" value={step.stepId || step.step_id || "-"} />
+            <DebugField
+              label="Step ID"
+              value={step.stepId || step.step_id || "-"}
+            />
             <DebugField
               label="Step Index"
               value={String(step.stepIndex ?? step.step_index ?? "-")}

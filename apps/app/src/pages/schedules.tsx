@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AppShell } from "../components/app-shell";
+import { trackScheduleDeleted } from "../lib/analytics";
 import { ApiError, type PipelineRecord, apiFetch } from "../lib/api";
 
 type ScheduleRecord = {
@@ -89,10 +90,7 @@ export function SchedulesPage() {
   });
 
   const schedulesQ = useQuery({
-    queryKey: [
-      "schedules",
-      ...(pipelinesQ.data ?? []).map((p) => p.id).sort(),
-    ],
+    queryKey: ["schedules", ...(pipelinesQ.data ?? []).map((p) => p.id).sort()],
     enabled: (pipelinesQ.data ?? []).length > 0,
     queryFn: async () => {
       const pipelines = pipelinesQ.data ?? [];
@@ -113,7 +111,8 @@ export function SchedulesPage() {
       apiFetch<{ deleted: boolean }>(`/api/schedules/${scheduleId}`, {
         method: "DELETE",
       }),
-    onSuccess: () => {
+    onSuccess: (_, scheduleId) => {
+      trackScheduleDeleted(scheduleId);
       queryClient.invalidateQueries({ queryKey: ["pipelines"] });
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
     },
@@ -121,9 +120,13 @@ export function SchedulesPage() {
 
   const rows: ScheduleRow[] = (() => {
     const mapped = (schedulesQ.data ?? []).map(({ schedule, pipeline }) => {
-      const cron = schedule.cronExpression || schedule.cron_expression || "* * * * *";
+      const cron =
+        schedule.cronExpression || schedule.cron_expression || "* * * * *";
       const title = toTitleCase(
-        (schedule.name || pipeline.name || "Pipeline schedule").replace(/[-_]+/g, " "),
+        (schedule.name || pipeline.name || "Pipeline schedule").replace(
+          /[-_]+/g,
+          " ",
+        ),
       );
       const status: ScheduleRow["status"] =
         schedule.enabled === false ? "paused" : "active";
@@ -165,7 +168,11 @@ export function SchedulesPage() {
         <StatCard
           label="ACTIVE SCHEDULES"
           value={String(hasRealData ? activeSchedules : 12)}
-          sub={hasRealData ? `+${Math.max(1, Math.round(activeSchedules / 3))} this week` : "+3 this week"}
+          sub={
+            hasRealData
+              ? `+${Math.max(1, Math.round(activeSchedules / 3))} this week`
+              : "+3 this week"
+          }
           subColor="var(--accent)"
         />
         <StatCard
@@ -182,7 +189,12 @@ export function SchedulesPage() {
         />
         <StatCard
           label="NEXT TRIGGER"
-          value={nextRow.nextRun.replace("in ", "").replace(" hours", "h").replace(" hour", "h").replace(" minutes", "m").replace(" minute", "m")}
+          value={nextRow.nextRun
+            .replace("in ", "")
+            .replace(" hours", "h")
+            .replace(" hour", "h")
+            .replace(" minutes", "m")
+            .replace(" minute", "m")}
           sub={toKebab(nextRow.pipeline)}
           subColor="var(--text-tertiary)"
         />
@@ -223,9 +235,7 @@ export function SchedulesPage() {
           </p>
         ) : null}
         {pipelinesQ.isError || schedulesQ.isError ? (
-          <p className="p-5 text-sm text-red-300">
-            Failed to load schedules.
-          </p>
+          <p className="p-5 text-sm text-red-300">Failed to load schedules.</p>
         ) : null}
         {deleteMut.isError ? (
           <p className="p-5 text-sm text-red-300">
@@ -254,8 +264,12 @@ export function SchedulesPage() {
                   {row.cron}
                 </p>
               </div>
-              <p className="text-[13px] text-[var(--text-secondary)]">{row.pipeline}</p>
-              <p className="text-[13px] text-[var(--text-secondary)]">{row.frequency}</p>
+              <p className="text-[13px] text-[var(--text-secondary)]">
+                {row.pipeline}
+              </p>
+              <p className="text-[13px] text-[var(--text-secondary)]">
+                {row.frequency}
+              </p>
               <p
                 className="text-[13px] text-[var(--text-secondary)]"
                 style={{ fontFamily: "var(--font-mono)" }}
@@ -314,7 +328,9 @@ function StatCard({
   );
 }
 
-function ScheduleStatusBadge({ status }: { status: "active" | "paused" | "failed" }) {
+function ScheduleStatusBadge({
+  status,
+}: { status: "active" | "paused" | "failed" }) {
   let bg = "#22C55E20";
   let fg = "#22C55E";
   let text = "Active";

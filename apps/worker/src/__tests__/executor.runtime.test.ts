@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 const tables = {
-  users: { __name: "users", id: "users.id", creditsRemaining: "users.creditsRemaining" },
+  users: {
+    __name: "users",
+    id: "users.id",
+    creditsRemaining: "users.creditsRemaining",
+  },
   pipelines: { __name: "pipelines", id: "pipelines.id" },
   schedules: { __name: "schedules", id: "schedules.id" },
   runs: { __name: "runs", id: "runs.id" },
@@ -51,10 +55,7 @@ type TestState = {
 let state: TestState;
 let kmsShouldFail = false;
 
-function getEqValue(
-  cond: unknown,
-  left: string,
-): string | undefined {
+function getEqValue(cond: unknown, left: string): string | undefined {
   if (!cond || typeof cond !== "object") return undefined;
   const c = cond as Record<string, unknown>;
   if (c.type === "eq" && c.left === left && typeof c.right === "string") {
@@ -121,7 +122,9 @@ function createDbMock() {
           if (table.__name === "stepExecutions") {
             const id = getEqValue(cond, tables.stepExecutions.id);
             if (!id) return [];
-            const index = state.stepExecutions.findIndex((row) => row.id === id);
+            const index = state.stepExecutions.findIndex(
+              (row) => row.id === id,
+            );
             if (index < 0) return [];
             state.stepExecutions[index] = {
               ...state.stepExecutions[index],
@@ -153,7 +156,11 @@ mock.module("drizzle-orm/postgres-js", () => ({
 mock.module("drizzle-orm", () => ({
   and: (...conds: unknown[]) => ({ type: "and", conds }),
   eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
-  inArray: (left: unknown, right: unknown[]) => ({ type: "inArray", left, right }),
+  inArray: (left: unknown, right: unknown[]) => ({
+    type: "inArray",
+    left,
+    right,
+  }),
   isNull: (left: unknown) => ({ type: "isNull", left }),
   or: (...conds: unknown[]) => ({ type: "or", conds }),
 }));
@@ -248,7 +255,9 @@ describe("executePipeline runtime behavior", () => {
     expect(state.stepExecutions).toHaveLength(2);
     expect(state.stepExecutions[0]?.status).toBe("completed");
     expect(state.stepExecutions[1]?.status).toBe("completed");
-    expect(state.stepExecutions[0]?.promptSent).not.toContain("super-secret-value");
+    expect(state.stepExecutions[0]?.promptSent).not.toContain(
+      "super-secret-value",
+    );
     expect(state.stepExecutions[0]?.promptSent).toContain("[REDACTED]");
   });
 
@@ -328,7 +337,9 @@ describe("executePipeline runtime behavior", () => {
     expect(String(state.run?.error || "")).not.toContain("super-secret-value");
     expect(state.stepExecutions).toHaveLength(1);
     expect(state.stepExecutions[0]?.status).toBe("failed");
-    expect(String(state.stepExecutions[0]?.error || "")).toContain("[REDACTED]");
+    expect(String(state.stepExecutions[0]?.error || "")).toContain(
+      "[REDACTED]",
+    );
   });
 
   it("throws when run is missing", async () => {
@@ -371,10 +382,10 @@ describe("executePipeline runtime behavior", () => {
     const apiKeys = (state.lastModelRequest?.api_keys || {}) as Record<
       string,
       string
-  >;
-  expect(apiKeys.openai).toBe("super-secret-value");
-  expect(apiKeys.gemini).toBe("super-secret-value");
-  expect(apiKeys.mistral).toBe("super-secret-value");
+    >;
+    expect(apiKeys.openai).toBe("super-secret-value");
+    expect(apiKeys.gemini).toBe("super-secret-value");
+    expect(apiKeys.mistral).toBe("super-secret-value");
   });
 
   it("fails run with explicit KMS error when secrets cannot be decrypted", async () => {

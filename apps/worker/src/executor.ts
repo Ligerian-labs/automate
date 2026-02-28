@@ -1,20 +1,21 @@
-import {
-  createKmsProvider,
-  decryptSecret,
-  redactSecrets,
-  TOKENS_PER_CREDIT,
-  type PipelineDefinition,
-} from "./core-adapter.js";
 import { and, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import Handlebars from "handlebars";
 import postgres from "postgres";
+import { serverTrack } from "./analytics.js";
+import {
+  type PipelineDefinition,
+  TOKENS_PER_CREDIT,
+  createKmsProvider,
+  decryptSecret,
+  redactSecrets,
+} from "./core-adapter.js";
 import {
   pipelineVersions,
   runs,
   stepExecutions,
-  users,
   userSecrets,
+  users,
 } from "./db-executor.js";
 import { callModel } from "./model-router.js";
 import { deliverWebhookWithRetry } from "./webhook-delivery.js";
@@ -170,9 +171,13 @@ export async function executePipeline(runId: string) {
         }
 
         const durationMs = Date.now() - startTime;
-        const stepContext = context.steps as Record<string, { output: unknown }>;
+        const stepContext = context.steps as Record<
+          string,
+          { output: unknown }
+        >;
         stepContext[step.id] = { output: parsedOutput };
-        if (!(String(i) in stepContext)) stepContext[String(i)] = { output: parsedOutput };
+        if (!(String(i) in stepContext))
+          stepContext[String(i)] = { output: parsedOutput };
         if (!(String(i + 1) in stepContext)) {
           stepContext[String(i + 1)] = { output: parsedOutput };
         }
@@ -227,6 +232,17 @@ export async function executePipeline(runId: string) {
       })
       .where(eq(runs.id, runId));
 
+    serverTrack(run.userId, "pipeline_run_completed", {
+      run_id: runId,
+      pipeline_id: run.pipelineId,
+      total_tokens: totalTokens,
+      total_cost_cents: totalCostCents,
+      step_count: definition.steps.length,
+      duration_ms:
+        completedAt.getTime() -
+        (runStartedAt?.getTime() ?? completedAt.getTime()),
+    });
+
     await deductRunCredits(run.userId, totalTokens);
     creditsDeducted = true;
 
@@ -245,6 +261,13 @@ export async function executePipeline(runId: string) {
     const rawError = err instanceof Error ? err.message : String(err);
     const error = redactSecrets(rawError, envSecrets.plainValues);
     console.error(`❌ Run ${runId} failed before completion: ${error}`);
+    serverTrack(run.userId, "pipeline_run_failed", {
+      run_id: runId,
+      pipeline_id: run.pipelineId,
+      error,
+      total_tokens: totalTokens,
+      total_cost_cents: totalCostCents,
+    });
     await db
       .update(runs)
       .set({
@@ -321,7 +344,11 @@ async function resolveUserSecrets(
     ? refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean)
     : [];
   const names = [
-    ...new Set([...providerSecretNames, ...referencedNames, ...additionalNames]),
+    ...new Set([
+      ...providerSecretNames,
+      ...referencedNames,
+      ...additionalNames,
+    ]),
   ] as string[];
   if (names.length === 0) return { values: {}, plainValues: [] };
 
@@ -338,7 +365,9 @@ async function resolveUserSecrets(
         encryptedValue: userSecrets.encryptedValue,
       })
       .from(userSecrets)
-      .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
+      .where(
+        and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)),
+      );
   } catch (error) {
     if (!isMissingPipelineIdColumnError(error)) throw error;
     const legacySecrets = await database
@@ -347,7 +376,9 @@ async function resolveUserSecrets(
         encryptedValue: userSecrets.encryptedValue,
       })
       .from(userSecrets)
-      .where(and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)));
+      .where(
+        and(eq(userSecrets.userId, userId), inArray(userSecrets.name, names)),
+      );
     secrets = legacySecrets.map((secret) => ({
       ...secret,
       pipelineId: null,
@@ -421,8 +452,10 @@ async function deliverOutputWebhooks(params: {
     (delivery) => delivery.type === "webhook" && delivery.url,
   );
   for (const target of targets) {
-    const rawSecretName = (target as Record<string, unknown>).signing_secret_name;
-    const secretName = typeof rawSecretName === "string" ? rawSecretName : undefined;
+    const rawSecretName = (target as Record<string, unknown>)
+      .signing_secret_name;
+    const secretName =
+      typeof rawSecretName === "string" ? rawSecretName : undefined;
     const signingSecret = secretName ? params.envValues[secretName] : undefined;
     if (secretName && !signingSecret) {
       console.warn(

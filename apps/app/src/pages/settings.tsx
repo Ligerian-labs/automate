@@ -2,20 +2,25 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
 import {
-  PLAN_BILLING_PRICES,
-  YEARLY_DISCOUNT_PERCENT,
-} from "../lib/billing";
+  trackApiKeyCreated,
+  trackBillingCheckout,
+  trackSecretCreated,
+  trackSecretDeleted,
+  trackSecretUpdated,
+  trackSettingsViewed,
+} from "../lib/analytics";
 import {
-  type ApiKeyRecord,
   ApiError,
-  type CreatedApiKeyRecord,
+  type ApiKeyRecord,
   type BillingCheckoutResponse,
   type BillingPortalResponse,
+  type CreatedApiKeyRecord,
   type SecretRecord,
   type UsageRecord,
   type UserMe,
   apiFetch,
 } from "../lib/api";
+import { PLAN_BILLING_PRICES, YEARLY_DISCOUNT_PERCENT } from "../lib/billing";
 
 const tabs = ["Profile", "API Keys", "Secrets", "Billing"] as const;
 
@@ -65,6 +70,7 @@ export function SettingsPage() {
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
+      trackSecretCreated("user");
       setSecretName("");
       setSecretValue("");
       setSecretError(null);
@@ -86,6 +92,7 @@ export function SettingsPage() {
         { method: "DELETE" },
       ),
     onSuccess: () => {
+      trackSecretDeleted("user");
       setSecretError(null);
       setSecretSuccess("Secret removed");
       queryClient.invalidateQueries({ queryKey: ["user-secrets"] });
@@ -108,6 +115,7 @@ export function SettingsPage() {
         },
       ),
     onSuccess: (_, payload) => {
+      trackSecretUpdated("user");
       setSecretUpdateValue("");
       setSecretUpdateName(null);
       setSecretError(null);
@@ -123,12 +131,16 @@ export function SettingsPage() {
   });
 
   const checkoutMut = useMutation({
-    mutationFn: (payload: { plan: "starter" | "pro"; interval: "month" | "year" }) =>
+    mutationFn: (payload: {
+      plan: "starter" | "pro";
+      interval: "month" | "year";
+    }) =>
       apiFetch<BillingCheckoutResponse>("/api/billing/checkout", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    onSuccess: (res) => {
+    onSuccess: (res, payload) => {
+      trackBillingCheckout(payload.plan, payload.interval);
       window.location.href = res.url;
     },
     onError: (err) => {
@@ -150,9 +162,7 @@ export function SettingsPage() {
     onError: (err) => {
       setBillingMessage(null);
       setBillingError(
-        err instanceof ApiError
-          ? err.message
-          : "Failed to open billing portal",
+        err instanceof ApiError ? err.message : "Failed to open billing portal",
       );
     },
   });
@@ -164,9 +174,12 @@ export function SettingsPage() {
         body: JSON.stringify(payload),
       }),
     onSuccess: (created) => {
+      trackApiKeyCreated();
       setApiKeyName("");
       setApiKeyError(null);
-      setApiKeySuccess("API key created. Copy it now, it won't be shown again.");
+      setApiKeySuccess(
+        "API key created. Copy it now, it won't be shown again.",
+      );
       setNewApiKeyValue(created.key);
       queryClient.invalidateQueries({ queryKey: ["user-api-keys"] });
     },
@@ -204,7 +217,12 @@ export function SettingsPage() {
     const planParam = params.get("plan");
     const checkoutParam = params.get("checkout");
 
-    if (tabParam === "Billing") setTab("Billing");
+    if (tabParam === "Billing") {
+      setTab("Billing");
+      trackSettingsViewed("Billing");
+    } else {
+      trackSettingsViewed("Profile");
+    }
     if (intervalParam === "month" || intervalParam === "year") {
       setBillingInterval(intervalParam);
     }
@@ -731,7 +749,9 @@ export function SettingsPage() {
                       disabled={updateSecretMut.isPending}
                       className="cursor-pointer rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {updateSecretMut.isPending ? "Updating..." : "Update value"}
+                      {updateSecretMut.isPending
+                        ? "Updating..."
+                        : "Update value"}
                     </button>
                     <button
                       type="button"
@@ -798,7 +818,9 @@ export function SettingsPage() {
                       }`}
                     >
                       <div className="mb-2 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold capitalize">{plan}</h3>
+                        <h3 className="text-sm font-semibold capitalize">
+                          {plan}
+                        </h3>
                         {isCurrent ? (
                           <span className="rounded-full bg-[var(--accent)]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent)]">
                             Current
@@ -822,7 +844,10 @@ export function SettingsPage() {
                         onClick={() => {
                           setBillingError(null);
                           setBillingMessage(null);
-                          checkoutMut.mutate({ plan, interval: billingInterval });
+                          checkoutMut.mutate({
+                            plan,
+                            interval: billingInterval,
+                          });
                         }}
                         className="mt-3 w-full cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"
                       >

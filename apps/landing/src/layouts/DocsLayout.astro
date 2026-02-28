@@ -12,13 +12,14 @@ const { title, breadcrumb = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
 const currentPage = getDocsPageByRoute(currentPath);
 const referencePages = DOCS_PAGES.filter((page) => page.route !== currentPath);
-const sectionLinks: { label: string; href: string; active: boolean }[] = currentPage
-  ? currentPage.sections.map((section, index) => ({
-      label: section.label,
-      href: `${currentPage.route}#${section.id}`,
-      active: index === 0,
-    }))
-  : [];
+const sectionLinks: { label: string; href: string; active: boolean }[] =
+  currentPage
+    ? currentPage.sections.map((section, index) => ({
+        label: section.label,
+        href: `${currentPage.route}#${section.id}`,
+        active: index === 0,
+      }))
+    : [];
 ---
 
 <!doctype html>

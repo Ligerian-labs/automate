@@ -22,7 +22,8 @@
     "handlebars": "^4.7.0",
     "ioredis": "^5.4.0",
     "openai": "^4.80.0",
-    "postgres": "^3.4.0"
+    "postgres": "^3.4.0",
+    "posthog-node": "^5.26.0"
   },
   "devDependencies": {
     "tsx": "^4.19.0"

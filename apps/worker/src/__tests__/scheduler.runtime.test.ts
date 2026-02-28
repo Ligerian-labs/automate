@@ -76,14 +76,17 @@ function createDbMock() {
         where: (_cond: unknown) => {
           if (table.__name === "schedules") {
             return {
-              limit: async () => state.schedules.filter((schedule) => schedule.enabled),
+              limit: async () =>
+                state.schedules.filter((schedule) => schedule.enabled),
             };
           }
           if (table.__name === "pipelines") {
             return {
               limit: async () => {
                 const pipelineId = getEqValue(_cond, tables.pipelines.id);
-                const row = state.pipelines.find((pipeline) => pipeline.id === pipelineId);
+                const row = state.pipelines.find(
+                  (pipeline) => pipeline.id === pipelineId,
+                );
                 return row ? [row] : [];
               },
             };
@@ -148,7 +151,11 @@ mock.module("drizzle-orm", () => ({
   eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
   gte: (left: unknown, right: unknown) => ({ type: "gte", left, right }),
   lte: (left: unknown, right: unknown) => ({ type: "lte", left, right }),
-  inArray: (left: unknown, right: unknown[]) => ({ type: "inArray", left, right }),
+  inArray: (left: unknown, right: unknown[]) => ({
+    type: "inArray",
+    left,
+    right,
+  }),
 }));
 mock.module("bullmq", () => ({ Queue: QueueMock }));
 

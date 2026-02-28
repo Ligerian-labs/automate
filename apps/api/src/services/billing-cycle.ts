@@ -13,7 +13,9 @@ function addBillingInterval(date: Date, interval: string): Date {
   return next;
 }
 
-export async function rollUserBillingCycleIfNeeded(userId: string): Promise<void> {
+export async function rollUserBillingCycleIfNeeded(
+  userId: string,
+): Promise<void> {
   const [user] = await db
     .select({
       id: users.id,
@@ -47,7 +49,10 @@ export async function rollUserBillingCycleIfNeeded(userId: string): Promise<void
 
   let nextPeriodEnd = new Date(user.stripeCurrentPeriodEnd);
   while (nextPeriodEnd <= now) {
-    nextPeriodEnd = addBillingInterval(nextPeriodEnd, user.stripeBillingInterval);
+    nextPeriodEnd = addBillingInterval(
+      nextPeriodEnd,
+      user.stripeBillingInterval,
+    );
   }
 
   await db

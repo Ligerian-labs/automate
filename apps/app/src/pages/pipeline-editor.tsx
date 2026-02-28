@@ -4,6 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import YAML from "yaml";
 import { AppShell } from "../components/app-shell";
 import {
+  trackPipelineDeleted,
+  trackPipelineRunTriggered,
+  trackPipelineSaved,
+  trackSecretCreated,
+  trackSecretDeleted,
+  trackSecretUpdated,
+} from "../lib/analytics";
+import {
   ApiError,
   type PipelineRecord,
   type RunRecord,
@@ -291,10 +299,7 @@ export function PipelineEditorPage() {
       })),
       variables: Object.keys(vars).length > 0 ? vars : undefined,
       output: {
-        from:
-          outputFromStepId ||
-          steps[steps.length - 1]?.id ||
-          "",
+        from: outputFromStepId || steps[steps.length - 1]?.id || "",
         deliver: outputWebhookEnabled
           ? [
               {
@@ -399,6 +404,7 @@ export function PipelineEditorPage() {
       });
     },
     onSuccess: async () => {
+      trackPipelineSaved(pipelineId, steps.length);
       const local = {
         enabled: outputWebhookEnabled,
         from: outputFromStepId || steps[steps.length - 1]?.id || "",
@@ -433,8 +439,10 @@ export function PipelineEditorPage() {
         method: "POST",
         body: "{}",
       }),
-    onSuccess: (run) =>
-      navigate({ to: "/runs/$runId", params: { runId: run.id } }),
+    onSuccess: (run) => {
+      trackPipelineRunTriggered(pipelineId, "manual");
+      navigate({ to: "/runs/$runId", params: { runId: run.id } });
+    },
     onError: (err) =>
       setMessage(err instanceof Error ? err.message : "Run failed"),
   });
@@ -446,6 +454,7 @@ export function PipelineEditorPage() {
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
+      trackSecretCreated("pipeline");
       setPipelineSecretName("");
       setPipelineSecretValue("");
       setPipelineSecretError(null);
@@ -472,6 +481,7 @@ export function PipelineEditorPage() {
         },
       ),
     onSuccess: (_, payload) => {
+      trackSecretUpdated("pipeline");
       setPipelineSecretUpdateName(null);
       setPipelineSecretUpdateValue("");
       setPipelineSecretError(null);
@@ -495,6 +505,7 @@ export function PipelineEditorPage() {
         { method: "DELETE" },
       ),
     onSuccess: () => {
+      trackSecretDeleted("pipeline");
       setPipelineSecretError(null);
       setPipelineSecretSuccess("Secret removed");
       queryClient.invalidateQueries({
