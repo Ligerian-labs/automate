@@ -186,11 +186,13 @@ export function DashboardPage() {
         onClick={() => createMut.mutate()}
         className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-[18px] py-2.5 text-sm font-semibold text-[var(--bg-primary)]"
       >
-        <span className="text-base leading-none">+</span> New pipeline
+        <span className="text-base leading-none">+</span>
+        <span className="hidden sm:inline">New pipeline</span>
+        <span className="sm:hidden">New</span>
       </button>
       <button
         type="button"
-        className="flex items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)]"
+        className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
       >
         Import YAML
       </button>
@@ -212,7 +214,7 @@ export function DashboardPage() {
       ) : null}
 
       {/* Stats row — gap 16, cards cornerRadius 10, padding 20, gap 8 */}
-      <section className="grid grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <StatCard
           label="ACTIVE PIPELINES"
           value={String(stats.active)}
@@ -239,33 +241,8 @@ export function DashboardPage() {
         />
       </section>
 
-      {/* Table — cornerRadius 12, clip */}
-      <section className="overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
-        {/* Header — bg-inset, padding [14,20] */}
-        <div
-          className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
-          style={{
-            gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Pipeline
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Status
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Last Run
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Steps
-          </span>
-          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Cost
-          </span>
-        </div>
-
+      {/* Table — desktop: grid table, mobile: card list */}
+      <section className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
         {pipelinesQ.isLoading ? (
           <p className="p-5 text-sm text-[var(--text-tertiary)]">
             Loading pipelines...
@@ -279,9 +256,33 @@ export function DashboardPage() {
           </p>
         ) : null}
 
-        <div className="divide-y divide-[var(--divider)]">
-          {tableRows.map((row) => {
-            return (
+        {/* Desktop table — hidden on mobile */}
+        <div className="hidden md:block">
+          <div
+            className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
+            style={{
+              gridTemplateColumns: "minmax(280px,1fr) 120px 160px 80px 100px",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Pipeline
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Status
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Last Run
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Steps
+            </span>
+            <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Cost
+            </span>
+          </div>
+          <div className="divide-y divide-[var(--divider)]">
+            {tableRows.map((row) => (
               <button
                 key={row.id}
                 type="button"
@@ -299,7 +300,6 @@ export function DashboardPage() {
                   }
                 }}
               >
-                {/* Name col — 300px, gap 2 */}
                 <div className="flex flex-col gap-0.5">
                   <p className="text-sm font-medium">{row.name}</p>
                   <p
@@ -309,22 +309,18 @@ export function DashboardPage() {
                     {row.description}
                   </p>
                 </div>
-                {/* Status — badge cornerRadius 100 */}
                 <div>
                   <StatusBadge status={row.status} />
                 </div>
-                {/* Last run */}
                 <div className="text-[13px] text-[var(--text-secondary)]">
                   {row.lastRun}
                 </div>
-                {/* Steps */}
                 <div
                   className="text-[13px] text-[var(--text-secondary)]"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
                   {row.steps}
                 </div>
-                {/* Cost */}
                 <div
                   className="text-right text-[13px] text-[var(--text-secondary)]"
                   style={{ fontFamily: "var(--font-mono)" }}
@@ -332,8 +328,50 @@ export function DashboardPage() {
                   {row.cost}
                 </div>
               </button>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="divide-y divide-[var(--divider)] md:hidden">
+          {tableRows.map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              className="flex w-full flex-col gap-3 px-4 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
+              onClick={() => {
+                if (row.pipelineId) {
+                  navigate({
+                    to: "/pipelines/$pipelineId/edit",
+                    params: { pipelineId: row.pipelineId },
+                  });
+                }
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{row.name}</p>
+                  <p
+                    className="mt-0.5 truncate text-[11px] text-[var(--text-tertiary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {row.description}
+                  </p>
+                </div>
+                <StatusBadge status={row.status} />
+              </div>
+              <div
+                className="flex items-center gap-4 text-[12px] text-[var(--text-secondary)]"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                <span>{row.steps} steps</span>
+                <span className="text-[var(--divider)]">·</span>
+                <span>{row.lastRun}</span>
+                <span className="text-[var(--divider)]">·</span>
+                <span>{row.cost}</span>
+              </div>
+            </button>
+          ))}
         </div>
       </section>
     </AppShell>

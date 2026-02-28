@@ -589,9 +589,9 @@ export function PipelineEditorPage() {
         <p className="mb-2 text-sm text-[var(--text-secondary)]">{message}</p>
       ) : null}
 
-      <div className="flex gap-6">
-        {/* Left panel — 360px */}
-        <div className="flex w-[360px] shrink-0 flex-col gap-5">
+      <div className="flex flex-col gap-6 lg:flex-row">
+        {/* Left panel — 360px on desktop, full width on mobile */}
+        <div className="flex w-full shrink-0 flex-col gap-5 lg:w-[360px]">
           {/* Config card */}
           <div className="flex flex-col gap-4 rounded-[10px] border border-[var(--divider)] bg-[var(--bg-surface)] p-5">
             <h2 className="text-[15px] font-semibold">Pipeline Config</h2>
@@ -910,7 +910,7 @@ export function PipelineEditorPage() {
                   <div className="border-t border-[var(--divider)] px-5 pb-5 pt-4">
                     <div className="flex flex-col gap-4">
                       {/* Name + Model row */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <label className="flex flex-col gap-1.5">
                           <span className="text-xs font-medium text-[var(--text-secondary)]">
                             Step Name
@@ -1061,7 +1061,7 @@ export function PipelineEditorPage() {
                       </label>
 
                       {/* Config row — Output Format, Timeout, Retries */}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <label className="flex flex-col gap-1.5">
                           <span className="text-xs font-medium text-[var(--text-secondary)]">
                             Output Format
@@ -1212,7 +1212,7 @@ export function PipelineEditorPage() {
                     placeholder="https://example.com/hooks/stepiq"
                   />
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-xs font-medium text-[var(--text-secondary)]">
                       Method

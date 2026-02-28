@@ -95,7 +95,7 @@ export function PipelinesListPage() {
         </p>
       ) : null}
 
-      <section className="overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
+      <section className="overflow-x-auto rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
         <div
           className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
           style={{

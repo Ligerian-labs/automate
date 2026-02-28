@@ -306,15 +306,15 @@ export function SettingsPage() {
       title="Settings"
       subtitle="Manage your account, API keys, and billing"
     >
-      <div className="flex gap-6">
-        {/* Tab sidebar — 200px, cornerRadius 8 */}
-        <div className="flex w-[200px] shrink-0 flex-col gap-1">
+      <div className="flex flex-col gap-6 md:flex-row">
+        {/* Tab sidebar — horizontal on mobile, vertical on desktop */}
+        <div className="flex w-full gap-1 overflow-x-auto md:w-[200px] md:shrink-0 md:flex-col">
           {tabs.map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setTab(item)}
-              className={`w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+              className={`whitespace-nowrap rounded-lg px-3 py-2.5 text-left text-sm transition-colors md:w-full ${
                 tab === item
                   ? "bg-[var(--bg-surface)] font-medium text-[var(--text-primary)]"
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]"
@@ -342,7 +342,7 @@ export function SettingsPage() {
                 {meQ.data ? (
                   <div className="flex flex-col gap-4">
                     {/* Name / Email row — inputs cornerRadius 6 */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                       <label className="flex flex-col gap-1.5">
                         <span className="text-xs font-medium text-[var(--text-secondary)]">
                           Name
@@ -600,7 +600,7 @@ export function SettingsPage() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-[var(--text-secondary)]">
                     Secret name
@@ -800,7 +800,7 @@ export function SettingsPage() {
                 </button>
               </div>
 
-              <div className="mb-5 grid grid-cols-2 gap-4">
+              <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 {(["starter", "pro"] as const).map((plan) => {
                   const currentPlan = (meQ.data?.plan || "free").toLowerCase();
                   const isCurrent = currentPlan === plan;
@@ -887,7 +887,7 @@ export function SettingsPage() {
                   {billingError}
                 </p>
               ) : null}
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
                 <Tile
                   label="Credits used"
                   value={String(usage?.credits_used ?? 0)}
