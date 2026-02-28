@@ -17,35 +17,7 @@ export function RunsListPage() {
 
   return (
     <AppShell title="Runs" subtitle="View all pipeline execution history">
-      <section className="overflow-x-auto rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
-        <div
-          className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
-          style={{
-            gridTemplateColumns:
-              "minmax(200px,1fr) 120px 120px 100px 100px 120px",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Run ID
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Status
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Trigger
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Steps
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Tokens
-          </span>
-          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Cost
-          </span>
-        </div>
-
+      <section className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
         {runsQ.isLoading ? (
           <p className="p-5 text-sm text-[var(--text-tertiary)]">
             Loading runs...
@@ -59,74 +31,160 @@ export function RunsListPage() {
           </p>
         ) : null}
 
-        <div className="divide-y divide-[var(--divider)]">
+        {/* Desktop table */}
+        <div className="hidden md:block">
+          <div
+            className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
+            style={{
+              gridTemplateColumns:
+                "minmax(200px,1fr) 120px 120px 100px 100px 120px",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Run ID
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Status
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Trigger
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Steps
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Tokens
+            </span>
+            <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Cost
+            </span>
+          </div>
+          <div className="divide-y divide-[var(--divider)]">
+            {runs.map((run) => {
+              const status = run.status || "pending";
+              return (
+                <button
+                  key={run.id}
+                  type="button"
+                  className="grid w-full items-center px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
+                  style={{
+                    gridTemplateColumns:
+                      "minmax(200px,1fr) 120px 120px 100px 100px 120px",
+                  }}
+                  onClick={() =>
+                    navigate({
+                      to: "/runs/$runId",
+                      params: { runId: run.id },
+                    })
+                  }
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {run.id.slice(0, 8)}...
+                    </p>
+                    <p className="text-[11px] text-[var(--text-tertiary)]">
+                      {run.createdAt || run.created_at
+                        ? timeAgo(
+                            new Date(run.createdAt || run.created_at || ""),
+                          )
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <RunStatusBadge status={status} />
+                  </div>
+                  <div
+                    className="text-[13px] text-[var(--text-secondary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {run.triggerType || run.trigger_type || "manual"}
+                  </div>
+                  <div
+                    className="text-[13px] text-[var(--text-secondary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {(run.steps ?? []).length}
+                  </div>
+                  <div
+                    className="text-[13px] text-[var(--text-secondary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {run.totalTokens ?? run.total_tokens ?? 0}
+                  </div>
+                  <div
+                    className="text-right text-[13px] text-[var(--text-secondary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    €
+                    {(
+                      (run.totalCostCents ?? run.total_cost_cents ?? 0) / 100
+                    ).toFixed(2)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="divide-y divide-[var(--divider)] md:hidden">
           {runs.map((run) => {
             const status = run.status || "pending";
+            const trigger = run.triggerType || run.trigger_type || "manual";
+            const tokens = run.totalTokens ?? run.total_tokens ?? 0;
+            const cost = (
+              (run.totalCostCents ?? run.total_cost_cents ?? 0) / 100
+            ).toFixed(2);
+            const created = run.createdAt || run.created_at;
             return (
               <button
                 key={run.id}
                 type="button"
-                className="grid w-full items-center px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
-                style={{
-                  gridTemplateColumns:
-                    "minmax(200px,1fr) 120px 120px 100px 100px 120px",
-                }}
+                className="flex w-full flex-col gap-2.5 px-4 py-4 text-left transition-colors hover:bg-[var(--bg-surface-hover)]"
                 onClick={() =>
                   navigate({ to: "/runs/$runId", params: { runId: run.id } })
                 }
               >
-                <div className="flex flex-col gap-0.5">
-                  <p
-                    className="text-sm font-medium"
-                    style={{ fontFamily: "var(--font-mono)" }}
-                  >
-                    {run.id.slice(0, 8)}...
-                  </p>
-                  <p className="text-[11px] text-[var(--text-tertiary)]">
-                    {run.createdAt || run.created_at
-                      ? timeAgo(new Date(run.createdAt || run.created_at || ""))
-                      : "-"}
-                  </p>
-                </div>
-                <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-sm font-medium"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      {run.id.slice(0, 12)}...
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
+                      {created ? timeAgo(new Date(created)) : "-"}
+                    </p>
+                  </div>
                   <RunStatusBadge status={status} />
                 </div>
                 <div
-                  className="text-[13px] text-[var(--text-secondary)]"
+                  className="flex items-center gap-3 text-[12px] text-[var(--text-secondary)]"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  {run.triggerType || run.trigger_type || "manual"}
-                </div>
-                <div
-                  className="text-[13px] text-[var(--text-secondary)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {(run.steps ?? []).length}
-                </div>
-                <div
-                  className="text-[13px] text-[var(--text-secondary)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  {run.totalTokens ?? run.total_tokens ?? 0}
-                </div>
-                <div
-                  className="text-right text-[13px] text-[var(--text-secondary)]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  €
-                  {(
-                    (run.totalCostCents ?? run.total_cost_cents ?? 0) / 100
-                  ).toFixed(2)}
+                  <span>{trigger}</span>
+                  <span className="text-[var(--text-muted)]">·</span>
+                  <span>{(run.steps ?? []).length} steps</span>
+                  <span className="text-[var(--text-muted)]">·</span>
+                  <span>{tokens} tok</span>
+                  <span className="text-[var(--text-muted)]">·</span>
+                  <span>€{cost}</span>
                 </div>
               </button>
             );
           })}
-          {runs.length === 0 && !runsQ.isLoading ? (
-            <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
-              No runs yet — execute a pipeline to see results here.
-            </p>
-          ) : null}
         </div>
+
+        {runs.length === 0 && !runsQ.isLoading ? (
+          <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
+            No runs yet — execute a pipeline to see results here.
+          </p>
+        ) : null}
       </section>
     </AppShell>
   );

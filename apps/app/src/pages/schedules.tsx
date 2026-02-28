@@ -164,7 +164,7 @@ export function SchedulesPage() {
       subtitle="Automate your pipeline runs with cron-based schedules"
       actions={actions}
     >
-      <section className="grid grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <StatCard
           label="ACTIVE SCHEDULES"
           value={String(hasRealData ? activeSchedules : 12)}
@@ -200,35 +200,7 @@ export function SchedulesPage() {
         />
       </section>
 
-      <section className="overflow-x-auto rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
-        <div
-          className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
-          style={{
-            gridTemplateColumns:
-              "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px 110px",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Schedule
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Pipeline
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Frequency
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Next Run
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Status
-          </span>
-          <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
-            Actions
-          </span>
-        </div>
-
+      <section className="rounded-xl border border-[var(--divider)] bg-[var(--bg-surface)]">
         {pipelinesQ.isLoading || schedulesQ.isLoading ? (
           <p className="p-5 text-sm text-[var(--text-tertiary)]">
             Loading schedules...
@@ -245,51 +217,129 @@ export function SchedulesPage() {
           </p>
         ) : null}
 
-        <div className="divide-y divide-[var(--divider)]">
-          {rows.map((row) => (
-            <div
-              key={row.id}
-              className="grid items-center px-5 py-4"
-              style={{
-                gridTemplateColumns:
-                  "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px 110px",
-              }}
-            >
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium">{row.title}</p>
+        {/* Desktop table */}
+        <div className="hidden md:block">
+          <div
+            className="grid items-center bg-[var(--bg-inset)] px-5 py-3.5"
+            style={{
+              gridTemplateColumns:
+                "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px 110px",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Schedule
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Pipeline
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Frequency
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Next Run
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Status
+            </span>
+            <span className="text-right text-[11px] font-semibold uppercase tracking-[1px] text-[var(--text-tertiary)]">
+              Actions
+            </span>
+          </div>
+          <div className="divide-y divide-[var(--divider)]">
+            {rows.map((row) => (
+              <div
+                key={row.id}
+                className="grid items-center px-5 py-4"
+                style={{
+                  gridTemplateColumns:
+                    "240px minmax(200px,1fr) minmax(200px,1fr) 120px 100px 110px",
+                }}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-sm font-medium">{row.title}</p>
+                  <p
+                    className="text-[11px] text-[var(--text-tertiary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {row.cron}
+                  </p>
+                </div>
+                <p className="text-[13px] text-[var(--text-secondary)]">
+                  {row.pipeline}
+                </p>
+                <p className="text-[13px] text-[var(--text-secondary)]">
+                  {row.frequency}
+                </p>
                 <p
-                  className="text-[11px] text-[var(--text-tertiary)]"
+                  className="text-[13px] text-[var(--text-secondary)]"
                   style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  {row.cron}
+                  {row.nextRun}
                 </p>
+                <ScheduleStatusBadge status={row.status} />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => deleteMut.mutate(row.id)}
+                    disabled={deleteMut.isPending || row.isFallback}
+                    className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <p className="text-[13px] text-[var(--text-secondary)]">
-                {row.pipeline}
-              </p>
-              <p className="text-[13px] text-[var(--text-secondary)]">
-                {row.frequency}
-              </p>
-              <p
-                className="text-[13px] text-[var(--text-secondary)]"
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="divide-y divide-[var(--divider)] md:hidden">
+          {rows.map((row) => (
+            <div key={row.id} className="px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{row.title}</p>
+                  <p
+                    className="mt-0.5 truncate text-[11px] text-[var(--text-tertiary)]"
+                    style={{ fontFamily: "var(--font-mono)" }}
+                  >
+                    {row.cron}
+                  </p>
+                </div>
+                <ScheduleStatusBadge status={row.status} />
+              </div>
+              <div
+                className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--text-secondary)]"
                 style={{ fontFamily: "var(--font-mono)" }}
               >
-                {row.nextRun}
-              </p>
-              <ScheduleStatusBadge status={row.status} />
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => deleteMut.mutate(row.id)}
-                  disabled={deleteMut.isPending || row.isFallback}
-                  className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Delete
-                </button>
+                <span className="truncate">{row.pipeline}</span>
+                <span className="text-[var(--text-muted)]">·</span>
+                <span>{row.frequency}</span>
+                <span className="text-[var(--text-muted)]">·</span>
+                <span>Next: {row.nextRun}</span>
               </div>
+              {!row.isFallback ? (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => deleteMut.mutate(row.id)}
+                    disabled={deleteMut.isPending}
+                    className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
+
+        {rows.length === 0 && !pipelinesQ.isLoading && !schedulesQ.isLoading ? (
+          <p className="p-8 text-center text-sm text-[var(--text-tertiary)]">
+            No schedules yet — create one to automate your pipelines.
+          </p>
+        ) : null}
       </section>
     </AppShell>
   );
@@ -313,13 +363,13 @@ function StatCard({
         {label}
       </p>
       <p
-        className="mt-2 text-[28px] font-bold leading-none"
+        className="mt-2 text-xl font-bold leading-none md:text-[28px]"
         style={{ fontFamily: "var(--font-mono)" }}
       >
         {value}
       </p>
       <p
-        className="mt-2 text-xs font-medium"
+        className="mt-2 truncate text-[11px] font-medium md:text-xs"
         style={{ fontFamily: "var(--font-mono)", color: subColor }}
       >
         {sub}
