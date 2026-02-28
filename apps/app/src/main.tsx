@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/clerk-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -24,10 +23,6 @@ import { SettingsPage } from "./pages/settings";
 import "./styles.css";
 
 const queryClient = new QueryClient();
-const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || "";
-if (!clerkPublishableKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
-}
 
 // Initialize PostHog
 initAnalytics();
@@ -62,9 +57,23 @@ const loginRoute = createRoute({
   component: () => <AuthPage mode="login" />,
 });
 
+const loginNestedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login/$",
+  beforeLoad: redirectIfAuth,
+  component: () => <AuthPage mode="login" />,
+});
+
 const registerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/register",
+  beforeLoad: redirectIfAuth,
+  component: () => <AuthPage mode="register" />,
+});
+
+const registerNestedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/register/$",
   beforeLoad: redirectIfAuth,
   component: () => <AuthPage mode="register" />,
 });
@@ -128,7 +137,9 @@ const settingsRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  loginNestedRoute,
   registerRoute,
+  registerNestedRoute,
   dashboardRoute,
   pipelinesRoute,
   editorRoute,
@@ -157,10 +168,8 @@ if (!rootElement) throw new Error("Root element not found");
 
 createRoot(rootElement).render(
   <StrictMode>
-    <ClerkProvider publishableKey={clerkPublishableKey}>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>,
 );

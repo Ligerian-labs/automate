@@ -41,6 +41,8 @@ CLERK_API_URL=https://api.clerk.com
 STEPIQ_MASTER_KEY=
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
+RESEND_API_KEY=
+EMAIL_FROM=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_STARTER_MONTHLY_EUR=
@@ -145,6 +147,7 @@ See [full spec](https://github.com/Ligerian-labs/brainstorm/blob/main/products/a
 
 ### Core routes:
 - `POST /api/auth/register` - Sign up
+- `POST /api/auth/register/request-code` - Send email verification code
 - `POST /api/auth/login` - Sign in
 - `POST /api/auth/clerk/exchange` - Exchange Clerk session token for API JWT
 - `GET /api/pipelines` - List pipelines

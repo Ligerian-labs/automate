@@ -1,17 +1,33 @@
 import { loginSchema, registerSchema } from "@stepiq/core";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { SignJWT, createRemoteJWKSet, jwtVerify } from "jose";
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import { db } from "../db/index.js";
-import { users } from "../db/schema.js";
+import { emailVerificationCodes, users } from "../db/schema.js";
 import { serverIdentify, serverTrack } from "../lib/analytics.js";
 import { config } from "../lib/env.js";
 
 const secret = new TextEncoder().encode(config.jwtSecret);
 
 export const authRoutes = new Hono();
+
+const requestRegisterCodeSchema = z.object({
+  email: z.string().email(),
+});
+
+const registerWithCodeSchema = registerSchema.extend({
+  verification_code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Verification code must be 6 digits"),
+});
+
+const CODE_TTL_MS = 10 * 60 * 1000;
+const CODE_RESEND_COOLDOWN_MS = 60 * 1000;
+const MAX_CODE_ATTEMPTS = 5;
 
 type OAuthState = {
   mode: "login" | "register";
@@ -110,6 +126,41 @@ async function createAuthToken(userId: string, plan: string) {
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
     .sign(secret);
+}
+
+function generateVerificationCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function sendVerificationEmail(email: string, code: string) {
+  if (config.resendApiKey && config.emailFrom) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: config.emailFrom,
+        to: [email],
+        subject: "Your stepIQ verification code",
+        text: `Your stepIQ verification code is: ${code}. It expires in 10 minutes.`,
+      }),
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`Email send failed (${response.status}): ${body}`);
+    }
+    return;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Email provider is not configured. Set RESEND_API_KEY and EMAIL_FROM.",
+    );
+  }
+
+  console.log(`[dev] verification code for ${email}: ${code}`);
 }
 
 function buildAppAuthRedirect(
@@ -213,10 +264,10 @@ function getPrimaryClerkEmail(user: ClerkUserResponse): string | null {
 
 authRoutes.post("/register", async (c) => {
   const body = await c.req.json();
-  const parsed = registerSchema.safeParse(body);
+  const parsed = registerWithCodeSchema.safeParse(body);
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
 
-  const { email, password, name } = parsed.data;
+  const { email, password, name, verification_code } = parsed.data;
 
   const existing = await db
     .select()
@@ -225,6 +276,53 @@ authRoutes.post("/register", async (c) => {
     .limit(1);
   if (existing.length > 0)
     return c.json({ error: "Email already registered" }, 409);
+
+  const now = new Date();
+  const [verification] = await db
+    .select({
+      id: emailVerificationCodes.id,
+      codeHash: emailVerificationCodes.codeHash,
+      attempts: emailVerificationCodes.attempts,
+    })
+    .from(emailVerificationCodes)
+    .where(
+      and(
+        eq(emailVerificationCodes.email, email),
+        isNull(emailVerificationCodes.consumedAt),
+        gt(emailVerificationCodes.expiresAt, now),
+      ),
+    )
+    .orderBy(desc(emailVerificationCodes.createdAt))
+    .limit(1);
+
+  if (!verification) {
+    return c.json({ error: "Verification code is missing or expired" }, 400);
+  }
+  if (verification.attempts >= MAX_CODE_ATTEMPTS) {
+    await db
+      .update(emailVerificationCodes)
+      .set({ consumedAt: new Date() })
+      .where(eq(emailVerificationCodes.id, verification.id));
+    return c.json({ error: "Too many invalid verification attempts" }, 400);
+  }
+
+  const validCode = await bcrypt.compare(verification_code, verification.codeHash);
+  if (!validCode) {
+    const attempts = verification.attempts + 1;
+    await db
+      .update(emailVerificationCodes)
+      .set({
+        attempts,
+        ...(attempts >= MAX_CODE_ATTEMPTS ? { consumedAt: new Date() } : {}),
+      })
+      .where(eq(emailVerificationCodes.id, verification.id));
+    return c.json({ error: "Invalid verification code" }, 400);
+  }
+
+  await db
+    .update(emailVerificationCodes)
+    .set({ consumedAt: new Date() })
+    .where(eq(emailVerificationCodes.id, verification.id));
 
   const passwordHash = await bcrypt.hash(password, 12);
   const [user] = await db
@@ -238,6 +336,76 @@ authRoutes.post("/register", async (c) => {
   serverTrack(user.id, "user_registered", { email: user.email });
 
   return c.json({ user, token }, 201);
+});
+
+authRoutes.post("/register/request-code", async (c) => {
+  const body = await c.req.json();
+  const parsed = requestRegisterCodeSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
+
+  const { email } = parsed.data;
+  const existing = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (existing.length > 0) return c.json({ error: "Email already registered" }, 409);
+
+  const now = new Date();
+  const [recentCode] = await db
+    .select({
+      id: emailVerificationCodes.id,
+      createdAt: emailVerificationCodes.createdAt,
+    })
+    .from(emailVerificationCodes)
+    .where(
+      and(
+        eq(emailVerificationCodes.email, email),
+        isNull(emailVerificationCodes.consumedAt),
+        gt(emailVerificationCodes.expiresAt, now),
+      ),
+    )
+    .orderBy(desc(emailVerificationCodes.createdAt))
+    .limit(1);
+
+  if (
+    recentCode &&
+    now.getTime() - recentCode.createdAt.getTime() < CODE_RESEND_COOLDOWN_MS
+  ) {
+    return c.json(
+      { error: "Please wait before requesting another verification code" },
+      429,
+    );
+  }
+
+  const code = generateVerificationCode();
+  const codeHash = await bcrypt.hash(code, 10);
+  await db.insert(emailVerificationCodes).values({
+    email,
+    codeHash,
+    attempts: 0,
+    expiresAt: new Date(now.getTime() + CODE_TTL_MS),
+  });
+
+  try {
+    await sendVerificationEmail(email, code);
+  } catch (err) {
+    return c.json(
+      {
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to send verification code",
+      },
+      503,
+    );
+  }
+
+  return c.json({
+    sent: true,
+    expires_in_seconds: Math.floor(CODE_TTL_MS / 1000),
+    ...(process.env.NODE_ENV === "production" ? {} : { dev_code: code }),
+  });
 });
 
 authRoutes.post("/login", async (c) => {

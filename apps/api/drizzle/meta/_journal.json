@@ -36,6 +36,13 @@
       "when": 1772186862852,
       "tag": "0004_pipeline_scoped_secrets",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772409600000,
+      "tag": "0005_email_verification_codes",
+      "breakpoints": true
     }
   ]
 }
