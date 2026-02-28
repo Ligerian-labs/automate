@@ -210,7 +210,32 @@ steps:
         <a href={`${APP_URL}/login`} class="ghost-link">Log in</a>
         <a href={`${APP_URL}/register`} class="solid-link">Get Started</a>
       </div>
+      <button type="button" class="mobile-menu-btn" aria-label="Open menu" id="mobile-menu-open">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </header>
+
+    <div class="mobile-nav" id="mobile-nav">
+      <div class="mobile-nav-header">
+        <div class="brand">
+          <div class="logo-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M7 10v4a3 3 0 0 0 3 3h4"/><circle cx="17.5" cy="6.5" r="3.5"/></svg>
+          </div>
+          <span>stepIQ</span>
+        </div>
+        <button type="button" class="mobile-nav-close" aria-label="Close menu" id="mobile-menu-close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <a href="#features" class="mobile-nav-link">Features</a>
+      <a href="#pricing" class="mobile-nav-link">Pricing</a>
+      <a href="/docs" class="mobile-nav-link">Docs</a>
+      <a href="#templates" class="mobile-nav-link">Templates</a>
+      <div class="mobile-nav-cta">
+        <a href={`${APP_URL}/login`} class="outline-link">Log in</a>
+        <a href={`${APP_URL}/register`} class="solid-link">Get Started</a>
+      </div>
+    </div>
 
     <section class="hero">
       <div class="beta-badge"><span class="dot"></span> Now in public beta</div>
@@ -486,6 +511,29 @@ steps:
   }
 
   applyInterval("month");
+
+  // Mobile menu
+  const mobileNav = document.getElementById("mobile-nav");
+  const openBtn = document.getElementById("mobile-menu-open");
+  const closeBtn = document.getElementById("mobile-menu-close");
+
+  openBtn?.addEventListener("click", () => {
+    mobileNav?.classList.add("open");
+    document.body.style.overflow = "hidden";
+  });
+
+  closeBtn?.addEventListener("click", () => {
+    mobileNav?.classList.remove("open");
+    document.body.style.overflow = "";
+  });
+
+  // Close mobile nav on link click
+  mobileNav?.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => {
+      mobileNav.classList.remove("open");
+      document.body.style.overflow = "";
+    });
+  });
 
   // PostHog CTA tracking
   document.querySelectorAll<HTMLAnchorElement>("a.solid-link, a.ghost-link").forEach((link) => {
