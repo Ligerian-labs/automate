@@ -120,9 +120,7 @@ userRoutes.get("/usage", async (c) => {
   const plan = (user.plan in PLAN_LIMITS ? user.plan : "free") as Plan;
   const creditsTotal = PLAN_LIMITS[plan].credits;
   const creditsUsed =
-    creditsTotal >= 0
-      ? Math.max(0, creditsTotal - user.creditsRemaining)
-      : 0;
+    creditsTotal >= 0 ? Math.max(0, creditsTotal - user.creditsRemaining) : 0;
 
   return c.json({
     credits_used: creditsUsed,

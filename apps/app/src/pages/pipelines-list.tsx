@@ -2,6 +2,7 @@ import type { PipelineDefinition } from "@stepiq/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppShell } from "../components/app-shell";
+import { trackPipelineCreated, trackPipelineDeleted } from "../lib/analytics";
 import { ApiError, type PipelineRecord, apiFetch } from "../lib/api";
 
 export function PipelinesListPage() {
@@ -32,6 +33,7 @@ export function PipelinesListPage() {
         definition: baseDefinition,
       }),
     });
+    trackPipelineCreated(created.id, "Untitled pipeline");
     navigate({
       to: "/pipelines/$pipelineId/edit",
       params: { pipelineId: created.id },
@@ -44,7 +46,8 @@ export function PipelinesListPage() {
       apiFetch<{ deleted: boolean }>(`/api/pipelines/${pipelineId}`, {
         method: "DELETE",
       }),
-    onSuccess: () => {
+    onSuccess: (_, pipelineId) => {
+      trackPipelineDeleted(pipelineId);
       queryClient.invalidateQueries({ queryKey: ["pipelines"] });
     },
   });

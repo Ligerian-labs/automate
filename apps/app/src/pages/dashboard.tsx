@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { AppShell } from "../components/app-shell";
+import { trackPipelineCreated } from "../lib/analytics";
 import { type PipelineRecord, type RunRecord, apiFetch } from "../lib/api";
 
 const DASHBOARD_FALLBACK = {
@@ -93,6 +94,7 @@ export function DashboardPage() {
         definition: baseDefinition,
       }),
     });
+    trackPipelineCreated(created.id, "Untitled pipeline");
     navigate({
       to: "/pipelines/$pipelineId/edit",
       params: { pipelineId: created.id },
@@ -140,7 +142,9 @@ export function DashboardPage() {
       successRate: hasData ? successRate : DASHBOARD_FALLBACK.successRate,
       creditsRemaining: DASHBOARD_FALLBACK.creditsRemaining,
       creditsCap: DASHBOARD_FALLBACK.creditsCap,
-      totalTokens: hasData ? formatNumber(totalTokens) : DASHBOARD_FALLBACK.totalTokens,
+      totalTokens: hasData
+        ? formatNumber(totalTokens)
+        : DASHBOARD_FALLBACK.totalTokens,
       totalCostPeriod: hasData
         ? `~€${(totalCost / 100).toFixed(2)} this period`
         : DASHBOARD_FALLBACK.totalCostPeriod,

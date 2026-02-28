@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 import { Mistral } from "@mistralai/mistralai";
-import { MARKUP_PERCENTAGE, SUPPORTED_MODELS } from "./core-adapter.js";
 import OpenAI from "openai";
+import { MARKUP_PERCENTAGE, SUPPORTED_MODELS } from "./core-adapter.js";
 
 interface ModelRequest {
   model: string;
@@ -164,7 +164,9 @@ async function callGoogle(
     contents: req.prompt,
     config: {
       ...(req.system ? { systemInstruction: req.system } : {}),
-      ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
+      ...(req.temperature !== undefined
+        ? { temperature: req.temperature }
+        : {}),
       ...(req.max_tokens ? { maxOutputTokens: req.max_tokens } : {}),
       ...(req.output_format === "json"
         ? { responseMimeType: "application/json" }

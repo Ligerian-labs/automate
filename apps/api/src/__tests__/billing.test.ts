@@ -67,7 +67,10 @@ mock.module("stripe", () => ({
   },
 }));
 
-function pickFields(source: Record<string, unknown>, fields: Record<string, unknown>) {
+function pickFields(
+  source: Record<string, unknown>,
+  fields: Record<string, unknown>,
+) {
   const out: Record<string, unknown> = {};
   for (const key of Object.keys(fields || {})) {
     out[key] = source[key];
@@ -81,7 +84,12 @@ mock.module("../db/index.js", () => ({
       from: () => ({
         where: () => ({
           limit: async () => [
-            fields ? pickFields(state.user as unknown as Record<string, unknown>, fields) : state.user,
+            fields
+              ? pickFields(
+                  state.user as unknown as Record<string, unknown>,
+                  fields,
+                )
+              : state.user,
           ],
         }),
       }),

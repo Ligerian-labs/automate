@@ -66,9 +66,14 @@ scheduleRoutes.post("/pipelines/:id/schedules", async (c) => {
     throw err;
   }
 
-  const result = await createScheduleForPipeline(userId, pipelineId, parsed.data);
+  const result = await createScheduleForPipeline(
+    userId,
+    pipelineId,
+    parsed.data,
+  );
   if (result.error) {
-    if (result.error === "Pipeline not found") return c.json({ error: result.error }, 404);
+    if (result.error === "Pipeline not found")
+      return c.json({ error: result.error }, 404);
     return c.json({ error: result.error }, 400);
   }
 

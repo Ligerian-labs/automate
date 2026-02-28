@@ -32,7 +32,8 @@ export const DOCS_PAGES: DocsPageMeta[] = [
       {
         id: "overview",
         label: "Introduction",
-        excerpt: "Overview of account setup, pipeline creation, and first execution.",
+        excerpt:
+          "Overview of account setup, pipeline creation, and first execution.",
       },
       {
         id: "prerequisites",

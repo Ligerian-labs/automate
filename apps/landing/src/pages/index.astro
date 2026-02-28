@@ -486,4 +486,33 @@ steps:
   }
 
   applyInterval("month");
+
+  // PostHog CTA tracking
+  document.querySelectorAll<HTMLAnchorElement>("a.solid-link, a.ghost-link").forEach((link) => {
+    link.addEventListener("click", () => {
+      const href = link.getAttribute("href") || "";
+      const text = link.textContent?.trim() || "";
+      if (typeof (window as any).posthog !== "undefined") {
+        (window as any).posthog.capture("landing_cta_clicked", {
+          cta_text: text,
+          cta_href: href,
+          cta_location: link.closest("section")?.id || link.closest("nav") ? "nav" : "hero",
+        });
+      }
+    });
+  });
+
+  // Track pricing plan clicks specifically
+  document.querySelectorAll<HTMLAnchorElement>("[data-plan]").forEach((link) => {
+    link.addEventListener("click", () => {
+      const plan = link.getAttribute("data-plan") || "";
+      const href = link.getAttribute("href") || "";
+      if (typeof (window as any).posthog !== "undefined") {
+        (window as any).posthog.capture("landing_pricing_cta_clicked", {
+          plan,
+          href,
+        });
+      }
+    });
+  });
 </script>

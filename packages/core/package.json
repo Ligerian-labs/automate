@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "biome lint src",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "test": "bun test"
   },
   "dependencies": {

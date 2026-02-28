@@ -1,7 +1,7 @@
 ---
 import "../../styles/global.css";
-import Layout from "../../layouts/Layout.astro";
 import DocsSearch from "../../components/DocsSearch.astro";
+import Layout from "../../layouts/Layout.astro";
 import { getDocsSearchEntries } from "../../lib/docs/content.js";
 
 const searchEntries = getDocsSearchEntries();
@@ -57,10 +57,26 @@ const featuredPages = [
 ];
 
 const quickLinks = [
-  { label: "Pipeline YAML Schema", href: "/docs/pipeline-format#pipeline-definition", icon: "book" },
-  { label: "Authentication & API Keys", href: "/docs/api-reference#authentication", icon: "key" },
-  { label: "Variable Interpolation", href: "/docs/pipeline-format#variables", icon: "variable" },
-  { label: "Webhooks & Triggers", href: "/docs/api-reference#webhooks", icon: "webhook" },
+  {
+    label: "Pipeline YAML Schema",
+    href: "/docs/pipeline-format#pipeline-definition",
+    icon: "book",
+  },
+  {
+    label: "Authentication & API Keys",
+    href: "/docs/api-reference#authentication",
+    icon: "key",
+  },
+  {
+    label: "Variable Interpolation",
+    href: "/docs/pipeline-format#variables",
+    icon: "variable",
+  },
+  {
+    label: "Webhooks & Triggers",
+    href: "/docs/api-reference#webhooks",
+    icon: "webhook",
+  },
 ];
 ---
 

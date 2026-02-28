@@ -5,7 +5,10 @@ import { config } from "../lib/env.js";
 export type PaidPlan = Extract<Plan, "starter" | "pro">;
 export type BillingInterval = "month" | "year";
 
-function getStripePriceIds(): Record<PaidPlan, Record<BillingInterval, string>> {
+function getStripePriceIds(): Record<
+  PaidPlan,
+  Record<BillingInterval, string>
+> {
   return {
     starter: {
       month: config.stripePriceStarterMonthly,
@@ -79,7 +82,8 @@ export function billingConfigError(): string | null {
     missing.push("STRIPE_PRICE_STARTER_MONTHLY_EUR");
   if (!config.stripePriceStarterYearly)
     missing.push("STRIPE_PRICE_STARTER_YEARLY_EUR");
-  if (!config.stripePriceProMonthly) missing.push("STRIPE_PRICE_PRO_MONTHLY_EUR");
+  if (!config.stripePriceProMonthly)
+    missing.push("STRIPE_PRICE_PRO_MONTHLY_EUR");
   if (!config.stripePriceProYearly) missing.push("STRIPE_PRICE_PRO_YEARLY_EUR");
   if (missing.length > 0) {
     return `Stripe is not configured: missing ${missing.join(", ")}`;

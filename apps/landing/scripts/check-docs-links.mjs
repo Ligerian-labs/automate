@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(process.cwd(), "src/pages/docs");
@@ -8,7 +8,8 @@ const routeToFile = new Map();
 const idsByRoute = new Map();
 
 for (const file of files) {
-  const route = file === "index.astro" ? "/docs" : `/docs/${file.replace(/\.astro$/, "")}`;
+  const route =
+    file === "index.astro" ? "/docs" : `/docs/${file.replace(/\.astro$/, "")}`;
   const fullPath = join(root, file);
   const content = readFileSync(fullPath, "utf8");
 

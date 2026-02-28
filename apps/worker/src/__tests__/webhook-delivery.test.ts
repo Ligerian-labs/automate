@@ -7,7 +7,9 @@ import {
 describe("buildWebhookSignature", () => {
   it("creates deterministic signatures", () => {
     const sig = buildWebhookSignature("secret", "1700000000", '{"ok":true}');
-    expect(sig).toBe("v1=c1afc7c2df3db0690d7d75954610ed1a1d959ce96355ccb8c0a8bc09fd0cfc27");
+    expect(sig).toBe(
+      "v1=c1afc7c2df3db0690d7d75954610ed1a1d959ce96355ccb8c0a8bc09fd0cfc27",
+    );
   });
 });
 

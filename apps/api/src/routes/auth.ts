@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { SignJWT } from "jose";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
+import { serverIdentify, serverTrack } from "../lib/analytics.js";
 import { config } from "../lib/env.js";
 
 const secret = new TextEncoder().encode(config.jwtSecret);
@@ -36,6 +37,9 @@ authRoutes.post("/register", async (c) => {
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
     .sign(secret);
+
+  serverIdentify(user.id, { email: user.email, plan: user.plan });
+  serverTrack(user.id, "user_registered", { email: user.email });
 
   return c.json({ user, token }, 201);
 });

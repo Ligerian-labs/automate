@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { apiFetch } from "../lib/api";
+import { identifyUser, trackLogin, trackSignUp } from "../lib/analytics";
+import { type UserMe, apiFetch } from "../lib/api";
 import { setToken } from "../lib/auth";
 
 export function AuthPage({ mode }: { mode: "login" | "register" }) {
@@ -25,6 +26,17 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
         false,
       );
       setToken(response.token);
+
+      // Identify user for analytics
+      try {
+        const me = await apiFetch<UserMe>("/api/user/me");
+        identifyUser(me);
+      } catch {
+        /* non-critical */
+      }
+      if (mode === "register") trackSignUp(email);
+      else trackLogin(email);
+
       const params = new URLSearchParams(window.location.search);
       const plan = params.get("plan");
       const interval = params.get("interval");

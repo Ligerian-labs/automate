@@ -7,8 +7,9 @@ import {
   createRouter,
   redirect,
 } from "@tanstack/react-router";
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import { initAnalytics, trackPageView } from "./lib/analytics";
 import { isAuthenticated } from "./lib/auth";
 import { AuthPage } from "./pages/auth-page";
 import { DashboardPage } from "./pages/dashboard";
@@ -22,6 +23,9 @@ import { SettingsPage } from "./pages/settings";
 import "./styles.css";
 
 const queryClient = new QueryClient();
+
+// Initialize PostHog
+initAnalytics();
 
 function RootLayout() {
   return <Outlet />;
@@ -137,6 +141,11 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
+
+// Track page views on navigation
+router.subscribe("onResolved", ({ toLocation }) => {
+  trackPageView(toLocation.pathname);
+});
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Root element not found");
