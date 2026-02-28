@@ -232,3 +232,34 @@ export const stripeEvents = pgTable("stripe_events", {
     .defaultNow()
     .notNull(),
 });
+
+export const billingDiscountCodes = pgTable(
+  "billing_discount_codes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    code: text("code").notNull().unique(),
+    active: boolean("active").default(true).notNull(),
+    kind: text("kind").notNull(), // percent_off | free_cycles
+    percentOff: integer("percent_off"),
+    freeCyclesCount: integer("free_cycles_count"),
+    freeCyclesInterval: text("free_cycles_interval"), // month | year
+    appliesToPlan: text("applies_to_plan"), // starter | pro | null
+    appliesToInterval: text("applies_to_interval"), // month | year | null
+    allowedEmails: text("allowed_emails").array().default([]).notNull(),
+    maxRedemptions: integer("max_redemptions"),
+    redeemedCount: integer("redeemed_count").default(0).notNull(),
+    stripeCouponId: text("stripe_coupon_id"),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("billing_discount_codes_code").on(table.code),
+    index("billing_discount_codes_active").on(table.active),
+  ],
+);

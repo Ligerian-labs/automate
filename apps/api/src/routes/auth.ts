@@ -33,6 +33,7 @@ type OAuthState = {
   mode: "login" | "register";
   plan?: "starter" | "pro";
   interval?: "month" | "year";
+  discount?: string;
 };
 
 type GithubAccessTokenResponse = {
@@ -178,8 +179,17 @@ function buildAppAuthRedirect(
     params.set("token", token);
     if (state.plan) params.set("plan", state.plan);
     if (state.interval) params.set("interval", state.interval);
+    if (state.discount) params.set("discount", state.discount);
   }
   return `${base}?${params.toString()}`;
+}
+
+function normalizeDiscountCode(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const value = raw.trim().toUpperCase();
+  if (!value) return undefined;
+  if (!/^[A-Z0-9_-]{1,64}$/.test(value)) return undefined;
+  return value;
 }
 
 async function fetchGithubPrimaryEmail(accessToken: string): Promise<string | null> {
@@ -484,11 +494,13 @@ authRoutes.get("/github/start", async (c) => {
   const mode = modeRaw === "register" ? "register" : "login";
   const planRaw = c.req.query("plan");
   const intervalRaw = c.req.query("interval");
+  const discountRaw = c.req.query("discount");
   const plan = planRaw === "starter" || planRaw === "pro" ? planRaw : undefined;
   const interval =
     intervalRaw === "month" || intervalRaw === "year" ? intervalRaw : undefined;
+  const discount = normalizeDiscountCode(discountRaw);
 
-  const statePayload: OAuthState = { mode, plan, interval };
+  const statePayload: OAuthState = { mode, plan, interval, discount };
   const state = await new SignJWT(statePayload)
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("10m")
@@ -528,6 +540,7 @@ authRoutes.get("/github/callback", async (c) => {
       mode: payload.mode === "register" ? "register" : "login",
       plan: payload.plan,
       interval: payload.interval,
+      discount: normalizeDiscountCode(payload.discount),
     };
   } catch {
     return c.redirect(
@@ -592,11 +605,13 @@ authRoutes.get("/google/start", async (c) => {
   const mode = modeRaw === "register" ? "register" : "login";
   const planRaw = c.req.query("plan");
   const intervalRaw = c.req.query("interval");
+  const discountRaw = c.req.query("discount");
   const plan = planRaw === "starter" || planRaw === "pro" ? planRaw : undefined;
   const interval =
     intervalRaw === "month" || intervalRaw === "year" ? intervalRaw : undefined;
+  const discount = normalizeDiscountCode(discountRaw);
 
-  const statePayload: OAuthState = { mode, plan, interval };
+  const statePayload: OAuthState = { mode, plan, interval, discount };
   const state = await new SignJWT(statePayload)
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("10m")
@@ -653,6 +668,7 @@ authRoutes.get("/google/callback", async (c) => {
       mode: payload.mode === "register" ? "register" : "login",
       plan: payload.plan,
       interval: payload.interval,
+      discount: normalizeDiscountCode(payload.discount),
     };
   } catch {
     return c.redirect(

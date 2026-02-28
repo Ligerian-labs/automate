@@ -146,6 +146,7 @@ export function AppShell({
 
   const displayName = meQ.data?.name?.trim() || meQ.data?.email || "User";
   const planName = `${(meQ.data?.plan || "free").toString()} plan`;
+  const isAdmin = Boolean(meQ.data?.isAdmin);
   const initials = getInitials(displayName);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -364,6 +365,23 @@ export function AppShell({
               </svg>
               Settings
             </Link>
+            {isAdmin ? (
+              <Link
+                to="/admin"
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                  location.pathname.startsWith("/admin")
+                    ? "bg-[var(--bg-surface)] font-medium text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
+                )}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="w-[18px] text-center text-[var(--text-tertiary)]">
+                  #
+                </span>
+                Admin
+              </Link>
+            ) : null}
             <div className="-mx-5 h-px bg-[var(--divider)]" />
             <div className="flex items-center gap-3">
               <div
@@ -534,6 +552,22 @@ export function AppShell({
             </svg>
             Settings
           </Link>
+          {isAdmin ? (
+            <Link
+              to="/admin"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                location.pathname.startsWith("/admin")
+                  ? "bg-[var(--bg-surface)] font-medium text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]",
+              )}
+            >
+              <span className="w-[18px] text-center text-[var(--text-tertiary)]">
+                #
+              </span>
+              Admin
+            </Link>
+          ) : null}
         </nav>
 
         {/* Divider */}
