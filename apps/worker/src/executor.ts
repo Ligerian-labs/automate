@@ -2,6 +2,7 @@ import {
   createKmsProvider,
   decryptSecret,
   redactSecrets,
+  TOKENS_PER_CREDIT,
   type PipelineDefinition,
 } from "./core-adapter.js";
 import { and, eq, inArray } from "drizzle-orm";
@@ -12,6 +13,7 @@ import {
   pipelineVersions,
   runs,
   stepExecutions,
+  users,
   userSecrets,
 } from "./db-executor.js";
 import { callModel } from "./model-router.js";
@@ -78,6 +80,7 @@ export async function executePipeline(runId: string) {
 
   let totalTokens = 0;
   let totalCostCents = 0;
+  let creditsDeducted = false;
 
   try {
     envSecrets = await resolveUserSecrets(
@@ -224,6 +227,9 @@ export async function executePipeline(runId: string) {
       })
       .where(eq(runs.id, runId));
 
+    await deductRunCredits(run.userId, totalTokens);
+    creditsDeducted = true;
+
     await deliverOutputWebhooks({
       definition,
       run,
@@ -249,7 +255,34 @@ export async function executePipeline(runId: string) {
         totalCostCents,
       })
       .where(eq(runs.id, runId));
+
+    if (!creditsDeducted) {
+      await deductRunCredits(run.userId, totalTokens);
+    }
   }
+}
+
+function creditsFromTokens(totalTokens: number): number {
+  if (totalTokens <= 0) return 0;
+  return Math.ceil(totalTokens / TOKENS_PER_CREDIT);
+}
+
+async function deductRunCredits(userId: string, totalTokens: number) {
+  const creditsToDeduct = creditsFromTokens(totalTokens);
+  if (creditsToDeduct <= 0) return;
+
+  const [user] = await db
+    .select({ creditsRemaining: users.creditsRemaining })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!user) return;
+
+  const nextCredits = Math.max(0, user.creditsRemaining - creditsToDeduct);
+  await db
+    .update(users)
+    .set({ creditsRemaining: nextCredits, updatedAt: new Date() })
+    .where(eq(users.id, userId));
 }
 
 function interpolate(

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 const tables = {
-  users: { __name: "users", id: "users.id" },
+  users: { __name: "users", id: "users.id", creditsRemaining: "users.creditsRemaining" },
   pipelines: { __name: "pipelines", id: "pipelines.id" },
   schedules: { __name: "schedules", id: "schedules.id" },
   runs: { __name: "runs", id: "runs.id" },
@@ -31,6 +31,7 @@ type StepExecRow = {
 
 type TestState = {
   run: Record<string, unknown> | null;
+  user: { id: string; creditsRemaining: number } | null;
   definition: Record<string, unknown> | null;
   userSecrets: Array<{
     name: string;
@@ -73,6 +74,11 @@ function createDbMock() {
     select: () => ({
       from: (table: { __name: string }) => ({
         where: (_cond: unknown) => {
+          if (table.__name === "users") {
+            return {
+              limit: async (_n: number) => (state.user ? [state.user] : []),
+            };
+          }
           if (table.__name === "userSecrets") {
             return Promise.resolve(state.userSecrets);
           }
@@ -123,6 +129,15 @@ function createDbMock() {
             };
             return [state.stepExecutions[index]];
           }
+          if (table.__name === "users" && state.user) {
+            state.user = {
+              ...state.user,
+              ...(typeof setValues.creditsRemaining === "number"
+                ? { creditsRemaining: setValues.creditsRemaining }
+                : {}),
+            };
+            return [state.user];
+          }
           return [];
         },
       }),
@@ -149,6 +164,7 @@ mock.module("../model-router.js", () => ({
   },
 }));
 mock.module("../core-adapter.js", () => ({
+  TOKENS_PER_CREDIT: 1000,
   createKmsProvider: () => ({
     getMasterKey: async () => {
       if (kmsShouldFail) {
@@ -180,6 +196,10 @@ describe("executePipeline runtime behavior", () => {
         pipelineVersion: 1,
         inputData: { topic: "AI" },
         status: "pending",
+      },
+      user: {
+        id: "user-1",
+        creditsRemaining: 10,
       },
       definition: {
         name: "Test pipeline",
@@ -223,6 +243,7 @@ describe("executePipeline runtime behavior", () => {
     expect(state.run?.totalTokens).toBe(140);
     expect(state.run?.totalCostCents).toBe(3);
     expect(state.run?.outputData).toBe("Second model-output");
+    expect(state.user?.creditsRemaining).toBe(9);
 
     expect(state.stepExecutions).toHaveLength(2);
     expect(state.stepExecutions[0]?.status).toBe("completed");
@@ -419,5 +440,102 @@ describe("executePipeline runtime behavior", () => {
       string
     >;
     expect(apiKeys.openai).toBe("pipeline-openai-value");
+  });
+
+  it("deducts credits based on total tokens with round-up", async () => {
+    state.callModelImpl = async () => ({
+      output: "model-output",
+      input_tokens: 1999,
+      output_tokens: 0,
+      cost_cents: 5,
+    });
+    state.definition = {
+      name: "Credit rounding pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "Hello",
+        },
+      ],
+    };
+
+    await executePipeline("run-1");
+
+    expect(state.run?.status).toBe("completed");
+    expect(state.run?.totalTokens).toBe(1999);
+    expect(state.user?.creditsRemaining).toBe(8);
+  });
+
+  it("does not let credit balance go below zero", async () => {
+    state.user = {
+      id: "user-1",
+      creditsRemaining: 1,
+    };
+    state.callModelImpl = async () => ({
+      output: "model-output",
+      input_tokens: 2500,
+      output_tokens: 0,
+      cost_cents: 5,
+    });
+    state.definition = {
+      name: "Credit floor pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "Hello",
+        },
+      ],
+    };
+
+    await executePipeline("run-1");
+
+    expect(state.run?.status).toBe("completed");
+    expect(state.user?.creditsRemaining).toBe(0);
+  });
+
+  it("deducts credits for failed runs that consumed tokens", async () => {
+    let calls = 0;
+    state.callModelImpl = async () => {
+      calls += 1;
+      if (calls === 1) {
+        return {
+          output: "first-output",
+          input_tokens: 1200,
+          output_tokens: 100,
+          cost_cents: 2,
+        };
+      }
+      throw new Error("provider error");
+    };
+    state.definition = {
+      name: "Partial failure pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "First",
+        },
+        {
+          id: "s2",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "Second",
+        },
+      ],
+    };
+
+    await executePipeline("run-1");
+
+    expect(state.run?.status).toBe("failed");
+    expect(state.run?.totalTokens).toBe(1300);
+    expect(state.user?.creditsRemaining).toBe(8);
   });
 });

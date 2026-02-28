@@ -2,12 +2,14 @@ import { PLAN_LIMITS, type PipelineDefinition, type Plan } from "@stepiq/core";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { pipelines, runs, users } from "../db/schema.js";
+import { rollUserBillingCycleIfNeeded } from "./billing-cycle.js";
 
 type PlanLimitCode =
   | "PLAN_USER_NOT_FOUND"
   | "PLAN_MAX_PIPELINES"
   | "PLAN_MAX_STEPS"
   | "PLAN_MAX_RUNS_PER_DAY"
+  | "PLAN_CREDITS_EXHAUSTED"
   | "PLAN_CRON_DISABLED"
   | "PLAN_WEBHOOKS_DISABLED"
   | "PLAN_API_DISABLED";
@@ -37,9 +39,12 @@ export function isPlanValidationError(err: unknown): err is PlanValidationError 
 async function getUserPlanState(userId: string): Promise<{
   plan: Plan;
   limits: (typeof PLAN_LIMITS)[Plan];
+  creditsRemaining: number;
 }> {
+  await rollUserBillingCycleIfNeeded(userId);
+
   const [user] = await db
-    .select({ plan: users.plan })
+    .select({ plan: users.plan, creditsRemaining: users.creditsRemaining })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
@@ -54,7 +59,7 @@ async function getUserPlanState(userId: string): Promise<{
   }
 
   const plan = (user.plan in PLAN_LIMITS ? user.plan : "free") as Plan;
-  return { plan, limits: PLAN_LIMITS[plan] };
+  return { plan, limits: PLAN_LIMITS[plan], creditsRemaining: user.creditsRemaining };
 }
 
 function utcDayWindow(date = new Date()): { start: Date; end: Date } {
@@ -121,7 +126,14 @@ export async function assertPipelineDefinitionWithinPlan(
 }
 
 export async function assertCanTriggerRun(userId: string): Promise<void> {
-  const { plan, limits } = await getUserPlanState(userId);
+  const { plan, limits, creditsRemaining } = await getUserPlanState(userId);
+  if (limits.credits >= 0 && creditsRemaining <= 0) {
+    throw new PlanValidationError(
+      "PLAN_CREDITS_EXHAUSTED",
+      "Credits exhausted for current plan",
+      { plan, remaining: creditsRemaining },
+    );
+  }
   if (limits.max_runs_per_day < 0) return;
 
   const { start, end } = utcDayWindow();

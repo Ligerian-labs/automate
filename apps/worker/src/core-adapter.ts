@@ -1,6 +1,7 @@
 export {
   MARKUP_PERCENTAGE,
   SUPPORTED_MODELS,
+  TOKENS_PER_CREDIT,
   createKmsProvider,
   decryptSecret,
   redactSecrets,

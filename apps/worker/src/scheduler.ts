@@ -1,7 +1,7 @@
 import { Queue } from "bullmq";
 import { CronExpressionParser } from "cron-parser";
 import { PLAN_LIMITS, type Plan } from "@stepiq/core";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import type { Redis as IORedis } from "ioredis";
 import postgres from "postgres";
@@ -32,6 +32,62 @@ export function startScheduler(connection: IORedis) {
     return PLAN_LIMITS[plan];
   }
 
+  function addBillingInterval(date: Date, interval: string): Date {
+    const next = new Date(date);
+    if (interval === "year") {
+      next.setUTCFullYear(next.getUTCFullYear() + 1);
+      return next;
+    }
+    next.setUTCMonth(next.getUTCMonth() + 1);
+    return next;
+  }
+
+  async function refreshExpiredPaidCredits(now: Date) {
+    const dueUsers = await db
+      .select({
+        id: users.id,
+        plan: users.plan,
+        stripeBillingInterval: users.stripeBillingInterval,
+        stripeCurrentPeriodEnd: users.stripeCurrentPeriodEnd,
+      })
+      .from(users)
+      .where(
+        and(
+          inArray(users.plan, ["starter", "pro"]),
+          inArray(users.stripeSubscriptionStatus, ["active", "trialing"]),
+          lte(users.stripeCurrentPeriodEnd, now),
+        ),
+      )
+      .limit(200);
+
+    for (const user of dueUsers) {
+      if (!user.stripeCurrentPeriodEnd) continue;
+      if (
+        user.stripeBillingInterval !== "month" &&
+        user.stripeBillingInterval !== "year"
+      ) {
+        continue;
+      }
+      const plan = user.plan === "pro" ? "pro" : "starter";
+      let nextPeriodEnd = new Date(user.stripeCurrentPeriodEnd);
+      while (nextPeriodEnd <= now) {
+        nextPeriodEnd = addBillingInterval(
+          nextPeriodEnd,
+          user.stripeBillingInterval,
+        );
+      }
+
+      await db
+        .update(users)
+        .set({
+          creditsRemaining: PLAN_LIMITS[plan].credits,
+          stripeCurrentPeriodEnd: nextPeriodEnd,
+          updatedAt: now,
+        })
+        .where(eq(users.id, user.id));
+    }
+  }
+
   async function tick() {
     const lockToken = `${process.pid}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
 
@@ -47,6 +103,7 @@ export function startScheduler(connection: IORedis) {
 
     try {
       const now = new Date();
+      await refreshExpiredPaidCredits(now);
       const dueSchedules = await db
         .select()
         .from(schedules)
