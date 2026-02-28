@@ -49,6 +49,7 @@ STRIPE_PRICE_STARTER_MONTHLY_EUR=
 STRIPE_PRICE_STARTER_YEARLY_EUR=
 STRIPE_PRICE_PRO_MONTHLY_EUR=
 STRIPE_PRICE_PRO_YEARLY_EUR=
+AUTHORIZED_ADMIN_EMAILS=admin@stepiq.sh,ops@stepiq.sh
 APP_URL=http://localhost:5173
 CORS_ORIGIN=http://localhost:5173
 PUBLIC_API_URL=http://localhost:3001
@@ -150,6 +151,8 @@ See [full spec](https://github.com/Ligerian-labs/brainstorm/blob/main/products/a
 - `POST /api/auth/register/request-code` - Send email verification code
 - `POST /api/auth/login` - Sign in
 - `POST /api/auth/clerk/exchange` - Exchange Clerk session token for API JWT
+- `GET /api/billing/discount-codes` - List discount codes (admin-only)
+- `POST /api/billing/discount-codes` - Create/update discount code (admin-only)
 - `GET /api/pipelines` - List pipelines
 - `POST /api/pipelines` - Create pipeline
 - `POST /api/pipelines/:id/run` - Execute pipeline

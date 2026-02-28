@@ -11,9 +11,11 @@ import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { initAnalytics, trackPageView } from "./lib/analytics";
 import { isAuthenticated } from "./lib/auth";
+import { AdminPage } from "./pages/admin";
 import { AuthPage } from "./pages/auth-page";
 import { DashboardPage } from "./pages/dashboard";
 import { NewSchedulePage } from "./pages/new-schedule";
+import { NotFoundPage } from "./pages/not-found";
 import { PipelineEditorPage } from "./pages/pipeline-editor";
 import { PipelinesListPage } from "./pages/pipelines-list";
 import { RunDetailPage } from "./pages/run-detail";
@@ -31,7 +33,10 @@ function RootLayout() {
   return <Outlet />;
 }
 
-const rootRoute = createRootRoute({ component: RootLayout });
+const rootRoute = createRootRoute({
+  component: RootLayout,
+  notFoundComponent: NotFoundPage,
+});
 
 function requireAuth() {
   if (!isAuthenticated()) throw redirect({ to: "/login" });
@@ -134,6 +139,13 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 });
 
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  beforeLoad: requireAuth,
+  component: AdminPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -148,6 +160,7 @@ const routeTree = rootRoute.addChildren([
   schedulesRoute,
   newScheduleRoute,
   settingsRoute,
+  adminRoute,
 ]);
 
 const router = createRouter({ routeTree });

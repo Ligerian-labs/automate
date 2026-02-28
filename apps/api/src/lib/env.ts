@@ -38,6 +38,10 @@ export const config = {
   stripePriceStarterYearly: process.env.STRIPE_PRICE_STARTER_YEARLY_EUR || "",
   stripePriceProMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY_EUR || "",
   stripePriceProYearly: process.env.STRIPE_PRICE_PRO_YEARLY_EUR || "",
+  authorizedAdminEmails: (process.env.AUTHORIZED_ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
   appUrl: process.env.APP_URL || "http://localhost:5173",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
   openaiApiKey: process.env.OPENAI_API_KEY || "",

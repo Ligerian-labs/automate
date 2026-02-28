@@ -12,6 +12,7 @@ import {
 import {
   ApiError,
   type ApiKeyRecord,
+  type BillingCheckoutRequest,
   type BillingCheckoutResponse,
   type BillingPortalResponse,
   type CreatedApiKeyRecord,
@@ -45,6 +46,7 @@ export function SettingsPage() {
   >(null);
   const [billingMessage, setBillingMessage] = useState<string | null>(null);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const [discountCode, setDiscountCode] = useState("");
   const meQ = useQuery({
     queryKey: ["me"],
     queryFn: () => apiFetch<UserMe>("/api/user/me"),
@@ -131,10 +133,7 @@ export function SettingsPage() {
   });
 
   const checkoutMut = useMutation({
-    mutationFn: (payload: {
-      plan: "starter" | "pro";
-      interval: "month" | "year";
-    }) =>
+    mutationFn: (payload: BillingCheckoutRequest) =>
       apiFetch<BillingCheckoutResponse>("/api/billing/checkout", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -215,6 +214,7 @@ export function SettingsPage() {
     const tabParam = params.get("tab");
     const intervalParam = params.get("interval");
     const planParam = params.get("plan");
+    const discountParam = params.get("discount");
     const checkoutParam = params.get("checkout");
 
     if (tabParam === "Billing") {
@@ -228,6 +228,9 @@ export function SettingsPage() {
     }
     if (planParam === "starter" || planParam === "pro") {
       setBillingTargetPlan(planParam);
+    }
+    if (discountParam) {
+      setDiscountCode(discountParam.toUpperCase());
     }
     if (checkoutParam === "success") {
       setBillingMessage("Checkout completed. Your subscription is updating.");
@@ -800,6 +803,25 @@ export function SettingsPage() {
                 </button>
               </div>
 
+              <div className="mb-4">
+                <label
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]"
+                  htmlFor="discount-code"
+                >
+                  Discount code
+                </label>
+                <input
+                  id="discount-code"
+                  type="text"
+                  value={discountCode}
+                  onChange={(event) =>
+                    setDiscountCode(event.target.value.toUpperCase())
+                  }
+                  placeholder="Optional"
+                  className="w-full rounded-lg border border-[var(--divider)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+                />
+              </div>
+
               <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 {(["starter", "pro"] as const).map((plan) => {
                   const currentPlan = (meQ.data?.plan || "free").toLowerCase();
@@ -847,6 +869,9 @@ export function SettingsPage() {
                           checkoutMut.mutate({
                             plan,
                             interval: billingInterval,
+                            ...(discountCode.trim()
+                              ? { discount_code: discountCode.trim() }
+                              : {}),
                           });
                         }}
                         className="mt-3 w-full cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60"

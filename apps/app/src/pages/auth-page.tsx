@@ -14,6 +14,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const authSearch = window.location.search || "";
 
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -38,11 +39,18 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
       const params = new URLSearchParams(window.location.search);
       const plan = params.get("plan");
       const interval = params.get("interval");
+      const discount = params.get("discount");
       if (
         (plan === "starter" || plan === "pro") &&
         (interval === "month" || interval === "year")
       ) {
-        window.location.href = `/settings?tab=Billing&plan=${plan}&interval=${interval}`;
+        const next = new URLSearchParams({
+          tab: "Billing",
+          plan,
+          interval,
+        });
+        if (discount) next.set("discount", discount);
+        window.location.href = `/settings?${next.toString()}`;
         return;
       }
       navigate({ to: "/dashboard" });
@@ -54,10 +62,12 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
     const params = new URLSearchParams(window.location.search);
     const plan = params.get("plan");
     const interval = params.get("interval");
+    const discount = params.get("discount");
     const query = new URLSearchParams({ mode });
     if (plan === "starter" || plan === "pro") query.set("plan", plan);
     if (interval === "month" || interval === "year")
       query.set("interval", interval);
+    if (discount) query.set("discount", discount);
     window.location.href = `${apiUrl}/api/auth/github/start?${query.toString()}`;
   }
 
@@ -65,10 +75,12 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
     const params = new URLSearchParams(window.location.search);
     const plan = params.get("plan");
     const interval = params.get("interval");
+    const discount = params.get("discount");
     const query = new URLSearchParams({ mode });
     if (plan === "starter" || plan === "pro") query.set("plan", plan);
     if (interval === "month" || interval === "year")
       query.set("interval", interval);
+    if (discount) query.set("discount", discount);
     window.location.href = `${apiUrl}/api/auth/google/start?${query.toString()}`;
   }
 
@@ -302,7 +314,7 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
             : "Already have an account?"}{" "}
           <a
             className="font-semibold text-[var(--accent)] hover:underline"
-            href={mode === "login" ? "/register" : "/login"}
+            href={`${mode === "login" ? "/register" : "/login"}${authSearch}`}
           >
             {mode === "login" ? "Sign up" : "Sign in"}
           </a>

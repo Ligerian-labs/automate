@@ -120,6 +120,7 @@ export interface UserMe {
   email: string;
   name: string | null;
   plan: string;
+  isAdmin?: boolean;
   creditsRemaining?: number;
   credits_remaining?: number;
 }
@@ -165,6 +166,7 @@ export interface CreatedApiKeyRecord extends ApiKeyRecord {
 export interface BillingCheckoutRequest {
   plan: "starter" | "pro";
   interval: "month" | "year";
+  discount_code?: string;
 }
 
 export interface BillingCheckoutResponse {
@@ -173,4 +175,23 @@ export interface BillingCheckoutResponse {
 
 export interface BillingPortalResponse {
   url: string;
+}
+
+export interface AdminDiscountCode {
+  id: string;
+  code: string;
+  active: boolean;
+  kind: "percent_off" | "free_cycles";
+  percentOff: number | null;
+  freeCyclesCount: number | null;
+  freeCyclesInterval: "month" | "year" | null;
+  appliesToPlan: "starter" | "pro" | null;
+  appliesToInterval: "month" | "year" | null;
+  allowedEmails: string[];
+  maxRedemptions: number | null;
+  redeemedCount: number;
+  startsAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

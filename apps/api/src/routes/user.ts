@@ -5,6 +5,7 @@ import { db } from "../db/index.js";
 import { runs, users } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import { isAuthorizedAdminEmail } from "../services/admin.js";
 import { rollUserBillingCycleIfNeeded } from "../services/billing-cycle.js";
 
 export const userRoutes = new Hono<{ Variables: Env }>();
@@ -60,7 +61,10 @@ userRoutes.get("/me", async (c) => {
     .limit(1);
 
   if (!user) return c.json({ error: "Not found" }, 404);
-  return c.json(user);
+  return c.json({
+    ...user,
+    isAdmin: isAuthorizedAdminEmail(user.email),
+  });
 });
 
 // Get usage stats
