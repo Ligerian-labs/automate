@@ -14,6 +14,8 @@ RUN bun install --frozen-lockfile || bun install
 FROM base AS build
 ARG VITE_API_URL=https://api.stepiq.sh
 ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_CLERK_PUBLISHABLE_KEY=
+ENV VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
 ARG VITE_POSTHOG_KEY=phc_hmEYKj8OGt4Mm6hsOyn7cuBpJlIa8ubgzSmsuoRxMif
 ENV VITE_POSTHOG_KEY=${VITE_POSTHOG_KEY}
 COPY --from=deps /app .
