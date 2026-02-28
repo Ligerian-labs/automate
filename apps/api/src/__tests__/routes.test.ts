@@ -297,6 +297,7 @@ describe("Auth routes (with data)", () => {
         email: "new@example.com",
         password: "securepass123",
         name: "New User",
+        verification_code: "123456",
       }),
     });
     expect([201, 409]).toContain(res.status);

@@ -27,6 +27,8 @@ export const config = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
   googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || "",
+  resendApiKey: process.env.RESEND_API_KEY || "",
+  emailFrom: process.env.EMAIL_FROM || "",
   clerkSecretKey: process.env.CLERK_SECRET_KEY || "",
   clerkJwksUrl: process.env.CLERK_JWKS_URL || "",
   clerkApiUrl: process.env.CLERK_API_URL || "https://api.clerk.com",
