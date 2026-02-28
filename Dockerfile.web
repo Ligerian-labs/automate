@@ -26,4 +26,4 @@ RUN bun add -g serve
 COPY --from=build /app/apps/landing/dist ./dist
 
 EXPOSE 4321
-CMD ["serve", "-s", "dist", "-l", "4321"]
+CMD ["serve", "dist", "-l", "4321"]
