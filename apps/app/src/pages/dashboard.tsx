@@ -1,60 +1,22 @@
 import type { PipelineDefinition } from "@stepiq/core";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
+import { ImportYamlModal } from "../components/import-yaml-modal";
 import { trackPipelineCreated } from "../lib/analytics";
-import { type PipelineRecord, type RunRecord, apiFetch } from "../lib/api";
+import {
+  type PipelineRecord,
+  type RunRecord,
+  type UsageRecord,
+  type UserMe,
+  apiFetch,
+} from "../lib/api";
 
-const DASHBOARD_FALLBACK = {
-  active: 7,
-  activeThisWeek: 2,
-  runsToday: 43,
-  successRate: 89,
-  creditsRemaining: "6,284",
-  creditsCap: "8,000",
-  totalTokens: "1.2M",
-  totalCostPeriod: "~€14.80 this period",
-};
-
-const DASHBOARD_MOCK_ROWS = [
-  {
-    id: "mock-1",
-    name: "weekly-blog-generator",
-    description: "Every Monday 09:00",
-    status: "active",
-    lastRun: "2 hours ago",
-    steps: "4",
-    cost: "~14 credits",
-  },
-  {
-    id: "mock-2",
-    name: "support-ticket-triage",
-    description: "Webhook trigger",
-    status: "active",
-    lastRun: "18 min ago",
-    steps: "3",
-    cost: "~8 credits",
-  },
-  {
-    id: "mock-3",
-    name: "competitor-analysis",
-    description: "Manual trigger",
-    status: "draft",
-    lastRun: "3 days ago",
-    steps: "5",
-    cost: "~22 credits",
-  },
-  {
-    id: "mock-4",
-    name: "daily-news-digest",
-    description: "Every day 07:00",
-    status: "active",
-    lastRun: "6 hours ago",
-    steps: "3",
-    cost: "~6 credits",
-  },
-];
+function canImportYaml(plan: string | undefined): boolean {
+  const normalized = (plan || "").toLowerCase();
+  return normalized === "pro" || normalized === "enterprise";
+}
 
 type DashboardRow = {
   id: string;
@@ -69,6 +31,8 @@ type DashboardRow = {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [importOpen, setImportOpen] = useState(false);
 
   async function createPipeline() {
     const baseDefinition: PipelineDefinition = {
@@ -108,20 +72,51 @@ export function DashboardPage() {
   });
   const runsQ = useQuery({
     queryKey: ["runs", "dashboard"],
-    queryFn: () => apiFetch<RunRecord[]>("/api/runs?limit=20"),
+    queryFn: () => apiFetch<RunRecord[]>("/api/runs?limit=100"),
   });
+  const meQ = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<UserMe>("/api/user/me"),
+  });
+  const usageQ = useQuery({
+    queryKey: ["usage"],
+    queryFn: () => apiFetch<UsageRecord>("/api/user/usage"),
+  });
+  const importEnabled = canImportYaml(meQ.data?.plan);
 
   const stats = useMemo(() => {
     const pipelines = pipelinesQ.data ?? [];
     const runs = runsQ.data ?? [];
+    const usage = usageQ.data;
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 7);
+
     const active = pipelines.filter(
       (p) => (p.status || "active") === "active",
     ).length;
-    const runsToday = runs.length;
+    const activeThisWeek = pipelines.filter((p) => {
+      if ((p.status || "active") !== "active") return false;
+      const updated = p.updatedAt || p.updated_at;
+      if (!updated) return false;
+      const updatedAt = new Date(updated);
+      return !Number.isNaN(updatedAt.getTime()) && updatedAt >= weekAgo;
+    }).length;
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const recentRunsToday = runs.filter((r) => {
+      const created = r.createdAt || r.created_at;
+      if (!created) return false;
+      const createdAt = new Date(created);
+      return !Number.isNaN(createdAt.getTime()) && createdAt >= todayStart;
+    });
+    const runsToday = usage?.runs_today ?? 0;
     const successRate =
-      runsToday > 0
+      recentRunsToday.length > 0
         ? Math.round(
-            (runs.filter((r) => r.status === "completed").length / runsToday) *
+            (recentRunsToday.filter((r) => r.status === "completed").length /
+              recentRunsToday.length) *
               100,
           )
         : 0;
@@ -129,27 +124,28 @@ export function DashboardPage() {
       (sum, r) => sum + (r.totalTokens ?? r.total_tokens ?? 0),
       0,
     );
-    const totalCost = runs.reduce(
-      (sum, r) => sum + (r.totalCostCents ?? r.total_cost_cents ?? 0),
-      0,
-    );
-    const hasData = pipelines.length > 0 || runs.length > 0;
+    const creditsRemaining = usage?.credits_remaining ?? 0;
+    const creditsUsed = usage?.credits_used ?? 0;
+    const creditsCap =
+      creditsRemaining + creditsUsed > 0 ? creditsRemaining + creditsUsed : 0;
+    const costPeriod = usage?.total_cost_cents ?? 0;
+
     return {
-      hasData,
-      active: hasData ? active : DASHBOARD_FALLBACK.active,
-      activeThisWeek: hasData ? active : DASHBOARD_FALLBACK.activeThisWeek,
-      runsToday: hasData ? runsToday : DASHBOARD_FALLBACK.runsToday,
-      successRate: hasData ? successRate : DASHBOARD_FALLBACK.successRate,
-      creditsRemaining: DASHBOARD_FALLBACK.creditsRemaining,
-      creditsCap: DASHBOARD_FALLBACK.creditsCap,
-      totalTokens: hasData
-        ? formatNumber(totalTokens)
-        : DASHBOARD_FALLBACK.totalTokens,
-      totalCostPeriod: hasData
-        ? `~€${(totalCost / 100).toFixed(2)} this period`
-        : DASHBOARD_FALLBACK.totalCostPeriod,
+      active,
+      activeThisWeek,
+      runsToday,
+      successRate,
+      creditsRemaining:
+        creditsRemaining < 0 ? "∞" : formatInteger(creditsRemaining),
+      creditsCap: creditsCap > 0 ? formatInteger(creditsCap) : "∞",
+      totalTokens: formatNumber(totalTokens),
+      totalCostPeriod: `€${(costPeriod / 100).toFixed(2)} this period`,
+      successRateWindow:
+        recentRunsToday.length > 0
+          ? `from ${recentRunsToday.length} recent run${recentRunsToday.length === 1 ? "" : "s"}`
+          : "No runs recorded today",
     };
-  }, [pipelinesQ.data, runsQ.data]);
+  }, [pipelinesQ.data, runsQ.data, usageQ.data]);
 
   const tableRows = useMemo<DashboardRow[]>(() => {
     const rows: DashboardRow[] = (pipelinesQ.data ?? []).map((pipeline) => {
@@ -171,11 +167,11 @@ export function DashboardPage() {
         status,
         lastRun: updated ? timeAgo(new Date(updated)) : "-",
         steps: String(stepCount),
-        cost: "~14 credits",
+        cost: "—",
         pipelineId: pipeline.id,
       };
     });
-    return rows.length > 0 ? rows : DASHBOARD_MOCK_ROWS;
+    return rows;
   }, [pipelinesQ.data]);
 
   /* Design: buttons padding [10,18], gap 8, cornerRadius 8 */
@@ -190,12 +186,15 @@ export function DashboardPage() {
         <span className="hidden sm:inline">New pipeline</span>
         <span className="sm:hidden">New</span>
       </button>
-      <button
-        type="button"
-        className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
-      >
-        Import YAML
-      </button>
+      {importEnabled ? (
+        <button
+          type="button"
+          onClick={() => setImportOpen(true)}
+          className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
+        >
+          Import YAML
+        </button>
+      ) : null}
     </>
   );
 
@@ -205,6 +204,20 @@ export function DashboardPage() {
       subtitle="Overview of your pipelines and recent activity"
       actions={actions}
     >
+      {importEnabled ? (
+        <ImportYamlModal
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImported={(created) => {
+            trackPipelineCreated(created.id, created.name);
+            queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+            navigate({
+              to: "/pipelines/$pipelineId/edit",
+              params: { pipelineId: created.id },
+            });
+          }}
+        />
+      ) : null}
       {createMut.isError ? (
         <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">
           {createMut.error instanceof Error
@@ -224,7 +237,11 @@ export function DashboardPage() {
         <StatCard
           label="RUNS TODAY"
           value={String(stats.runsToday)}
-          sub={`${stats.successRate}% success rate`}
+          sub={
+            stats.successRate > 0
+              ? `${stats.successRate}% success rate (${stats.successRateWindow})`
+              : stats.successRateWindow
+          }
           subColor="#22C55E"
         />
         <StatCard
@@ -253,6 +270,11 @@ export function DashboardPage() {
             {pipelinesQ.error instanceof Error
               ? pipelinesQ.error.message
               : "Failed to load"}
+          </p>
+        ) : null}
+        {!pipelinesQ.isLoading && tableRows.length === 0 ? (
+          <p className="p-5 text-sm text-[var(--text-tertiary)]">
+            No pipelines yet. Create one to see dashboard activity.
           </p>
         ) : null}
 
@@ -441,6 +463,10 @@ function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return String(n);
+}
+
+function formatInteger(n: number): string {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 }
 
 function timeAgo(date: Date): string {
