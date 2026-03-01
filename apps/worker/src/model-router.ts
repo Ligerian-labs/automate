@@ -2,7 +2,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 import { Mistral } from "@mistralai/mistralai";
 import OpenAI from "openai";
+import { bootstrapWorkerEnv } from "./env-bootstrap.js";
 import { MARKUP_PERCENTAGE, SUPPORTED_MODELS } from "./core-adapter.js";
+
+bootstrapWorkerEnv();
 
 interface ModelRequest {
   model: string;

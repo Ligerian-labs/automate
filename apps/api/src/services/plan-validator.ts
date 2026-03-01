@@ -1,7 +1,15 @@
-import { PLAN_LIMITS, type PipelineDefinition, type Plan } from "@stepiq/core";
-import { and, eq, gte, lte } from "drizzle-orm";
+import {
+  PLAN_LIMITS,
+  type ModelProvider,
+  type PipelineDefinition,
+  type Plan,
+  type RunFundingMode,
+  providerSecretNames,
+  providersForPipeline,
+} from "@stepiq/core";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { pipelines, runs, users } from "../db/schema.js";
+import { pipelines, runs, userSecrets, users } from "../db/schema.js";
 import { rollUserBillingCycleIfNeeded } from "./billing-cycle.js";
 
 type PlanLimitCode =
@@ -10,6 +18,7 @@ type PlanLimitCode =
   | "PLAN_MAX_STEPS"
   | "PLAN_MAX_RUNS_PER_DAY"
   | "PLAN_CREDITS_EXHAUSTED"
+  | "PLAN_BYOK_REQUIRED"
   | "PLAN_CRON_DISABLED"
   | "PLAN_WEBHOOKS_DISABLED"
   | "PLAN_API_DISABLED";
@@ -36,6 +45,13 @@ export function isPlanValidationError(
   err: unknown,
 ): err is PlanValidationError {
   return err instanceof PlanValidationError;
+}
+
+function isMissingPipelineIdColumnError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return /(?:no such column|column .* does not exist).*pipeline_id/i.test(
+    error.message,
+  );
 }
 
 async function getUserPlanState(userId: string): Promise<{
@@ -74,6 +90,137 @@ function utcDayWindow(date = new Date()): { start: Date; end: Date } {
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
   return { start, end };
+}
+
+async function assertWithinDailyRunLimit(
+  userId: string,
+  plan: Plan,
+  maxRunsPerDay: number,
+): Promise<void> {
+  if (maxRunsPerDay < 0) return;
+
+  const { start, end } = utcDayWindow();
+  const runsToday = await db
+    .select({ id: runs.id })
+    .from(runs)
+    .where(
+      and(
+        eq(runs.userId, userId),
+        gte(runs.createdAt, start),
+        lte(runs.createdAt, end),
+      ),
+    );
+
+  if (runsToday.length >= maxRunsPerDay) {
+    throw new PlanValidationError(
+      "PLAN_MAX_RUNS_PER_DAY",
+      "Daily run limit reached for current plan",
+      {
+        plan,
+        limit: maxRunsPerDay,
+        current: runsToday.length,
+      },
+    );
+  }
+}
+
+async function missingProviderKeys(
+  userId: string,
+  pipelineId: string,
+  requiredProviders: ModelProvider[],
+): Promise<ModelProvider[]> {
+  if (requiredProviders.length === 0) return [];
+
+  const candidateNames = Array.from(
+    new Set(
+      requiredProviders.flatMap((provider) => providerSecretNames(provider)),
+    ),
+  );
+
+  let secrets: Array<{ name: string; pipelineId: string | null }> = [];
+  try {
+    secrets = await db
+      .select({
+        name: userSecrets.name,
+        pipelineId: userSecrets.pipelineId,
+      })
+      .from(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          inArray(userSecrets.name, candidateNames),
+        ),
+      );
+  } catch (error) {
+    if (!isMissingPipelineIdColumnError(error)) throw error;
+    const legacySecrets = await db
+      .select({
+        name: userSecrets.name,
+      })
+      .from(userSecrets)
+      .where(
+        and(
+          eq(userSecrets.userId, userId),
+          inArray(userSecrets.name, candidateNames),
+        ),
+      );
+    secrets = legacySecrets.map((item) => ({ ...item, pipelineId: null }));
+  }
+
+  return requiredProviders.filter((provider) => {
+    const names = providerSecretNames(provider);
+    return !secrets.some(
+      (secret) =>
+        names.includes(secret.name) &&
+        (secret.pipelineId === pipelineId || secret.pipelineId == null),
+    );
+  });
+}
+
+export async function resolveRunFundingModeForPipeline(
+  userId: string,
+  pipelineId: string,
+  definition: PipelineDefinition,
+): Promise<{
+  fundingMode: RunFundingMode;
+  plan: Plan;
+}> {
+  const { plan, limits, creditsRemaining } = await getUserPlanState(userId);
+  await assertWithinDailyRunLimit(userId, plan, limits.max_runs_per_day);
+
+  if (plan === "starter" || plan === "pro") {
+    if (creditsRemaining > 0) {
+      return { fundingMode: "app_credits", plan };
+    }
+    const requiredProviders = providersForPipeline(definition);
+    const missingProviders = await missingProviderKeys(
+      userId,
+      pipelineId,
+      requiredProviders,
+    );
+    if (missingProviders.length > 0) {
+      throw new PlanValidationError(
+        "PLAN_BYOK_REQUIRED",
+        "Credits exhausted: bring your own provider keys to continue",
+        {
+          plan,
+          missing_providers: missingProviders,
+          remaining: creditsRemaining,
+        },
+      );
+    }
+    return { fundingMode: "byok_required", plan };
+  }
+
+  if (limits.credits >= 0 && creditsRemaining <= 0) {
+    throw new PlanValidationError(
+      "PLAN_CREDITS_EXHAUSTED",
+      "Credits exhausted for current plan",
+      { plan, remaining: creditsRemaining },
+    );
+  }
+
+  return { fundingMode: "legacy", plan };
 }
 
 export async function assertCanCreatePipeline(userId: string): Promise<void> {
@@ -140,31 +287,7 @@ export async function assertCanTriggerRun(userId: string): Promise<void> {
       { plan, remaining: creditsRemaining },
     );
   }
-  if (limits.max_runs_per_day < 0) return;
-
-  const { start, end } = utcDayWindow();
-  const runsToday = await db
-    .select({ id: runs.id })
-    .from(runs)
-    .where(
-      and(
-        eq(runs.userId, userId),
-        gte(runs.createdAt, start),
-        lte(runs.createdAt, end),
-      ),
-    );
-
-  if (runsToday.length >= limits.max_runs_per_day) {
-    throw new PlanValidationError(
-      "PLAN_MAX_RUNS_PER_DAY",
-      "Daily run limit reached for current plan",
-      {
-        plan,
-        limit: limits.max_runs_per_day,
-        current: runsToday.length,
-      },
-    );
-  }
+  await assertWithinDailyRunLimit(userId, plan, limits.max_runs_per_day);
 }
 
 export async function assertCanUseCron(userId: string): Promise<void> {

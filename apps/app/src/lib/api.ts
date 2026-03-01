@@ -6,14 +6,20 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 export interface ApiErrorShape {
   error?: string;
   message?: string;
+  code?: string;
+  details?: unknown;
 }
 
 export class ApiError extends Error {
   status: number;
+  code?: string;
+  details?: unknown;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string, details?: unknown) {
     super(message);
     this.status = status;
+    this.code = code;
+    this.details = details;
   }
 }
 
@@ -46,7 +52,12 @@ export async function apiFetch<T>(
       (data as ApiErrorShape | null)?.error ||
       (data as ApiErrorShape | null)?.message ||
       `Request failed (${res.status})`;
-    throw new ApiError(res.status, message);
+    throw new ApiError(
+      res.status,
+      message,
+      (data as ApiErrorShape | null)?.code,
+      (data as ApiErrorShape | null)?.details,
+    );
   }
 
   return data as T;
@@ -75,6 +86,10 @@ export interface RunRecord {
   total_tokens?: number;
   totalCostCents?: number;
   total_cost_cents?: number;
+  fundingMode?: "legacy" | "app_credits" | "byok_required";
+  funding_mode?: "legacy" | "app_credits" | "byok_required";
+  creditsDeducted?: number;
+  credits_deducted?: number;
   createdAt?: string;
   created_at?: string;
   startedAt?: string | null;

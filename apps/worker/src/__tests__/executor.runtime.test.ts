@@ -4,6 +4,7 @@ const tables = {
   users: {
     __name: "users",
     id: "users.id",
+    plan: "users.plan",
     creditsRemaining: "users.creditsRemaining",
   },
   pipelines: { __name: "pipelines", id: "pipelines.id" },
@@ -35,7 +36,7 @@ type StepExecRow = {
 
 type TestState = {
   run: Record<string, unknown> | null;
-  user: { id: string; creditsRemaining: number } | null;
+  user: { id: string; plan: string; creditsRemaining: number } | null;
   definition: Record<string, unknown> | null;
   userSecrets: Array<{
     name: string;
@@ -171,7 +172,27 @@ mock.module("../model-router.js", () => ({
   },
 }));
 mock.module("../core-adapter.js", () => ({
+  PLAN_LIMITS: {
+    free: { overage_per_credit_cents: 0 },
+    starter: { overage_per_credit_cents: 1 },
+    pro: { overage_per_credit_cents: 0.8 },
+    enterprise: { overage_per_credit_cents: 0 },
+  },
   TOKENS_PER_CREDIT: 1000,
+  providerSecretNames: (provider: string) => {
+    if (provider === "openai") return ["OPENAI_API_KEY", "openai_api_key"];
+    if (provider === "anthropic")
+      return ["ANTHROPIC_API_KEY", "anthropic_api_key"];
+    if (provider === "google")
+      return [
+        "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
+        "gemini_api_key",
+        "google_api_key",
+      ];
+    if (provider === "mistral") return ["MISTRAL_API_KEY", "mistral_api_key"];
+    return [];
+  },
   createKmsProvider: () => ({
     getMasterKey: async () => {
       if (kmsShouldFail) {
@@ -206,6 +227,7 @@ describe("executePipeline runtime behavior", () => {
       },
       user: {
         id: "user-1",
+        plan: "free",
         creditsRemaining: 10,
       },
       definition: {
@@ -453,6 +475,93 @@ describe("executePipeline runtime behavior", () => {
     expect(apiKeys.openai).toBe("pipeline-openai-value");
   });
 
+  it("uses app funding mode with env keys and deducts cost-based credits", async () => {
+    state.run = {
+      ...(state.run || {}),
+      fundingMode: "app_credits",
+    };
+    state.user = {
+      id: "user-1",
+      plan: "starter",
+      creditsRemaining: 10,
+    };
+    state.definition = {
+      name: "App-funded pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "Hello",
+        },
+      ],
+    };
+    state.userSecrets = [
+      {
+        name: "OPENAI_API_KEY",
+        encryptedValue: Buffer.from("encrypted").toString("base64"),
+      },
+    ];
+    state.callModelImpl = async () => ({
+      output: "ok",
+      input_tokens: 100,
+      output_tokens: 20,
+      cost_cents: 5,
+    });
+
+    await executePipeline("run-1");
+
+    const apiKeys = (state.lastModelRequest?.api_keys || {}) as Record<
+      string,
+      string
+    >;
+    expect(apiKeys.openai === undefined || apiKeys.openai === "").toBe(true);
+    expect(state.user?.creditsRemaining).toBe(5);
+    expect(state.run?.creditsDeducted).toBe(5);
+  });
+
+  it("does not deduct credits when run is BYOK funded", async () => {
+    state.run = {
+      ...(state.run || {}),
+      fundingMode: "byok_required",
+    };
+    state.user = {
+      id: "user-1",
+      plan: "starter",
+      creditsRemaining: 10,
+    };
+    state.definition = {
+      name: "BYOK funded pipeline",
+      version: 1,
+      steps: [
+        {
+          id: "s1",
+          type: "llm",
+          model: "gpt-4o-mini",
+          prompt: "Hello",
+        },
+      ],
+    };
+    state.userSecrets = [
+      {
+        name: "OPENAI_API_KEY",
+        encryptedValue: Buffer.from("encrypted").toString("base64"),
+      },
+    ];
+    state.callModelImpl = async () => ({
+      output: "ok",
+      input_tokens: 2000,
+      output_tokens: 500,
+      cost_cents: 8,
+    });
+
+    await executePipeline("run-1");
+
+    expect(state.user?.creditsRemaining).toBe(10);
+    expect(state.run?.creditsDeducted).toBe(0);
+  });
+
   it("deducts credits based on total tokens with round-up", async () => {
     state.callModelImpl = async () => ({
       output: "model-output",
@@ -483,6 +592,7 @@ describe("executePipeline runtime behavior", () => {
   it("does not let credit balance go below zero", async () => {
     state.user = {
       id: "user-1",
+      plan: "starter",
       creditsRemaining: 1,
     };
     state.callModelImpl = async () => ({

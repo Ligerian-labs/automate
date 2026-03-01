@@ -1,6 +1,7 @@
 import {
   createKmsProvider,
   createPipelineSchema,
+  type PipelineDefinition,
   createScheduleSchema,
   createSecretSchema,
   encryptSecret,
@@ -24,10 +25,10 @@ import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
 import {
   assertCanCreatePipeline,
-  assertCanTriggerRun,
   assertCanUseCron,
   assertPipelineDefinitionWithinPlan,
   isPlanValidationError,
+  resolveRunFundingModeForPipeline,
 } from "../services/plan-validator.js";
 import { enqueueRun } from "../services/queue.js";
 import { createScheduleForPipeline } from "../services/schedule-create.js";
@@ -243,8 +244,14 @@ pipelineRoutes.post("/:id/run", async (c) => {
 
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
 
+  let fundingMode: "legacy" | "app_credits" | "byok_required";
   try {
-    await assertCanTriggerRun(userId);
+    const resolved = await resolveRunFundingModeForPipeline(
+      userId,
+      pipelineId,
+      pipeline.definition as PipelineDefinition,
+    );
+    fundingMode = resolved.fundingMode;
   } catch (err) {
     if (isPlanValidationError(err)) {
       return c.json(
@@ -264,6 +271,7 @@ pipelineRoutes.post("/:id/run", async (c) => {
       triggerType: "manual",
       status: "pending",
       inputData: parsed.data.input_data || {},
+      fundingMode,
     })
     .returning();
 

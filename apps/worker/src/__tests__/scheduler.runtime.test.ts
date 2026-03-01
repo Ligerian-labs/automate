@@ -22,10 +22,17 @@ const tables = {
     __name: "users",
     id: "users.id",
     plan: "users.plan",
+    creditsRemaining: "users.creditsRemaining",
   },
   pipelineVersions: { __name: "pipelineVersions", id: "pipelineVersions.id" },
   stepExecutions: { __name: "stepExecutions", id: "stepExecutions.id" },
-  userSecrets: { __name: "userSecrets", id: "userSecrets.id" },
+  userSecrets: {
+    __name: "userSecrets",
+    id: "userSecrets.id",
+    userId: "userSecrets.userId",
+    name: "userSecrets.name",
+    pipelineId: "userSecrets.pipelineId",
+  },
 };
 
 type SchedulerState = {
@@ -42,8 +49,10 @@ type SchedulerState = {
     id: string;
     userId: string;
     version: number;
+    definition: Record<string, unknown>;
   }>;
-  users: Array<{ id: string; plan: string }>;
+  users: Array<{ id: string; plan: string; creditsRemaining: number }>;
+  userSecrets: Array<{ userId: string; name: string; pipelineId?: string | null }>;
   existingRunsToday: Array<{ id: string; userId: string; createdAt: Date }>;
   insertedRuns: Array<Record<string, unknown>>;
   updatedSchedules: Array<{ id: string; set: Record<string, unknown> }>;
@@ -103,6 +112,9 @@ function createDbMock() {
           if (table.__name === "runs") {
             return Promise.resolve(state.existingRunsToday);
           }
+          if (table.__name === "userSecrets") {
+            return Promise.resolve(state.userSecrets);
+          }
           return { limit: async () => [] };
         },
       }),
@@ -151,6 +163,7 @@ mock.module("drizzle-orm", () => ({
   eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
   gte: (left: unknown, right: unknown) => ({ type: "gte", left, right }),
   lte: (left: unknown, right: unknown) => ({ type: "lte", left, right }),
+  sql: (..._args: unknown[]) => ({ type: "sql" }),
   inArray: (left: unknown, right: unknown[]) => ({
     type: "inArray",
     left,
@@ -175,8 +188,22 @@ describe("scheduler runtime behavior", () => {
           inputData: { topic: "AI" },
         },
       ],
-      pipelines: [{ id: "pipe-1", userId: "user-1", version: 3 }],
-      users: [{ id: "user-1", plan: "pro" }],
+      pipelines: [
+        {
+          id: "pipe-1",
+          userId: "user-1",
+          version: 3,
+          definition: {
+            name: "cron-pipeline",
+            version: 1,
+            steps: [
+              { id: "s1", type: "llm", model: "gpt-4o-mini", prompt: "Hello" },
+            ],
+          },
+        },
+      ],
+      users: [{ id: "user-1", plan: "pro", creditsRemaining: 100 }],
+      userSecrets: [],
       existingRunsToday: [],
       insertedRuns: [],
       updatedSchedules: [],
@@ -205,6 +232,7 @@ describe("scheduler runtime behavior", () => {
 
     expect(state.insertedRuns).toHaveLength(1);
     expect(state.insertedRuns[0]?.triggerType).toBe("cron");
+    expect(state.insertedRuns[0]?.fundingMode).toBe("app_credits");
     expect(state.queueAdds).toHaveLength(1);
     expect(state.queueAdds[0]?.name).toBe("execute");
     expect(state.updatedSchedules).toHaveLength(1);
@@ -227,7 +255,7 @@ describe("scheduler runtime behavior", () => {
   });
 
   it("skips run creation when cron is disabled for plan", async () => {
-    state.users = [{ id: "user-1", plan: "free" }];
+    state.users = [{ id: "user-1", plan: "free", creditsRemaining: 100 }];
 
     const connection = {
       set: async () => "OK",
@@ -243,7 +271,7 @@ describe("scheduler runtime behavior", () => {
   });
 
   it("skips run creation when daily run cap is reached", async () => {
-    state.users = [{ id: "user-1", plan: "free" }];
+    state.users = [{ id: "user-1", plan: "free", creditsRemaining: 100 }];
     state.existingRunsToday = Array.from({ length: 10 }).map((_, idx) => ({
       id: `existing-${idx + 1}`,
       userId: "user-1",

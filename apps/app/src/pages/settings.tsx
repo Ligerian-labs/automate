@@ -778,6 +778,11 @@ export function SettingsPage() {
               <p className="mb-4 text-sm text-[var(--text-tertiary)]">
                 View usage and manage your subscription.
               </p>
+              <p className="mb-4 rounded-lg border border-[var(--divider)] bg-[var(--bg-inset)] px-3 py-2 text-xs text-[var(--text-secondary)]">
+                Starter and Pro credits run on StepIQ-managed provider keys.
+                When credits are exhausted, add your own provider keys in the
+                Secrets tab to continue running pipelines.
+              </p>
               <div className="mb-4 flex items-center gap-2">
                 <button
                   type="button"

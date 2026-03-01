@@ -1,14 +1,14 @@
-import { listRunsQuery, uuidParam } from "@stepiq/core";
+import { type PipelineDefinition, listRunsQuery, uuidParam } from "@stepiq/core";
 import { and, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { db } from "../db/index.js";
-import { pipelines, runs, stepExecutions } from "../db/schema.js";
+import { pipelineVersions, pipelines, runs, stepExecutions } from "../db/schema.js";
 import type { Env } from "../lib/env.js";
 import { requireAuth } from "../middleware/auth.js";
 import {
-  assertCanTriggerRun,
   isPlanValidationError,
+  resolveRunFundingModeForPipeline,
 } from "../services/plan-validator.js";
 import { enqueueRun } from "../services/queue.js";
 
@@ -112,7 +112,7 @@ runRoutes.post("/:id/retry", async (c) => {
   if (!sourceRun) return c.json({ error: "Run not found" }, 404);
 
   const [pipeline] = await db
-    .select({ id: pipelines.id })
+    .select({ id: pipelines.id, definition: pipelines.definition })
     .from(pipelines)
     .where(
       and(
@@ -124,8 +124,28 @@ runRoutes.post("/:id/retry", async (c) => {
     .limit(1);
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
 
+  const [sourceVersion] = await db
+    .select({ definition: pipelineVersions.definition })
+    .from(pipelineVersions)
+    .where(
+      and(
+        eq(pipelineVersions.pipelineId, sourceRun.pipelineId),
+        eq(pipelineVersions.version, sourceRun.pipelineVersion),
+      ),
+    )
+    .limit(1);
+  const definition =
+    (sourceVersion?.definition as PipelineDefinition | undefined) ||
+    (pipeline.definition as PipelineDefinition);
+
+  let fundingMode: "legacy" | "app_credits" | "byok_required";
   try {
-    await assertCanTriggerRun(userId);
+    const resolved = await resolveRunFundingModeForPipeline(
+      userId,
+      sourceRun.pipelineId,
+      definition,
+    );
+    fundingMode = resolved.fundingMode;
   } catch (err) {
     if (isPlanValidationError(err)) {
       return c.json(
@@ -145,6 +165,7 @@ runRoutes.post("/:id/retry", async (c) => {
       triggerType: "retry",
       status: "pending",
       inputData: sourceRun.inputData ?? {},
+      fundingMode,
     })
     .returning();
 
