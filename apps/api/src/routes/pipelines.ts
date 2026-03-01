@@ -600,9 +600,29 @@ pipelineRoutes.post("/:id/schedules", async (c) => {
 
 // Validate pipeline definition
 pipelineRoutes.post("/validate", async (c) => {
+  const userId = c.get("userId");
+  if (!userId) return c.json({ valid: false, errors: "Unauthorized" }, 401);
+
   const body = await c.req.json();
   const parsed = createPipelineSchema.safeParse(body);
-  if (!parsed.success)
+  if (!parsed.success) {
     return c.json({ valid: false, errors: parsed.error.flatten() });
+  }
+
+  try {
+    await assertCanCreatePipeline(userId);
+    await assertPipelineDefinitionWithinPlan(userId, parsed.data.definition);
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json({
+        valid: false,
+        errors: err.message,
+        code: err.code,
+        details: err.details,
+      });
+    }
+    throw err;
+  }
+
   return c.json({ valid: true });
 });

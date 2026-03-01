@@ -365,4 +365,54 @@ describe("plan limit enforcement", () => {
     expect(body.code).toBe("PLAN_BYOK_REQUIRED");
     expect(state.insertedRuns).toBe(0);
   });
+
+  it("returns invalid for malformed validate payload", async () => {
+    state.user = {
+      id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
+      plan: "free",
+      creditsRemaining: 100,
+    };
+    const headers = await authHeaders();
+
+    const res = await app.request("/api/pipelines/validate", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name: "bad",
+        definition: { name: "bad", version: 1, steps: [] },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.valid).toBe(false);
+  });
+
+  it("returns plan error for validate when pipeline cap is reached", async () => {
+    state.user = {
+      id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
+      plan: "free",
+      creditsRemaining: 100,
+    };
+    state.activePipelineCount = 3;
+    const headers = await authHeaders();
+
+    const res = await app.request("/api/pipelines/validate", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name: "over-limit",
+        definition: {
+          name: "over-limit",
+          version: 1,
+          steps: [{ id: "s1", name: "Step 1", prompt: "Hello" }],
+        },
+      }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.valid).toBe(false);
+    expect(body.code).toBe("PLAN_MAX_PIPELINES");
+  });
 });

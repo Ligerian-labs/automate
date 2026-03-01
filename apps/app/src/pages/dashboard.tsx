@@ -1,10 +1,21 @@
 import type { PipelineDefinition } from "@stepiq/core";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "../components/app-shell";
+import { ImportYamlModal } from "../components/import-yaml-modal";
 import { trackPipelineCreated } from "../lib/analytics";
-import { type PipelineRecord, type RunRecord, apiFetch } from "../lib/api";
+import {
+  type PipelineRecord,
+  type RunRecord,
+  type UserMe,
+  apiFetch,
+} from "../lib/api";
+
+function canImportYaml(plan: string | undefined): boolean {
+  const normalized = (plan || "").toLowerCase();
+  return normalized === "pro" || normalized === "enterprise";
+}
 
 const DASHBOARD_FALLBACK = {
   active: 7,
@@ -69,6 +80,8 @@ type DashboardRow = {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [importOpen, setImportOpen] = useState(false);
 
   async function createPipeline() {
     const baseDefinition: PipelineDefinition = {
@@ -110,6 +123,11 @@ export function DashboardPage() {
     queryKey: ["runs", "dashboard"],
     queryFn: () => apiFetch<RunRecord[]>("/api/runs?limit=20"),
   });
+  const meQ = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<UserMe>("/api/user/me"),
+  });
+  const importEnabled = canImportYaml(meQ.data?.plan);
 
   const stats = useMemo(() => {
     const pipelines = pipelinesQ.data ?? [];
@@ -190,12 +208,15 @@ export function DashboardPage() {
         <span className="hidden sm:inline">New pipeline</span>
         <span className="sm:hidden">New</span>
       </button>
-      <button
-        type="button"
-        className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
-      >
-        Import YAML
-      </button>
+      {importEnabled ? (
+        <button
+          type="button"
+          onClick={() => setImportOpen(true)}
+          className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
+        >
+          Import YAML
+        </button>
+      ) : null}
     </>
   );
 
@@ -205,6 +226,20 @@ export function DashboardPage() {
       subtitle="Overview of your pipelines and recent activity"
       actions={actions}
     >
+      {importEnabled ? (
+        <ImportYamlModal
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImported={(created) => {
+            trackPipelineCreated(created.id, created.name);
+            queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+            navigate({
+              to: "/pipelines/$pipelineId/edit",
+              params: { pipelineId: created.id },
+            });
+          }}
+        />
+      ) : null}
       {createMut.isError ? (
         <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">
           {createMut.error instanceof Error
