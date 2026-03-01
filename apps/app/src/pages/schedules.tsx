@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AppShell } from "../components/app-shell";
 import { trackScheduleDeleted } from "../lib/analytics";
-import { ApiError, type PipelineRecord, apiFetch } from "../lib/api";
+import {
+  ApiError,
+  type PipelineRecord,
+  type RunRecord,
+  apiFetch,
+} from "../lib/api";
 
 type ScheduleRecord = {
   id: string;
@@ -25,62 +30,9 @@ type ScheduleRow = {
   pipeline: string;
   frequency: string;
   nextRun: string;
+  nextRunAt: string | null;
   status: "active" | "paused" | "failed";
-  isFallback: boolean;
 };
-
-const FALLBACK_ROWS: ScheduleRow[] = [
-  {
-    id: "fallback-1",
-    title: "Weekly blog generation",
-    cron: "0 9 * * MON",
-    pipeline: "weekly-blog-generator",
-    frequency: "Every Monday 09:00",
-    nextRun: "in 14 minutes",
-    status: "active",
-    isFallback: true,
-  },
-  {
-    id: "fallback-2",
-    title: "Daily ticket triage",
-    cron: "0 8 * * *",
-    pipeline: "support-ticket-triage",
-    frequency: "Every day 08:00",
-    nextRun: "in 6 hours",
-    status: "active",
-    isFallback: true,
-  },
-  {
-    id: "fallback-3",
-    title: "Competitor analysis",
-    cron: "0 6 * * FRI",
-    pipeline: "competitor-analysis",
-    frequency: "Every Friday 06:00",
-    nextRun: "in 3 days",
-    status: "paused",
-    isFallback: true,
-  },
-  {
-    id: "fallback-4",
-    title: "Nightly data sync",
-    cron: "0 2 * * *",
-    pipeline: "data-sync-pipeline",
-    frequency: "Every day 02:00",
-    nextRun: "in 10 hours",
-    status: "active",
-    isFallback: true,
-  },
-  {
-    id: "fallback-5",
-    title: "Monthly report digest",
-    cron: "0 10 1 * *",
-    pipeline: "daily-news-digest",
-    frequency: "1st of month 10:00",
-    nextRun: "in 5 days",
-    status: "failed",
-    isFallback: true,
-  },
-];
 
 export function SchedulesPage() {
   const queryClient = useQueryClient();
@@ -106,6 +58,11 @@ export function SchedulesPage() {
     },
   });
 
+  const runsQ = useQuery({
+    queryKey: ["runs", "schedules-dashboard"],
+    queryFn: () => apiFetch<RunRecord[]>("/api/runs?limit=100"),
+  });
+
   const deleteMut = useMutation({
     mutationFn: (scheduleId: string) =>
       apiFetch<{ deleted: boolean }>(`/api/schedules/${scheduleId}`, {
@@ -119,7 +76,7 @@ export function SchedulesPage() {
   });
 
   const rows: ScheduleRow[] = (() => {
-    const mapped = (schedulesQ.data ?? []).map(({ schedule, pipeline }) => {
+    return (schedulesQ.data ?? []).map(({ schedule, pipeline }) => {
       const cron =
         schedule.cronExpression || schedule.cron_expression || "* * * * *";
       const title = toTitleCase(
@@ -130,24 +87,58 @@ export function SchedulesPage() {
       );
       const status: ScheduleRow["status"] =
         schedule.enabled === false ? "paused" : "active";
+      const nextRunAt = schedule.nextRunAt || schedule.next_run_at || null;
       return {
         id: schedule.id,
         title,
         cron,
         pipeline: pipeline.name,
         frequency: cronToFrequency(cron),
-        nextRun: relativeUntil(schedule.nextRunAt || schedule.next_run_at),
+        nextRun: relativeUntil(nextRunAt),
+        nextRunAt,
         status,
-        isFallback: false,
       };
     });
-    return mapped.length > 0 ? mapped : FALLBACK_ROWS;
   })();
 
   const activeSchedules = rows.filter((row) => row.status === "active").length;
+  const now = Date.now();
   const nextRow =
-    rows.find((row) => row.nextRun.startsWith("in ")) ?? FALLBACK_ROWS[0];
-  const hasRealData = (schedulesQ.data ?? []).length > 0;
+    rows
+      .filter((row) => row.nextRunAt)
+      .sort((a, b) => {
+        const aTs = new Date(a.nextRunAt || "").getTime();
+        const bTs = new Date(b.nextRunAt || "").getTime();
+        return aTs - bTs;
+      })
+      .find((row) => {
+        const ts = new Date(row.nextRunAt || "").getTime();
+        return !Number.isNaN(ts) && ts >= now;
+      }) || null;
+
+  const scheduleRuns = (runsQ.data ?? []).filter(
+    (run) => (run.triggerType || run.trigger_type) === "schedule",
+  );
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const monthScheduleRuns = scheduleRuns.filter((run) => {
+    const created = run.createdAt || run.created_at;
+    if (!created) return false;
+    const createdAt = new Date(created);
+    return !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart;
+  });
+  const successfulScheduleRuns = monthScheduleRuns.filter(
+    (run) => run.status === "completed",
+  ).length;
+  const failedScheduleRuns = monthScheduleRuns.filter(
+    (run) => run.status === "failed",
+  ).length;
+  const successRate =
+    monthScheduleRuns.length > 0
+      ? Math.round((successfulScheduleRuns / monthScheduleRuns.length) * 100)
+      : null;
 
   const actions = (
     <Link
@@ -167,35 +158,30 @@ export function SchedulesPage() {
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <StatCard
           label="ACTIVE SCHEDULES"
-          value={String(hasRealData ? activeSchedules : 12)}
-          sub={
-            hasRealData
-              ? `+${Math.max(1, Math.round(activeSchedules / 3))} this week`
-              : "+3 this week"
-          }
+          value={String(activeSchedules)}
+          sub={`${rows.length - activeSchedules} paused`}
           subColor="var(--accent)"
         />
         <StatCard
           label="RUNS TRIGGERED"
-          value={hasRealData ? String(rows.length * 9) : "128"}
+          value={String(monthScheduleRuns.length)}
           sub="this month"
           subColor="var(--text-tertiary)"
         />
         <StatCard
           label="SUCCESS RATE"
-          value={hasRealData ? "97%" : "96%"}
-          sub={hasRealData ? "2 failures" : "5 failures"}
+          value={successRate === null ? "—" : `${successRate}%`}
+          sub={
+            monthScheduleRuns.length === 0
+              ? "No scheduled runs yet"
+              : `${failedScheduleRuns} failures this month`
+          }
           subColor="#F87171"
         />
         <StatCard
           label="NEXT TRIGGER"
-          value={nextRow.nextRun
-            .replace("in ", "")
-            .replace(" hours", "h")
-            .replace(" hour", "h")
-            .replace(" minutes", "m")
-            .replace(" minute", "m")}
-          sub={toKebab(nextRow.pipeline)}
+          value={nextRow ? compactRelative(nextRow.nextRun) : "—"}
+          sub={nextRow ? toKebab(nextRow.pipeline) : "No upcoming run"}
           subColor="var(--text-tertiary)"
         />
       </section>
@@ -282,7 +268,7 @@ export function SchedulesPage() {
                   <button
                     type="button"
                     onClick={() => deleteMut.mutate(row.id)}
-                    disabled={deleteMut.isPending || row.isFallback}
+                    disabled={deleteMut.isPending}
                     className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Delete
@@ -319,18 +305,16 @@ export function SchedulesPage() {
                 <span className="text-[var(--text-muted)]">·</span>
                 <span>Next: {row.nextRun}</span>
               </div>
-              {!row.isFallback ? (
-                <div className="mt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => deleteMut.mutate(row.id)}
-                    disabled={deleteMut.isPending}
-                    className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ) : null}
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => deleteMut.mutate(row.id)}
+                  disabled={deleteMut.isPending}
+                  className="cursor-pointer rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -409,19 +393,30 @@ function ScheduleStatusBadge({
 }
 
 function cronToFrequency(cron: string): string {
-  if (cron === "0 9 * * MON") return "Every Monday 09:00";
-  if (cron === "0 8 * * *") return "Every day 08:00";
-  if (cron === "0 6 * * FRI") return "Every Friday 06:00";
-  if (cron === "0 2 * * *") return "Every day 02:00";
-  if (cron === "0 10 1 * *") return "1st of month 10:00";
+  const [min, hour, dayOfMonth, _month, dayOfWeek] = cron.split(/\s+/);
+  const hh = hour?.padStart(2, "0");
+  const mm = min?.padStart(2, "0");
+
+  if (dayOfMonth === "*" && dayOfWeek === "*" && hour === "*" && min === "0") {
+    return "Every hour";
+  }
+  if (dayOfMonth === "*" && dayOfWeek === "*") return `Every day ${hh}:${mm}`;
+  if (dayOfMonth === "*" && dayOfWeek && dayOfWeek !== "*") {
+    return `Every ${dayOfWeek} ${hh}:${mm}`;
+  }
+  if (dayOfMonth && dayOfMonth !== "*" && dayOfWeek === "*") {
+    return `Day ${dayOfMonth} each month ${hh}:${mm}`;
+  }
   return cron;
 }
 
-function relativeUntil(dateString?: string): string {
-  if (!dateString) return "in 14 minutes";
+function relativeUntil(dateString?: string | null): string {
+  if (!dateString) return "—";
   const target = new Date(dateString);
-  if (Number.isNaN(target.getTime())) return "in 14 minutes";
+  if (Number.isNaN(target.getTime())) return "—";
   const diffMs = target.getTime() - Date.now();
+  if (diffMs <= 0) return "now";
+
   const diffMin = Math.max(1, Math.floor(diffMs / 60000));
   if (diffMin < 60) return `in ${diffMin} minutes`;
   const diffHours = Math.floor(diffMin / 60);
@@ -443,4 +438,16 @@ function toKebab(input: string): string {
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
+}
+
+function compactRelative(input: string): string {
+  if (!input.startsWith("in ")) return input;
+  return input
+    .replace("in ", "")
+    .replace(" hours", "h")
+    .replace(" hour", "h")
+    .replace(" minutes", "m")
+    .replace(" minute", "m")
+    .replace(" days", "d")
+    .replace(" day", "d");
 }
