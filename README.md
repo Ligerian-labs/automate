@@ -172,6 +172,11 @@ curl -X POST "http://localhost:3001/api/webhooks/<pipeline-id>" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: sk_live_xxxxxxxx" \
   -d '{"input_data":{"topic":"AI agents","language":"en"}}'
+
+# Alternative (for webhook providers that can't set custom headers):
+curl -X POST "http://localhost:3001/api/webhooks/<pipeline-id>?api_key=sk_live_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"input_data":{"topic":"AI agents","language":"en"}}'
 ```
 
 Response (`202`):

@@ -39,6 +39,9 @@ export function extractApiKey(c: Context): string | null {
     return authorization.slice("Bearer ".length);
   }
 
+  const queryApiKey = c.req.query("api_key");
+  if (queryApiKey) return queryApiKey;
+
   return null;
 }
 

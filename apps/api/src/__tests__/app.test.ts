@@ -192,6 +192,20 @@ describe("Webhook route", () => {
     expect(res.status).toBe(401);
   });
 
+  it("POST /api/webhooks/:id accepts api_key query parameter", async () => {
+    const res = await app.request(
+      "/api/webhooks/550e8400-e29b-41d4-a716-446655440000?api_key=sk_live_test",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.error).toBe("Invalid API key");
+  });
+
   it("dev outbound endpoints are disabled in production", async () => {
     const previous = process.env.NODE_ENV;
     process.env.NODE_ENV = "production";
