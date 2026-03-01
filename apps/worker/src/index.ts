@@ -1,9 +1,18 @@
 import { Worker } from "bullmq";
 import { Redis as IORedis } from "ioredis";
+import { bootstrapWorkerEnv } from "./env-bootstrap.js";
 import { executePipeline } from "./executor.js";
 import { startScheduler } from "./scheduler.js";
 
+bootstrapWorkerEnv();
+
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+console.log("🔐 Platform model keys:", {
+  openai: Boolean(process.env.OPENAI_API_KEY),
+  anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+  gemini: Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
+  mistral: Boolean(process.env.MISTRAL_API_KEY),
+});
 
 console.log("🔌 Connecting to Redis...");
 const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });

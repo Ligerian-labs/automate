@@ -10,6 +10,33 @@ const tables = {
     __name: "users",
     id: "users.id",
     plan: "users.plan",
+    creditsRemaining: "users.creditsRemaining",
+  },
+  apiKeys: {
+    __name: "apiKeys",
+    id: "apiKeys.id",
+    userId: "apiKeys.userId",
+    keyHash: "apiKeys.keyHash",
+    expiresAt: "apiKeys.expiresAt",
+    scopes: "apiKeys.scopes",
+    lastUsedAt: "apiKeys.lastUsedAt",
+  },
+  emailVerificationCodes: {
+    __name: "emailVerificationCodes",
+    id: "emailVerificationCodes.id",
+    email: "emailVerificationCodes.email",
+    codeHash: "emailVerificationCodes.codeHash",
+    attempts: "emailVerificationCodes.attempts",
+    expiresAt: "emailVerificationCodes.expiresAt",
+    consumedAt: "emailVerificationCodes.consumedAt",
+  },
+  billingDiscountCodes: {
+    __name: "billingDiscountCodes",
+    id: "billingDiscountCodes.id",
+    code: "billingDiscountCodes.code",
+    active: "billingDiscountCodes.active",
+    startsAt: "billingDiscountCodes.startsAt",
+    expiresAt: "billingDiscountCodes.expiresAt",
   },
   pipelines: {
     __name: "pipelines",
@@ -39,23 +66,39 @@ const tables = {
 };
 
 type State = {
-  user: { id: string; plan: string };
+  user: { id: string; plan: string; creditsRemaining: number };
   activePipelineCount: number;
   runsTodayCount: number;
-  pipeline: { id: string; userId: string; version: number };
+  pipeline: {
+    id: string;
+    userId: string;
+    version: number;
+    status: string;
+    definition: Record<string, unknown>;
+  };
   insertedPipelines: number;
   insertedRuns: number;
   insertedSchedules: number;
 };
 
 const state: State = {
-  user: { id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4", plan: "free" },
+  user: {
+    id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
+    plan: "free",
+    creditsRemaining: 100,
+  },
   activePipelineCount: 0,
   runsTodayCount: 0,
   pipeline: {
     id: "a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4",
     userId: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
     version: 1,
+    status: "active",
+    definition: {
+      name: "plan-limit-pipeline",
+      version: 1,
+      steps: [{ id: "s1", type: "llm", model: "gpt-4o-mini", prompt: "Hi" }],
+    },
   },
   insertedPipelines: 0,
   insertedRuns: 0,
@@ -92,7 +135,12 @@ mock.module("drizzle-orm", () => ({
   and: (...conds: unknown[]) => ({ type: "and", conds }),
   eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
   gte: (left: unknown, right: unknown) => ({ type: "gte", left, right }),
+  gt: (left: unknown, right: unknown) => ({ type: "gt", left, right }),
+  desc: (value: unknown) => ({ type: "desc", value }),
   lte: (left: unknown, right: unknown) => ({ type: "lte", left, right }),
+  sql: (..._args: unknown[]) => ({ type: "sql" }),
+  isNull: (left: unknown) => ({ type: "isNull", left }),
+  or: (...conds: unknown[]) => ({ type: "or", conds }),
   inArray: (left: unknown, right: unknown[]) => ({
     type: "inArray",
     left,
@@ -216,6 +264,7 @@ describe("plan limit enforcement", () => {
     state.user = {
       id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
       plan: "free",
+      creditsRemaining: 100,
     };
     state.activePipelineCount = 3;
     state.insertedPipelines = 0;
@@ -244,6 +293,7 @@ describe("plan limit enforcement", () => {
     state.user = {
       id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
       plan: "free",
+      creditsRemaining: 100,
     };
     const headers = await authHeaders();
 
@@ -270,6 +320,7 @@ describe("plan limit enforcement", () => {
     state.user = {
       id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
       plan: "free",
+      creditsRemaining: 100,
     };
     state.runsTodayCount = 10;
     state.insertedRuns = 0;
@@ -287,6 +338,31 @@ describe("plan limit enforcement", () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.code).toBe("PLAN_MAX_RUNS_PER_DAY");
+    expect(state.insertedRuns).toBe(0);
+  });
+
+  it("requires BYOK when starter credits are exhausted", async () => {
+    state.user = {
+      id: "c0c0c0c0-d1d1-e2e2-f3f3-a4a4a4a4a4a4",
+      plan: "starter",
+      creditsRemaining: 0,
+    };
+    state.runsTodayCount = 0;
+    state.insertedRuns = 0;
+    const headers = await authHeaders();
+
+    const res = await app.request(
+      "/api/pipelines/a0a0a0a0-b1b1-c2c2-d3d3-e4e4e4e4e4e4/run",
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ input_data: {} }),
+      },
+    );
+
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe("PLAN_BYOK_REQUIRED");
     expect(state.insertedRuns).toBe(0);
   });
 });

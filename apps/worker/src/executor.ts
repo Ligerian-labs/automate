@@ -4,7 +4,11 @@ import Handlebars from "handlebars";
 import postgres from "postgres";
 import { serverTrack } from "./analytics.js";
 import {
+  PLAN_LIMITS,
+  type Plan,
   type PipelineDefinition,
+  type RunFundingMode,
+  providerSecretNames,
   TOKENS_PER_CREDIT,
   createKmsProvider,
   decryptSecret,
@@ -45,9 +49,24 @@ function isMissingPipelineIdColumnError(error: unknown): boolean {
   );
 }
 
+function resolvePlatformApiKeys() {
+  return {
+    openai: process.env.OPENAI_API_KEY,
+    anthropic: process.env.ANTHROPIC_API_KEY,
+    gemini: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+    mistral: process.env.MISTRAL_API_KEY,
+  };
+}
+
 export async function executePipeline(runId: string) {
   const [run] = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
   if (!run) throw new Error(`Run ${runId} not found`);
+
+  const [runUser] = await db
+    .select({ plan: users.plan, creditsRemaining: users.creditsRemaining })
+    .from(users)
+    .where(eq(users.id, run.userId))
+    .limit(1);
 
   const [version] = await db
     .select()
@@ -82,6 +101,18 @@ export async function executePipeline(runId: string) {
   let totalTokens = 0;
   let totalCostCents = 0;
   let creditsDeducted = false;
+  const rawFundingMode = ((run.fundingMode || "legacy") as RunFundingMode) || "legacy";
+  const fundingMode: RunFundingMode =
+    rawFundingMode === "legacy" &&
+    (runUser?.plan === "starter" || runUser?.plan === "pro") &&
+    (runUser.creditsRemaining || 0) > 0
+      ? "app_credits"
+      : rawFundingMode;
+  const platformApiKeys = resolvePlatformApiKeys();
+  console.log(`🔐 Run ${runId} funding mode: ${fundingMode}`, {
+    userPlan: runUser?.plan || "unknown",
+    hasPlatformOpenAIKey: Boolean(platformApiKeys.openai),
+  });
 
   try {
     envSecrets = await resolveUserSecrets(
@@ -90,6 +121,9 @@ export async function executePipeline(runId: string) {
       definition,
       db,
       getOutputSigningSecretNames(definition),
+      {
+        includeProviderSecrets: fundingMode !== "app_credits",
+      },
     );
     context = {
       ...context,
@@ -133,20 +167,24 @@ export async function executePipeline(runId: string) {
             max_tokens: step.max_tokens,
             output_format: step.output_format,
             api_keys: {
-              openai:
-                envSecrets.values.OPENAI_API_KEY ||
-                envSecrets.values.openai_api_key,
-              anthropic:
-                envSecrets.values.ANTHROPIC_API_KEY ||
-                envSecrets.values.anthropic_api_key,
-              gemini:
-                envSecrets.values.GEMINI_API_KEY ||
-                envSecrets.values.GOOGLE_API_KEY ||
-                envSecrets.values.gemini_api_key ||
-                envSecrets.values.google_api_key,
-              mistral:
-                envSecrets.values.MISTRAL_API_KEY ||
-                envSecrets.values.mistral_api_key,
+              ...(fundingMode === "app_credits"
+                ? platformApiKeys
+                : {
+                    openai:
+                      envSecrets.values.OPENAI_API_KEY ||
+                      envSecrets.values.openai_api_key,
+                    anthropic:
+                      envSecrets.values.ANTHROPIC_API_KEY ||
+                      envSecrets.values.anthropic_api_key,
+                    gemini:
+                      envSecrets.values.GEMINI_API_KEY ||
+                      envSecrets.values.GOOGLE_API_KEY ||
+                      envSecrets.values.gemini_api_key ||
+                      envSecrets.values.google_api_key,
+                    mistral:
+                      envSecrets.values.MISTRAL_API_KEY ||
+                      envSecrets.values.mistral_api_key,
+                  }),
             },
           });
 
@@ -243,7 +281,13 @@ export async function executePipeline(runId: string) {
         (runStartedAt?.getTime() ?? completedAt.getTime()),
     });
 
-    await deductRunCredits(run.userId, totalTokens);
+    await deductRunCredits(
+      run.id,
+      run.userId,
+      totalTokens,
+      totalCostCents,
+      fundingMode,
+    );
     creditsDeducted = true;
 
     await deliverOutputWebhooks({
@@ -280,7 +324,13 @@ export async function executePipeline(runId: string) {
       .where(eq(runs.id, runId));
 
     if (!creditsDeducted) {
-      await deductRunCredits(run.userId, totalTokens);
+      await deductRunCredits(
+        run.id,
+        run.userId,
+        totalTokens,
+        totalCostCents,
+        fundingMode,
+      );
     }
   }
 }
@@ -290,22 +340,55 @@ function creditsFromTokens(totalTokens: number): number {
   return Math.ceil(totalTokens / TOKENS_PER_CREDIT);
 }
 
-async function deductRunCredits(userId: string, totalTokens: number) {
-  const creditsToDeduct = creditsFromTokens(totalTokens);
-  if (creditsToDeduct <= 0) return;
+async function deductRunCredits(
+  runId: string,
+  userId: string,
+  totalTokens: number,
+  totalCostCents: number,
+  fundingMode: RunFundingMode,
+) {
+  if (fundingMode === "byok_required") {
+    await db
+      .update(runs)
+      .set({ creditsDeducted: 0 })
+      .where(eq(runs.id, runId));
+    return;
+  }
 
   const [user] = await db
-    .select({ creditsRemaining: users.creditsRemaining })
+    .select({ plan: users.plan, creditsRemaining: users.creditsRemaining })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
   if (!user) return;
+
+  const plan = (user.plan in PLAN_LIMITS ? user.plan : "free") as Plan;
+  let creditsToDeduct = creditsFromTokens(totalTokens);
+  if (
+    fundingMode === "app_credits" &&
+    (plan === "starter" || plan === "pro")
+  ) {
+    const rate = PLAN_LIMITS[plan].overage_per_credit_cents;
+    creditsToDeduct =
+      totalCostCents > 0 && rate > 0 ? Math.ceil(totalCostCents / rate) : 0;
+  }
+  if (creditsToDeduct <= 0) {
+    await db
+      .update(runs)
+      .set({ creditsDeducted: 0 })
+      .where(eq(runs.id, runId));
+    return;
+  }
 
   const nextCredits = Math.max(0, user.creditsRemaining - creditsToDeduct);
   await db
     .update(users)
     .set({ creditsRemaining: nextCredits, updatedAt: new Date() })
     .where(eq(users.id, userId));
+  await db
+    .update(runs)
+    .set({ creditsDeducted: creditsToDeduct })
+    .where(eq(runs.id, runId));
 }
 
 function interpolate(
@@ -322,19 +405,19 @@ async function resolveUserSecrets(
   definition: PipelineDefinition,
   database: typeof db,
   additionalNames: string[] = [],
+  options?: {
+    includeProviderSecrets?: boolean;
+  },
 ): Promise<{ values: Record<string, string>; plainValues: string[] }> {
-  const providerSecretNames = [
-    "OPENAI_API_KEY",
-    "ANTHROPIC_API_KEY",
-    "GEMINI_API_KEY",
-    "GOOGLE_API_KEY",
-    "MISTRAL_API_KEY",
-    "openai_api_key",
-    "anthropic_api_key",
-    "gemini_api_key",
-    "google_api_key",
-    "mistral_api_key",
-  ];
+  const includeProviderSecrets = options?.includeProviderSecrets ?? true;
+  const providerNames = includeProviderSecrets
+    ? [
+        ...providerSecretNames("openai"),
+        ...providerSecretNames("anthropic"),
+        ...providerSecretNames("google"),
+        ...providerSecretNames("mistral"),
+      ]
+    : [];
 
   const allText = definition.steps
     .map((s) => `${s.prompt || ""} ${s.system_prompt || ""}`)
@@ -344,8 +427,8 @@ async function resolveUserSecrets(
     ? refs.map((r) => r.match(/\{\{env\.(\w+)\}\}/)?.[1]).filter(Boolean)
     : [];
   const names = [
-    ...new Set([
-      ...providerSecretNames,
+      ...new Set([
+      ...providerNames,
       ...referencedNames,
       ...additionalNames,
     ]),

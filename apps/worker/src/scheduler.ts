@@ -1,11 +1,18 @@
-import { PLAN_LIMITS, type Plan } from "@stepiq/core";
+import {
+  PLAN_LIMITS,
+  type ModelProvider,
+  type PipelineDefinition,
+  type Plan,
+  providerSecretNames,
+  providersForPipeline,
+} from "@stepiq/core";
 import { Queue } from "bullmq";
 import { CronExpressionParser } from "cron-parser";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import type { Redis as IORedis } from "ioredis";
 import postgres from "postgres";
-import { pipelines, runs, schedules, users } from "./db-scheduler.js";
+import { pipelines, runs, schedules, userSecrets, users } from "./db-scheduler.js";
 
 const dbUrl =
   process.env.DATABASE_URL || "postgres://stepiq:stepiq@localhost:5432/stepiq";
@@ -40,6 +47,84 @@ export function startScheduler(connection: IORedis) {
     }
     next.setUTCMonth(next.getUTCMonth() + 1);
     return next;
+  }
+
+  function isMissingPipelineIdColumnError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    return /(?:no such column|column .* does not exist).*pipeline_id/i.test(
+      error.message,
+    );
+  }
+
+  async function missingProviderKeys(
+    userId: string,
+    pipelineId: string,
+    requiredProviders: ModelProvider[],
+  ): Promise<ModelProvider[]> {
+    if (requiredProviders.length === 0) return [];
+
+    const candidateNames = Array.from(
+      new Set(
+        requiredProviders.flatMap((provider) => providerSecretNames(provider)),
+      ),
+    );
+    let secrets: Array<{ name: string; pipelineId: string | null }> = [];
+    try {
+      secrets = await db
+        .select({
+          name: userSecrets.name,
+          pipelineId: userSecrets.pipelineId,
+        })
+        .from(userSecrets)
+        .where(
+          and(
+            eq(userSecrets.userId, userId),
+            inArray(userSecrets.name, candidateNames),
+          ),
+        );
+    } catch (error) {
+      if (!isMissingPipelineIdColumnError(error)) throw error;
+      const legacySecrets = await db
+        .select({ name: userSecrets.name })
+        .from(userSecrets)
+        .where(
+          and(
+            eq(userSecrets.userId, userId),
+            inArray(userSecrets.name, candidateNames),
+          ),
+        );
+      secrets = legacySecrets.map((item) => ({ ...item, pipelineId: null }));
+    }
+
+    return requiredProviders.filter((provider) => {
+      const names = providerSecretNames(provider);
+      return !secrets.some(
+        (secret) =>
+          names.includes(secret.name) &&
+          (secret.pipelineId === pipelineId || secret.pipelineId == null),
+      );
+    });
+  }
+
+  async function resolveFundingModeForCronRun(
+    user: { id: string; plan: string; creditsRemaining: number },
+    pipelineId: string,
+    definition: PipelineDefinition,
+  ): Promise<"legacy" | "app_credits" | "byok_required" | "blocked"> {
+    const plan = (user.plan in PLAN_LIMITS ? user.plan : "free") as Plan;
+    if (plan === "starter" || plan === "pro") {
+      if (user.creditsRemaining > 0) return "app_credits";
+      const missing = await missingProviderKeys(
+        user.id,
+        pipelineId,
+        providersForPipeline(definition),
+      );
+      return missing.length > 0 ? "blocked" : "byok_required";
+    }
+    if (plan === "free" && user.creditsRemaining <= 0) {
+      return "blocked";
+    }
+    return "legacy";
   }
 
   async function refreshExpiredPaidCredits(now: Date) {
@@ -121,7 +206,11 @@ export function startScheduler(connection: IORedis) {
         if (!pipeline) continue;
 
         const [user] = await db
-          .select({ id: users.id, plan: users.plan })
+          .select({
+            id: users.id,
+            plan: users.plan,
+            creditsRemaining: users.creditsRemaining,
+          })
           .from(users)
           .where(eq(users.id, pipeline.userId))
           .limit(1);
@@ -164,6 +253,19 @@ export function startScheduler(connection: IORedis) {
           }
         }
 
+        const fundingMode = await resolveFundingModeForCronRun(
+          user,
+          pipeline.id,
+          pipeline.definition as PipelineDefinition,
+        );
+        if (fundingMode === "blocked") {
+          await db
+            .update(schedules)
+            .set({ nextRunAt: nextRun })
+            .where(eq(schedules.id, schedule.id));
+          continue;
+        }
+
         // Create run
         const [run] = await db
           .insert(runs)
@@ -174,6 +276,7 @@ export function startScheduler(connection: IORedis) {
             triggerType: "cron",
             status: "pending",
             inputData: schedule.inputData as Record<string, unknown>,
+            fundingMode,
           })
           .returning();
 

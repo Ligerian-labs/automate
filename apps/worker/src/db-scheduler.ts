@@ -1,1 +1,1 @@
-export { pipelines, runs, schedules, users } from "./db-schema.js";
+export { pipelines, runs, schedules, userSecrets, users } from "./db-schema.js";

@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import type {
   PipelineStatus,
   Plan,
+  RunFundingMode,
   RunStatus,
   StepStatus,
   TriggerType,
@@ -186,6 +187,11 @@ export const runs = pgTable(
     error: text("error"),
     totalTokens: integer("total_tokens").default(0).notNull(),
     totalCostCents: integer("total_cost_cents").default(0).notNull(),
+    fundingMode: text("funding_mode")
+      .$type<RunFundingMode>()
+      .default("legacy")
+      .notNull(),
+    creditsDeducted: integer("credits_deducted").default(0).notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

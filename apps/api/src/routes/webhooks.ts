@@ -10,9 +10,9 @@ import { pipelines, runs } from "../db/schema.js";
 import { authenticateApiKey, extractApiKey } from "../services/api-keys.js";
 import { validateInputAgainstPipelineSchema } from "../services/input-schema.js";
 import {
-  assertCanTriggerRun,
   assertCanUseApi,
   isPlanValidationError,
+  resolveRunFundingModeForPipeline,
 } from "../services/plan-validator.js";
 import { enqueueRun } from "../services/queue.js";
 
@@ -113,7 +113,6 @@ webhookRoutes.post("/:pipelineId", async (c) => {
 
   try {
     await assertCanUseApi(auth.userId);
-    await assertCanTriggerRun(auth.userId);
   } catch (err) {
     if (isPlanValidationError(err)) {
       return c.json(
@@ -141,6 +140,24 @@ webhookRoutes.post("/:pipelineId", async (c) => {
     )
     .limit(1);
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
+
+  let fundingMode: "legacy" | "app_credits" | "byok_required";
+  try {
+    const resolved = await resolveRunFundingModeForPipeline(
+      auth.userId,
+      pipeline.id,
+      pipeline.definition as PipelineDefinition,
+    );
+    fundingMode = resolved.fundingMode;
+  } catch (err) {
+    if (isPlanValidationError(err)) {
+      return c.json(
+        { error: err.message, code: err.code, details: err.details },
+        err.status,
+      );
+    }
+    throw err;
+  }
 
   const body = await c.req.json().catch(() => null);
   if (body === null || typeof body !== "object" || Array.isArray(body)) {
@@ -181,6 +198,7 @@ webhookRoutes.post("/:pipelineId", async (c) => {
       triggerType: "webhook",
       status: "pending",
       inputData: validation.data,
+      fundingMode,
     })
     .returning({ id: runs.id, status: runs.status });
 

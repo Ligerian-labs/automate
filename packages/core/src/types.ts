@@ -33,6 +33,8 @@ export type PipelineStatus = (typeof PIPELINE_STATUSES)[number];
 
 export type Plan = (typeof PLANS)[number];
 
+export type RunFundingMode = "legacy" | "app_credits" | "byok_required";
+
 // ── Pipeline Definition ──
 
 export interface PipelineVariable {
@@ -117,6 +119,8 @@ export interface Run {
   error: string | null;
   total_tokens: number;
   total_cost_cents: number;
+  funding_mode: RunFundingMode;
+  credits_deducted: number;
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
