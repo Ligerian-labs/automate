@@ -239,20 +239,20 @@ steps:
     </div>
 
     <section class="hero">
-      <div class="beta-badge"><span class="dot"></span> Now in public beta</div>
-      <div class="hero-text-wrap">
+      <div class="beta-badge hero-reveal hero-reveal-1"><span class="dot"></span> Now in public beta</div>
+      <div class="hero-text-wrap hero-reveal hero-reveal-2">
         <h1>Build AI pipelines.<br />Ship without infrastructure.</h1>
         <p class="hero-sub">
           Chain models, prompts and logic into multi-step workflows.<br />
           Trigger via API, cron, or one click. No servers needed.
         </p>
       </div>
-      <div class="hero-actions">
+      <div class="hero-actions hero-reveal hero-reveal-3">
         <a href={`${APP_URL}/register`} class="solid-link">Start building free <span class="arrow-icon">→</span></a>
         <a href="/docs" class="outline-link">View documentation</a>
       </div>
 
-      <article class="pipeline-mockup" id="docs">
+      <article class="pipeline-mockup hero-reveal hero-reveal-4" id="docs">
         <div class="mock-head">
           <strong class="mock-title">weekly-blog-generator</strong>
           <span class="status"><span class="status-dot"></span> Running</span>
@@ -276,7 +276,7 @@ steps:
         </div>
       </article>
 
-      <div class="trust">
+      <div class="trust hero-reveal hero-reveal-5">
         <span class="trust-label">Works with</span>
         <span class="trust-sep"></span>
         <span>Anthropic</span>
@@ -287,14 +287,14 @@ steps:
     </section>
 
     <section class="section">
-      <div class="section-header">
+      <div class="section-header reveal-on-scroll">
         <p class="kicker">HOW IT WORKS</p>
         <h2>From YAML to production<br />in three steps</h2>
         <p class="section-sub">Define your pipeline as code. We handle execution, retries, scheduling, and delivery.</p>
       </div>
       <div class="card-grid three">
         {howItWorks.map((item) => (
-          <article class="card">
+          <article class="card reveal-on-scroll">
             <div class="step-pill">{item.step}</div>
             <h3>{item.title}</h3>
             <p>{item.description}</p>
@@ -304,12 +304,12 @@ steps:
     </section>
 
     <section class="section" id="features">
-      <div class="section-header">
+      <div class="section-header reveal-on-scroll">
         <p class="kicker">PIPELINE AS CODE</p>
         <h2>Everything you need to<br />orchestrate AI workflows</h2>
       </div>
       <div class="features-layout">
-        <div class="code-card">
+        <div class="code-card reveal-on-scroll">
           <div class="code-header">
             <div class="code-dots">
               <span class="code-dot red"></span>
@@ -328,7 +328,7 @@ steps:
         </div>
         <div class="feat-cards">
           {coreFeatures.map((feat) => (
-            <article class="card feat-card">
+            <article class="card feat-card reveal-on-scroll">
               <div class="feat-icon" set:html={feat.icon} />
               <h3>{feat.title}</h3>
               <p>{feat.desc}</p>
@@ -339,14 +339,14 @@ steps:
     </section>
 
     <section class="section" id="secondary-features">
-      <div class="section-header">
+      <div class="section-header reveal-on-scroll">
         <p class="kicker">FEATURES</p>
         <h2>Built for production</h2>
         <p class="section-sub">Everything beyond the basics to run AI workflows at scale.</p>
       </div>
       <div class="card-grid three">
         {secondaryFeatures.map((feat) => (
-          <article class="card feat-card">
+          <article class="card feat-card reveal-on-scroll">
             <div class="feat-icon" set:html={feat.icon} />
             <h3>{feat.title}</h3>
             <p>{feat.desc}</p>
@@ -356,7 +356,7 @@ steps:
     </section>
 
     <section class="section" id="pricing">
-      <div class="section-header">
+      <div class="section-header reveal-on-scroll">
         <p class="kicker">PRICING</p>
         <h2>Upgrade as your usage grows</h2>
         <p class="section-sub">All accounts start on Free by default. Upgrade anytime for higher limits and advanced features.</p>
@@ -367,7 +367,7 @@ steps:
       </div>
       <div class="card-grid three">
         {pricing.map((plan) => (
-          <article class={`card pricing-card ${plan.featured ? "featured" : ""}`}>
+          <article class={`card pricing-card reveal-on-scroll ${plan.featured ? "featured" : ""}`}>
             {plan.featured && <div class="popular-badge">MOST POPULAR</div>}
             <h3>{plan.name}</h3>
             <div class="price-row">
@@ -564,4 +564,18 @@ steps:
       }
     });
   });
+
+  // Scroll reveal animations
+  const revealNodes = document.querySelectorAll<HTMLElement>(".reveal-on-scroll");
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      }
+    },
+    { threshold: 0.15, rootMargin: "0px 0px -8% 0px" },
+  );
+  revealNodes.forEach((node) => observer.observe(node));
 </script>
