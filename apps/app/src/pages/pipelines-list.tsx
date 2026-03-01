@@ -1,13 +1,21 @@
 import type { PipelineDefinition } from "@stepiq/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppShell } from "../components/app-shell";
+import { ImportYamlModal } from "../components/import-yaml-modal";
 import { trackPipelineCreated, trackPipelineDeleted } from "../lib/analytics";
-import { ApiError, type PipelineRecord, apiFetch } from "../lib/api";
+import { ApiError, type PipelineRecord, type UserMe, apiFetch } from "../lib/api";
+
+function canImportYaml(plan: string | undefined): boolean {
+  const normalized = (plan || "").toLowerCase();
+  return normalized === "pro" || normalized === "enterprise";
+}
 
 export function PipelinesListPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [importOpen, setImportOpen] = useState(false);
 
   async function createPipeline() {
     const baseDefinition: PipelineDefinition = {
@@ -55,6 +63,11 @@ export function PipelinesListPage() {
     queryKey: ["pipelines"],
     queryFn: () => apiFetch<PipelineRecord[]>("/api/pipelines"),
   });
+  const meQ = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<UserMe>("/api/user/me"),
+  });
+  const importEnabled = canImportYaml(meQ.data?.plan);
 
   const actions = (
     <>
@@ -67,12 +80,15 @@ export function PipelinesListPage() {
         <span className="hidden sm:inline">New pipeline</span>
         <span className="sm:hidden">New</span>
       </button>
-      <button
-        type="button"
-        className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
-      >
-        Import YAML
-      </button>
+      {importEnabled ? (
+        <button
+          type="button"
+          onClick={() => setImportOpen(true)}
+          className="hidden items-center gap-2 rounded-lg border border-[var(--text-muted)] px-[18px] py-2.5 text-sm font-medium text-[var(--text-secondary)] sm:flex"
+        >
+          Import YAML
+        </button>
+      ) : null}
     </>
   );
 
@@ -82,6 +98,20 @@ export function PipelinesListPage() {
       subtitle="Manage and create AI pipelines"
       actions={actions}
     >
+      {importEnabled ? (
+        <ImportYamlModal
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImported={(created) => {
+            trackPipelineCreated(created.id, created.name);
+            queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+            navigate({
+              to: "/pipelines/$pipelineId/edit",
+              params: { pipelineId: created.id },
+            });
+          }}
+        />
+      ) : null}
       {createMut.isError ? (
         <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-300">
           {createMut.error instanceof Error
